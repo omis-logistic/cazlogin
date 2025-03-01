@@ -25,9 +25,7 @@
     
     <button id="loginButton">Login</button>
     <button id="showRegistrationButton">Create Account</button>
-    <button id="showForgotPasswordButton" class="secondary-btn">
-      Forgot Password?
-    </button>
+    <button id="showForgotPasswordButton" class="secondary-btn">Forgot Password?</button>
   </div>
   </div>
 
@@ -64,12 +62,213 @@
     </div>
 
     <div class="button-group">
-      <button onclick="handleRegistration(); return false;">Register</button>
+      <button id="registerButton">Register</button>
       <button class="secondary-btn" onclick="showLogin(); return false;">
         Back to Login
       </button>
     </div>
   </div>
+
+  <!-- My Info Page -->
+<div class="container my-info-page" style="display: none;">
+  <h1>My Information</h1>
+  
+  <div class="input-group">
+    <label>Registered Phone:</label>
+    <input type="tel" id="infoPhone" readonly>
+  </div>
+  
+  <div class="input-group">
+    <label>Registered Email:</label>
+    <p id="currentEmail"></p>
+  </div>
+
+  <!-- Password Change Section -->
+  <div class="security-section">
+    <h2>Change Password</h2>
+    
+    <div class="input-group">
+      <input type="password" id="currentPassword" placeholder="Current Password" required>
+      <div class="error-message" id="currentPasswordError"></div>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" id="newPassword" placeholder="New Password" required>
+      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+      <div class="error-message" id="newPasswordError"></div>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" id="repeatNewPassword" placeholder="Confirm New Password" required>
+      <div class="error-message" id="repeatNewPasswordError"></div>
+    </div>
+    
+    <button id="changePasswordButton" class="primary-btn">Update Password</button>
+  </div>
+
+  <!-- Email Change Section -->
+  <div class="security-section">
+    <h2>Change Email Address</h2>
+    
+    <div class="input-group">
+      <input type="password" id="verifyPassword" placeholder="Verify Current Password" required>
+      <div class="error-message" id="verifyPasswordError"></div>
+    </div>
+    
+    <div class="input-group">
+      <input type="email" id="newEmail" placeholder="New Email Address" required>
+      <div class="error-message" id="newEmailError"></div>
+    </div>
+    
+    <div class="input-group">
+      <input type="email" id="repeatNewEmail" placeholder="Confirm New Email" required>
+      <div class="error-message" id="repeatNewEmailError"></div>
+    </div>
+    
+    <button id="changeEmailButton" class="primary-btn">Update Email</button>
+  </div>
+
+  <div class="button-group">
+    <button id="backToDashboardButton" class="secondary-btn">Back to Dashboard</button>
+    <button id="logoutButton" class="secondary-btn">Logout</button>
+  </div>
+</div>
+
+<!-- Parcel Declaration Page -->
+<div class="container parcel-declaration-page" style="display: none;">
+  <h1>Parcel Declaration</h1>
+  
+  <div class="input-group">
+    <label for="trackingNumber">Tracking Number</label>
+    <input type="text" id="trackingNumber" required>
+    <div class="error-message" id="trackingNumberError"></div>
+  </div>
+
+  <div class="input-group">
+    <label for="nameOnParcel">Recipient Name</label>
+    <input type="text" id="nameOnParcel" required>
+    <div class="error-message" id="nameOnParcelError"></div>
+  </div>
+
+  <div class="input-group">
+    <label for="itemDescription">Item Description</label>
+    <textarea id="itemDescription" rows="3" required></textarea>
+    <div class="error-message" id="itemDescriptionError"></div>
+  </div>
+
+  <div class="form-row">
+    <div class="input-group">
+      <label for="quantity">Quantity</label>
+      <input type="number" id="quantity" min="1" required>
+      <div class="error-message" id="quantityError"></div>
+    </div>
+
+    <div class="input-group">
+      <label for="price">Total Value (RM)</label>
+      <input type="number" id="price" step="0.01" required>
+      <div class="error-message" id="priceError"></div>
+    </div>
+  </div>
+
+  <div class="input-group">
+    <label for="itemCategory">Item Category</label>
+    <select id="itemCategory" required>
+      <option value="">Select Category</option>
+      <option value="Electronics">Electronics</option>
+      <option value="Documents">Documents</option>
+      <option value="Clothing">Clothing</option>
+      <option value="Cosmetics">Cosmetics</option>
+      <option value="Other">Other</option>
+    </select>
+    <div class="error-message" id="itemCategoryError"></div>
+  </div>
+
+  <div class="input-group">
+    <label for="invoiceFiles">Upload Invoices (PDF/Images)</label>
+    <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
+    <div class="error-message" id="invoiceFilesError"></div>
+  </div>
+
+  <div class="button-group">
+    <button id="submitParcelButton" class="primary-btn">Submit Declaration</button>
+    <button id="cancelParcelButton" class="secondary-btn">Cancel</button>
+  </div>
+</div>
+
+<!-- Password Reset Page -->
+<div class="container password-reset-page" style="display: none;">
+  <h1>Reset Password</h1>
+  
+  <div class="input-group">
+    <input type="password" id="newPasswordReset" 
+           placeholder="New password (6+ characters, 1 uppercase, 1 number)"
+           required>
+    <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+    <div class="error-message" id="newPasswordResetError"></div>
+  </div>
+  
+  <div class="input-group">
+    <input type="password" id="confirmNewPassword" 
+           placeholder="Confirm new password" 
+           required>
+    <div class="error-message" id="confirmNewPasswordError"></div>
+  </div>
+  
+  <div class="button-group">
+    <button id="confirmPasswordResetButton" class="primary-btn">Reset Password</button>
+    <button id="cancelPasswordResetButton" class="secondary-btn">Cancel</button>
+  </div>
+</div>
+
+<!-- Track Parcel Page -->
+<div class="container track-parcel-page" style="display: none;">
+  <h1>Parcel Tracking</h1>
+  
+  <div class="search-container">
+    <input type="text" id="trackingSearch" 
+           placeholder="Search tracking numbers..."
+           class="search-box">
+  </div>
+
+  <div class="tracking-container">
+    <div class="tracking-list">
+      <h3>Your Parcels</h3>
+      <div id="trackingList" class="tracking-items">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+
+    <div class="parcel-details">
+      <h3>Parcel Details</h3>
+      <div id="parcelDetails">
+        <div class="detail-item">
+          <span class="detail-label">Status:</span>
+          <span id="detailStatus" class="detail-value"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Last Update:</span>
+          <span id="detailLastUpdate" class="detail-value"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Location:</span>
+          <span id="detailLocation" class="detail-value"></span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Est. Delivery:</span>
+          <span id="detailDelivery" class="detail-value"></span>
+        </div>
+      </div>
+      <div id="noParcelsMessage" class="empty-state">
+        No parcels found
+      </div>
+    </div>
+  </div>
+
+  <div class="button-group">
+    <button id="refreshTrackingButton" class="secondary-btn">Refresh List</button>
+    <button id="backToDashboardFromTracking" class="secondary-btn">Back to Dashboard</button>
+  </div>
+</div>
 
   <!-- Forgot Password Page -->
   <div class="container forgot-password-page" style="display: none;">
@@ -171,7 +370,7 @@
       <p><strong>● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
       <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
       <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
-      <button onclick="closeWelcomeModal()">Close</button>
+      <button id="closeModalButton">Close</button>
     </div>
   </div>
 
