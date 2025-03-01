@@ -1,27 +1,45 @@
-// Replace all google.script.run with:
-const API_URL = 'https://script.google.com/macros/s/AKfycbzZJFomuSsv-4shW0BaArlf-kvIugE_XBR67E4cGqDgf1_Xu6Dw6HdhIDiT3HJ-T5hz/exec';
+// API Configuration
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzZJFomuSsv-4shW0BaArlf-kvIugE_XBR67E4cGqDgf1_Xu6Dw6HdhIDiT3HJ-T5hz/exec';
 
-async function callBackend(action, data) {
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action, ...data})
+// State Management
+let currentUserPhone = '';
+let currentUserEmail = '';
+
+// Page Navigation Functions
+function showPage(pageClass) { /* ... */ }
+function showRegistration() { /* ... */ }
+function showForgotPassword() { /* ... */ }
+function showLogin() { /* ... */ }
+function showDashboard() { /* ... */ }
+
+// API Call Handler
+async function callBackend(action, data) { /* ... */ }
+
+// Login Handler
+async function handleLogin(event) {
+  event.preventDefault();
+  // Your login logic
+}
+
+// Registration Handler
+async function handleRegistration(event) {
+  event.preventDefault();
+  // Your registration logic
+}
+
+// Initialize Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // Button click handlers
+  document.querySelectorAll('[data-action]').forEach(button => {
+    button.addEventListener('click', function() {
+      const action = this.dataset.action;
+      if (action === 'showRegistration') showRegistration();
+      if (action === 'showForgotPassword') showForgotPassword();
+      if (action === 'showLogin') showLogin();
     });
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    return {success: false, message: 'Network error'};
-  }
-}
-
-// Modified login example
-async function handleLogin() {
-  const phone = document.getElementById('phone').value;
-  const password = document.getElementById('password').value;
-
-  const response = await callBackend('processLogin', {phone, password});
-  if (response.success) {
-    // Handle successful login
-  }
-}
+  });
+  
+  // Form submission handlers
+  document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+  document.getElementById('registrationForm')?.addEventListener('submit', handleRegistration);
+});
