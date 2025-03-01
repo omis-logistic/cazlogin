@@ -1,338 +1,283 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cahaya Az Zahra Enterprise</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cahaya Az Zahra Enterprise - Parcel Management</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Login Page -->
-  <div class="container login-page">
-    <h1>Cahaya Az Zahra Enterprise</h1>
-    
-    <div class="input-group">
-      <input type="tel" id="phone" 
-             placeholder="Phone Number"
-             pattern="^(673\d{7,}|60\d{9,})$" 
-             required>
-    </div>
-    
-    <div class="input-group">
-      <input type="password" id="password" 
-             placeholder="Password" 
-             required>
-    </div>
-    
-    <button id="loginButton">Login</button>
-    <button id="showRegistrationButton" data-action="show-registration">Create Account</button>
-  <button id="showForgotPasswordButton" class="secondary-btn" data-action="show-forgot-password">Forgot Password?</button>
-</div>
-
-  <!-- Registration Page -->
-  <div class="container registration-page" style="display: none;">
-    <h1>New Registration</h1>
-    
-    <div class="input-group">
-      <input type="tel" id="regPhone" placeholder="Phone (673/60 format)" 
-             pattern="^(673\d{7,}|60\d{9,})$" required>
-      <div class="error-message" id="phoneError"></div>
-    </div>
-
-    <div class="input-group">
-      <input type="password" id="regPassword" placeholder="Create Password"
-             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" required>
-      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
-      <div class="error-message" id="passError"></div>
-    </div>
-
-    <div class="input-group">
-      <input type="password" id="regConfirmPass" placeholder="Confirm Password" required>
-      <div class="error-message" id="confirmPassError"></div>
-    </div>
-
-    <div class="input-group">
-      <input type="email" id="regEmail" placeholder="Email Address" required>
-      <div class="error-message" id="emailError"></div>
-    </div>
-
-    <div class="input-group">
-      <input type="email" id="regConfirmEmail" placeholder="Confirm Email" required>
-      <div class="error-message" id="confirmEmailError"></div>
-    </div>
-
-    <div class="button-group">
-      <button id="registerButton">Register</button>
-      <button class="secondary-btn" data-action="showLogin">
-        Back to Login
-      </button>
-    </div>
-  </div>
-
-  <!-- My Info Page -->
-<div class="container my-info-page" style="display: none;">
-  <h1>My Information</h1>
-  
-  <div class="input-group">
-    <label>Registered Phone:</label>
-    <input type="tel" id="infoPhone" readonly>
-  </div>
-  
-  <div class="input-group">
-    <label>Registered Email:</label>
-    <p id="currentEmail"></p>
-  </div>
-
-  <!-- Password Change Section -->
-  <div class="security-section">
-    <h2>Change Password</h2>
-    
-    <div class="input-group">
-      <input type="password" id="currentPassword" placeholder="Current Password" required>
-      <div class="error-message" id="currentPasswordError"></div>
-    </div>
-    
-    <div class="input-group">
-      <input type="password" id="newPassword" placeholder="New Password" required>
-      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
-      <div class="error-message" id="newPasswordError"></div>
-    </div>
-    
-    <div class="input-group">
-      <input type="password" id="repeatNewPassword" placeholder="Confirm New Password" required>
-      <div class="error-message" id="repeatNewPasswordError"></div>
-    </div>
-    
-    <button id="changePasswordButton" class="primary-btn">Update Password</button>
-  </div>
-
-  <!-- Email Change Section -->
-  <div class="security-section">
-    <h2>Change Email Address</h2>
-    
-    <div class="input-group">
-      <input type="password" id="verifyPassword" placeholder="Verify Current Password" required>
-      <div class="error-message" id="verifyPasswordError"></div>
-    </div>
-    
-    <div class="input-group">
-      <input type="email" id="newEmail" placeholder="New Email Address" required>
-      <div class="error-message" id="newEmailError"></div>
-    </div>
-    
-    <div class="input-group">
-      <input type="email" id="repeatNewEmail" placeholder="Confirm New Email" required>
-      <div class="error-message" id="repeatNewEmailError"></div>
-    </div>
-    
-    <button id="changeEmailButton" class="primary-btn">Update Email</button>
-  </div>
-
-  <div class="button-group">
-    <button id="backToDashboardButton" class="secondary-btn">Back to Dashboard</button>
-    <button id="myInfoLogoutButton" class="secondary-btn">Logout</button>
-  </div>
-</div>
-
-<!-- Parcel Declaration Page -->
-<div class="container parcel-declaration-page" style="display: none;">
-  <h1>Parcel Declaration</h1>
-  
-  <div class="input-group">
-    <label for="trackingNumber">Tracking Number</label>
-    <input type="text" id="trackingNumber" required>
-    <div class="error-message" id="trackingNumberError"></div>
-  </div>
-
-  <div class="input-group">
-    <label for="nameOnParcel">Recipient Name</label>
-    <input type="text" id="nameOnParcel" required>
-    <div class="error-message" id="nameOnParcelError"></div>
-  </div>
-
-  <div class="input-group">
-    <label for="itemDescription">Item Description</label>
-    <textarea id="itemDescription" rows="3" required></textarea>
-    <div class="error-message" id="itemDescriptionError"></div>
-  </div>
-
-  <div class="form-row">
-    <div class="input-group">
-      <label for="quantity">Quantity</label>
-      <input type="number" id="quantity" min="1" required>
-      <div class="error-message" id="quantityError"></div>
-    </div>
-
-    <div class="input-group">
-      <label for="price">Total Value (RM)</label>
-      <input type="number" id="price" step="0.01" required>
-      <div class="error-message" id="priceError"></div>
-    </div>
-  </div>
-
-  <div class="input-group">
-    <label for="itemCategory">Item Category</label>
-    <select id="itemCategory" required>
-      <option value="">Select Category</option>
-      <option value="Electronics">Electronics</option>
-      <option value="Documents">Documents</option>
-      <option value="Clothing">Clothing</option>
-      <option value="Cosmetics">Cosmetics</option>
-      <option value="Other">Other</option>
-    </select>
-    <div class="error-message" id="itemCategoryError"></div>
-  </div>
-
-  <div class="input-group">
-    <label for="invoiceFiles">Upload Invoices (PDF/Images)</label>
-    <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
-    <div class="error-message" id="invoiceFilesError"></div>
-  </div>
-
-  <div class="button-group">
-    <button id="submitParcelButton" class="primary-btn">Submit Declaration</button>
-    <button id="cancelParcelButton" class="secondary-btn">Cancel</button>
-  </div>
-</div>
-
-<!-- Password Reset Page -->
-<div class="container password-reset-page" style="display: none;">
-  <h1>Reset Password</h1>
-  
-  <div class="input-group">
-    <input type="password" id="newPasswordReset" 
-           placeholder="New password (6+ characters, 1 uppercase, 1 number)"
-           required>
-    <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
-    <div class="error-message" id="newPasswordResetError"></div>
-  </div>
-  
-  <div class="input-group">
-    <input type="password" id="confirmNewPassword" 
-           placeholder="Confirm new password" 
-           required>
-    <div class="error-message" id="confirmNewPasswordError"></div>
-  </div>
-  
-  <div class="button-group">
-    <button id="confirmPasswordResetButton" class="primary-btn">Reset Password</button>
-    <button id="cancelPasswordResetButton" class="secondary-btn">Cancel</button>
-  </div>
-</div>
-
-<!-- Track Parcel Page -->
-<div class="container track-parcel-page" style="display: none;">
-  <h1>Parcel Tracking</h1>
-  
-  <div class="search-container">
-    <input type="text" id="trackingSearch" 
-           placeholder="Search tracking numbers..."
-           class="search-box">
-  </div>
-
-  <div class="tracking-container">
-    <div class="tracking-list">
-      <h3>Your Parcels</h3>
-      <div id="trackingList" class="tracking-items">
-        <!-- Dynamically populated -->
-      </div>
-    </div>
-
-    <div class="parcel-details">
-      <h3>Parcel Details</h3>
-      <div id="parcelDetails">
-        <div class="detail-item">
-          <span class="detail-label">Status:</span>
-          <span id="detailStatus" class="detail-value"></span>
+    <!-- Login Page -->
+    <div id="login-page" class="container">
+        <h1>Cahaya Az Zahra Enterprise</h1>
+        
+        <div class="input-group">
+            <input type="tel" id="phone" 
+                   placeholder="Phone Number"
+                   pattern="^(673\d{7,}|60\d{9,})$" 
+                   required>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Last Update:</span>
-          <span id="detailLastUpdate" class="detail-value"></span>
+        
+        <div class="input-group">
+            <input type="password" id="password" 
+                   placeholder="Password" 
+                   required>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Location:</span>
-          <span id="detailLocation" class="detail-value"></span>
+        
+        <button id="loginButton" class="primary-btn">Login</button>
+        
+        <div class="auth-links">
+            <button data-action="show-registration" class="text-button">Create Account</button>
+            <button data-action="show-forgot-password" class="text-button">Forgot Password?</button>
         </div>
-        <div class="detail-item">
-          <span class="detail-label">Est. Delivery:</span>
-          <span id="detailDelivery" class="detail-value"></span>
+    </div>
+
+    <!-- Registration Page -->
+    <div id="registration-page" class="container" style="display: none;">
+        <h1>New Registration</h1>
+        
+        <div class="input-group">
+            <input type="tel" id="regPhone" 
+                   placeholder="Phone (673/60 format)" 
+                   required>
+            <div class="error-message" id="phoneError"></div>
         </div>
-      </div>
-      <div id="noParcelsMessage" class="empty-state">
-        No parcels found
-      </div>
-    </div>
-  </div>
 
-  <div class="button-group">
-    <button id="refreshTrackingButton" class="secondary-btn">Refresh List</button>
-    <button id="backToDashboardFromTracking" class="secondary-btn">Back to Dashboard</button>
-  </div>
-</div>
+        <div class="input-group">
+            <input type="password" id="regPassword" 
+                   placeholder="Create Password"
+                   required>
+            <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+        </div>
 
-  <!-- Forgot Password Page -->
-  <div class="container forgot-password-page" style="display: none;">
-    <h1>Password Recovery</h1>
-    
-    <div class="input-group">
-      <input type="tel" 
-             id="recoveryPhone" 
-             placeholder="Registered Phone Number" 
-             pattern="^(673\d{7,}|60\d{9,})$" 
-             required
-             autocomplete="off">
-      <div class="error-message" id="phoneRecoveryError"></div>
-    </div>
-    
-    <div class="input-group">
-      <input type="email" 
-             id="recoveryEmail" 
-             placeholder="Registered Email Address" 
-             required
-             autocomplete="off">
-      <div class="error-message" id="emailRecoveryError"></div>
-    </div>
-    
-    <div id="recoveryStatus" class="status-message"></div>
-    
-    <div class="button-group">
-     <button id="passwordRecoveryButton" class="gold-btn">
-      Send Temporary Password
-    </button>
-     <button class="secondary-btn" data-action="show-login">
-        Back to Login
-      </button>
-    </div>
-  </div>
+        <div class="input-group">
+            <input type="email" id="regEmail" 
+                   placeholder="Email Address" 
+                   required>
+        </div>
 
-  <!-- Dashboard Page -->
-  <div class="container dashboard-page" style="display: none;">
-    <h1>Dashboard</h1>
-    
-    <div class="thumbnail-container">
-      <div class="thumbnail" data-action="show-my-info">
-        <h2>My Info</h2>
-        <p>View and update your personal information.</p>
-      </div>
-      
-      <div class="thumbnail" onclick="showParcelDeclaration(); return false;">
-        <h2>Submit Parcel Declaration</h2>
-        <p>Declare your parcel for customs clearance.</p>
-      </div>
-      
-      <div class="thumbnail" onclick="showTrackParcel(); return false;"> 
-        <h2>Track My Parcel</h2>
-        <p>Track the status of your parcel.</p>
-      </div>
+        <div class="button-group">
+            <button id="registerButton" class="primary-btn">Register</button>
+            <button data-action="show-login" class="secondary-btn">
+                Back to Login
+            </button>
+        </div>
     </div>
-    
-      <button id="dashboardLogoutButton" class="secondary-btn">Logout</button>
-  </div>
 
-  <!-- Welcome Modal -->
-  <div id="welcomeModal" class="modal">
-    <div class="modal-content">
-     <h2>MAKLUMAN PENTING. SILA BACA</h2>
+    <!-- Forgot Password Page -->
+    <div id="forgot-password-page" class="container" style="display: none;">
+        <h1>Password Recovery</h1>
+        
+        <div class="input-group">
+            <input type="tel" id="recoveryPhone" 
+                   placeholder="Registered Phone Number" 
+                   required>
+        </div>
+        
+        <div class="input-group">
+            <input type="email" id="recoveryEmail" 
+                   placeholder="Registered Email Address" 
+                   required>
+        </div>
+        
+        <div class="button-group">
+            <button id="passwordRecoveryButton" class="primary-btn">Send Reset Instructions</button>
+            <button data-action="show-login" class="secondary-btn">
+                Back to Login
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="container" style="display: none;">
+        <div class="dashboard-header">
+            <h1>Welcome, <span id="user-phone"></span></h1>
+            <p class="user-email" id="user-email"></p>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="dashboard-card" data-action="show-my-info">
+                <div class="card-icon">👤</div>
+                <h2>My Account</h2>
+                <p>Update personal information and security settings</p>
+            </div>
+            
+            <div class="dashboard-card" data-action="show-parcel-declaration">
+                <div class="card-icon">📦</div>
+                <h2>Declare Parcel</h2>
+                <p>Submit new parcel information for customs clearance</p>
+            </div>
+            
+            <div class="dashboard-card" data-action="show-track-parcel">
+                <div class="card-icon">📡</div>
+                <h2>Track Parcel</h2>
+                <p>Monitor shipment status and view history</p>
+            </div>
+        </div>
+        
+        <div class="dashboard-footer">
+            <button id="logoutButton" class="secondary-btn">Logout</button>
+        </div>
+    </div>
+
+    <!-- My Info Page -->
+    <div id="my-info-page" class="container" style="display: none;">
+        <h1>Account Information</h1>
+        
+        <div class="user-info">
+            <div class="info-item">
+                <label>Registered Phone:</label>
+                <input type="tel" id="infoPhone" readonly>
+            </div>
+            
+            <div class="info-item">
+                <label>Registered Email:</label>
+                <p id="currentEmail" class="email-display"></p>
+            </div>
+        </div>
+
+        <div class="security-section">
+            <h2>Change Password</h2>
+            <div class="input-group">
+                <input type="password" id="currentPassword" 
+                       placeholder="Current Password" 
+                       required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="newPassword" 
+                       placeholder="New Password" 
+                       required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="repeatNewPassword" 
+                       placeholder="Confirm New Password" 
+                       required>
+            </div>
+            <button id="changePasswordButton" class="primary-btn">Update Password</button>
+        </div>
+
+        <div class="security-section">
+            <h2>Change Email Address</h2>
+            <div class="input-group">
+                <input type="password" id="verifyPassword" 
+                       placeholder="Verify Current Password" 
+                       required>
+            </div>
+            <div class="input-group">
+                <input type="email" id="newEmail" 
+                       placeholder="New Email Address" 
+                       required>
+            </div>
+            <div class="input-group">
+                <input type="email" id="repeatNewEmail" 
+                       placeholder="Confirm New Email" 
+                       required>
+            </div>
+            <button id="changeEmailButton" class="primary-btn">Update Email</button>
+        </div>
+
+        <div class="button-group">
+            <button data-action="show-dashboard" class="secondary-btn">Back to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Parcel Declaration Page -->
+    <div id="parcel-declaration-page" class="container" style="display: none;">
+        <h1>Parcel Declaration</h1>
+        
+        <div class="parcel-form">
+            <div class="input-group">
+                <label>Tracking Number</label>
+                <input type="text" id="trackingNumber" required>
+            </div>
+
+            <div class="input-group">
+                <label>Item Description</label>
+                <textarea id="itemDescription" rows="3" required></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="input-group">
+                    <label>Quantity</label>
+                    <input type="number" id="quantity" min="1" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Total Value (RM)</label>
+                    <input type="number" id="price" step="0.01" required>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Item Category</label>
+                <select id="itemCategory" required>
+                    <option value="">Select Category</option>
+                    <option value="Electronics">Electronics</option>
+                    <option value="Documents">Documents</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Cosmetics">Cosmetics</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Upload Invoices</label>
+                <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
+            </div>
+
+            <div class="button-group">
+                <button id="submitParcelButton" class="primary-btn">Submit Declaration</button>
+                <button data-action="show-dashboard" class="secondary-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Track Parcel Page -->
+    <div id="track-parcel-page" class="container" style="display: none;">
+        <h1>Parcel Tracking</h1>
+        
+        <div class="tracking-container">
+            <div class="tracking-list">
+                <div class="search-box">
+                    <input type="text" id="trackingSearch" 
+                           placeholder="Search tracking numbers...">
+                </div>
+                <div id="trackingList" class="tracking-items"></div>
+            </div>
+            
+            <div class="parcel-details">
+                <h3>Parcel Details</h3>
+                <div id="parcelDetails">
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span id="detailStatus" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Last Update:</span>
+                        <span id="detailLastUpdate" class="detail-value"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Location:</span>
+                        <span id="detailLocation" class="detail-value"></span>
+                    </div>
+                </div>
+                <div id="noParcelsMessage" class="empty-state">
+                    No parcels found in your account
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button data-action="show-dashboard" class="secondary-btn">Back to Dashboard</button>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="modal">
+        <div class="modal-content">
+            <h2>MAKLUMAN PENTING</h2>
+            <div class="modal-scroll">
+                <h2>MAKLUMAN PENTING. SILA BACA</h2>
       <p><strong>Tolong submit tracking details biskita seawalnya jika biskita ada mengunakan shipping address alamat kami di limbang. Tidak perlu menunggu kiriman dari pihak kami lagi.</strong></p>
       <p>Sila check sea shipping, jika parcel sudah sampai Malaysia, perubahan tracking akan berlaku, sila update/submit tracking terkini yang telah sampai di Limbang.</p>
       <p><strong>Please do not key in any Tracking details that is not yours or your not sure about it please do ask admin to make sure about it.</strong></p>
@@ -369,21 +314,20 @@
       <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
       <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
       <button data-action="closeModalButton">Close</button>
+            </div>
+            <button data-action="close-modal" class="primary-btn">I Understand</button>
+        </div>
     </div>
-  </div>
 
-  <!-- Single JavaScript File -->
-  <script src="app.js"></script>
-  <div id="loading" class="loading-indicator">
-  <div class="spinner"></div>
-  <p>Loading...</p>
-</div>
-  <div id="global-error" class="error-message" style="display: none;"></div>
-  <script>
-  // Show modal only after successful login
-  function showWelcomeModal() {
-    document.getElementById('welcomeModal').style.display = 'block';
-  }
-</script>
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading-indicator">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Global Error Message -->
+    <div id="global-error" class="error-message" style="display: none;"></div>
+
+    <script src="app.js"></script>
 </body>
 </html>
