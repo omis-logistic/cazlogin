@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwK9DeEs1jPKf15IYEeuwGEok4TuioQTkGCqPhneqcCFuh3i4XR44FLHorNqct6Jknt/exec'; // Replace with actual URL
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwPfN5hpeGqBXuFe2PTKTZmPdE5_pUmjFMgUlEuqdX43AG0C_n6Or5vy_IQvFMmjtf_/exec'; // Replace with actual URL
 
 // ================= STATE MANAGEMENT =================
 let currentUserPhone = '';
@@ -20,22 +20,28 @@ function showPage(pageClass) {
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
   try {
-    const response = await fetch(GAS_WEBAPP_URL, {
+    const response = await fetch(`${GAS_WEBAPP_URL}?action=${action}`, {
       method: 'POST',
-      redirect: 'follow', // Add this line
-      headers: { 
+      redirect: 'follow',
+      headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ action, ...data })
+      body: JSON.stringify(data)
     });
-    
-    // Handle Google's redirect
-    const responseData = await response.text();
-    return JSON.parse(responseData);
-    
+
+    // Handle Google's URL redirect
+    const responseText = await response.text();
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      throw new Error('Invalid JSON response');
+    }
   } catch (error) {
     console.error('API Error:', error);
-    return { success: false, message: 'Network error' };
+    return { 
+      success: false, 
+      message: 'Network error: ' + error.message 
+    };
   }
 }
 
