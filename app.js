@@ -48,31 +48,56 @@ async function handleLogin(event) {
     const phone = document.getElementById('phone').value.trim();
     const password = document.getElementById('password').value;
 
-    // Add basic validation
+    // Basic validation
     if (!phone || !password) {
       throw new Error('Please fill in all fields');
     }
 
+    // Make login request
     const response = await callBackend('processLogin', { 
       phone: sanitizePhone(phone),
       password 
     });
-    
-    if (response.success) {
-      localStorage.setItem('userSession', JSON.stringify({
-        phone: response.phone,
-        email: response.email,
-        token: response.token
-      }));
-      window.location.href = '/dashboard'; // Force page reload
+
+    if (!response.success) {
+      throw new Error(response.message || 'Login failed');
     }
+
+    // Store session data
+    const sessionData = {
+      phone: response.phone,
+      email: response.email,
+      token: response.token
+    };
+    localStorage.setItem('userSession', JSON.stringify(sessionData));
+
+    // ▼▼▼ ADDED TOKEN VERIFICATION ▼▼▼
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+    
+    // Verify token storage
+    const storedSession = JSON.parse(localStorage.getItem('userSession'));
+    if (!storedSession?.token) {
+      throw new Error('Session initialization failed');
+    }
+
+    // Handle temp password redirect
+    if (response.tempPassword) {
+      showPage('password-reset-page');
+    } else {
+      showDashboard();
+      showWelcomeModal();
+    }
+
   } catch (error) {
+    console.error('Login error:', error);
     showError('login-error', error.message);
+    handleLogout(); // Clear invalid session
+  } finally {
     hideLoading();
   }
 }
 
-// Add phone sanitization helper
+// Add this helper function if missing
 function sanitizePhone(phone) {
   return phone.replace(/[^\d]/g, '').slice(-10);
 }
