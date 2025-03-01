@@ -1,23 +1,184 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!-- Move all CSS from original <style> tags here -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Original Login Page Content -->
+  <!-- Login Page -->
   <div class="container login-page">
-    <!-- Content from LoginPage.html -->
+    <h1>Cahaya Az Zahra Enterprise</h1>
+    
+    <div class="input-group">
+      <input type="tel" id="phone" 
+             placeholder="Phone Number"
+             pattern="^(673\d{7,}|60\d{9,})$" 
+             required>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" id="password" 
+             placeholder="Password" 
+             required>
+    </div>
+    
+    <button onclick="handleLogin()">Login</button>
+    
+    <div class="button-group">
+      <button onclick="showRegistration()">Create Account</button>
+      <button class="secondary-btn" onclick="showForgotPassword()">
+        Forgot Password?
+      </button>
+    </div>
   </div>
 
-  <!-- Original Registration Page -->
-  <div class="container registration-page" style="display:none">
-    <!-- Content from RegistrationPage.html -->
+  <!-- Registration Page -->
+  <div class="container registration-page" style="display: none;">
+    <h1>New Registration</h1>
+    
+    <div class="input-group">
+      <input type="tel" id="regPhone" placeholder="Phone (673/60 format)" 
+             pattern="^(673\d{7,}|60\d{9,})$" required>
+      <div class="error-message" id="phoneError"></div>
+    </div>
+
+    <div class="input-group">
+      <input type="password" id="regPassword" placeholder="Create Password"
+             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" required>
+      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+      <div class="error-message" id="passError"></div>
+    </div>
+
+    <div class="input-group">
+      <input type="password" id="regConfirmPass" placeholder="Confirm Password" required>
+      <div class="error-message" id="confirmPassError"></div>
+    </div>
+
+    <div class="input-group">
+      <input type="email" id="regEmail" placeholder="Email Address" required>
+      <div class="error-message" id="emailError"></div>
+    </div>
+
+    <div class="input-group">
+      <input type="email" id="regConfirmEmail" placeholder="Confirm Email" required>
+      <div class="error-message" id="confirmEmailError"></div>
+    </div>
+
+    <div class="button-group">
+      <button onclick="handleRegistration(); return false;">Register</button>
+      <button class="secondary-btn" onclick="showLogin(); return false;">
+        Back to Login
+      </button>
+    </div>
   </div>
 
-  <!-- Repeat for all other pages -->
-  
-  <!-- Move all JavaScript to app.js -->
+  <!-- Forgot Password Page -->
+  <div class="container forgot-password-page" style="display: none;">
+    <h1>Password Recovery</h1>
+    
+    <div class="input-group">
+      <input type="tel" 
+             id="recoveryPhone" 
+             placeholder="Registered Phone Number" 
+             pattern="^(673\d{7,}|60\d{9,})$" 
+             required
+             autocomplete="off">
+      <div class="error-message" id="phoneRecoveryError"></div>
+    </div>
+    
+    <div class="input-group">
+      <input type="email" 
+             id="recoveryEmail" 
+             placeholder="Registered Email Address" 
+             required
+             autocomplete="off">
+      <div class="error-message" id="emailRecoveryError"></div>
+    </div>
+    
+    <div id="recoveryStatus" class="status-message"></div>
+    
+    <div class="button-group">
+      <button onclick="handlePasswordRecovery(); return false;" class="gold-btn">
+        Send Temporary Password
+      </button>
+      <button class="secondary-btn" onclick="showLogin(); return false;">
+        Back to Login
+      </button>
+    </div>
+  </div>
+
+  <!-- Dashboard Page -->
+  <div class="container dashboard-page" style="display: none;">
+    <h1>Dashboard</h1>
+    
+    <div class="thumbnail-container">
+      <div class="thumbnail" onclick="showMyInfo(); return false;">
+        <h2>My Info</h2>
+        <p>View and update your personal information.</p>
+      </div>
+      
+      <div class="thumbnail" onclick="showParcelDeclaration(); return false;">
+        <h2>Submit Parcel Declaration</h2>
+        <p>Declare your parcel for customs clearance.</p>
+      </div>
+      
+      <div class="thumbnail" onclick="showTrackParcel(); return false;"> 
+        <h2>Track My Parcel</h2>
+        <p>Track the status of your parcel.</p>
+      </div>
+    </div>
+    
+    <button class="logout-btn" onclick="handleLogout(); return false;">
+      Logout
+    </button>
+  </div>
+
+  <!-- Welcome Modal -->
+  <div id="welcomeModal" class="modal">
+    <div class="modal-content">
+     <h2>MAKLUMAN PENTING. SILA BACA</h2>
+      <p><strong>Tolong submit tracking details biskita seawalnya jika biskita ada mengunakan shipping address alamat kami di limbang. Tidak perlu menunggu kiriman dari pihak kami lagi.</strong></p>
+      <p>Sila check sea shipping, jika parcel sudah sampai Malaysia, perubahan tracking akan berlaku, sila update/submit tracking terkini yang telah sampai di Limbang.</p>
+      <p><strong>Please do not key in any Tracking details that is not yours or your not sure about it please do ask admin to make sure about it.</strong></p>
+      <p><strong>Parcel Items not key-in will be left at storage. Parcel staying at storage can have high chance of lost. If it is lost, it is not our responsibility anymore.</strong></p>
+      <ul>
+        <li>Pastikan Details adalah betul.</li>
+        <li>Buat details nama yg mudah difahami sahaja, tidak perlu panjang.</li>
+        <li>Nombor telefon penerima di Brunei, pihak kami akan hubungi.</li>
+        <li>Jika parcel dalam satu tracking mempunyai banyak keterangan item, sila senaraikan "breakdown" satu persatu termasuk harga & kuantiti.</li>
+        <li>Harga termasuk postage.</li>
+        <li>Item yang memerlukan permit(under control), sila sediakan semua document yg diperlukan.</li>
+      </ul>
+      <p>Untuk Cosmetics ,Supplements, Foods or Drinks.</p>
+      <ul>
+        <li>Screenshot invoice adalah dimestikan.</li>
+        <li>Pastikan butiran nama penerima dan summary shipping dapat dilihat dengan jelas.</li>
+        <li>Gambar IC depan & belakang atau kirimkan nombor IC dan alamat kepada admin.</li>
+        <li>Untuk bungkusan cosmetic, pastikan barangan bukan untuk dijual, hanya personal use kegunaan sendiri sahaja, limit harga tidak boleh melebihi $200, berat maksimum 2KG kebawah *kecuali biskita ada DPS permit dibawah syarikat sendiri.</li>
+      </ul>
+      <p>Untuk AITI,</p>
+      <ul>
+        <li>Kesemua barangan yang mempunyai Bluetooth atau Wireless RC car yg mempunyai "remote control", Handphone & laptop hendak lah memohon permit di AITI dahulu, kuantiti tidak boleh melebihi 5 unit.</li>
+        <li>Invoice</li>
+        <li>Gambar IC depan belakang.</li>
+        <li>Copy link dari Shopee atau Lazada.</li>
+      </ul>
+      <p>Untuk buku,</p>
+      <ul>
+        <li>Sediakan invoice.</li>
+        <li>Gambar IC.</li>
+      </ul>
+      <p><strong>● SILA SEMAK SEBELUM SUBMIT.</strong></p>
+      <p><strong>● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
+      <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
+      <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
+      <button onclick="closeWelcomeModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- Single JavaScript File -->
   <script src="app.js"></script>
 </body>
 </html>
