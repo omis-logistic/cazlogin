@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzbHR78lxpR7LK0aMlWD4OchX21AR6ViODu_S49kFGLxbrPo6rCI0QLYlxu0Qu8wKaG/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwOAmAvpFeTakSItOF2x-RUqktdtp5OB_v0wv3TVJGAlCkigry-tYu-v8nqHRJMqUue/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -231,9 +231,9 @@ async function callBackend(action, data) {
     const formData = new FormData();
     formData.append('action', action);
     
-    // Add all data properties to FormData
+    // Stringify nested objects
     for (const [key, value] of Object.entries(data)) {
-      formData.append(key, value);
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
     }
 
     const response = await fetch(GAS_WEBAPP_URL, {
@@ -241,24 +241,28 @@ async function callBackend(action, data) {
       body: formData
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
     const result = await response.json();
     
+    // Enhanced error diagnostics
     if (!result.success) {
-      throw new Error(result.message || 'Action failed');
+      console.error('Backend Error:', {
+        action,
+        inputData: data,
+        error: result.message,
+        rawResponse: result
+      });
+      throw new Error(result.message || `Action ${action} failed`);
     }
 
     return result;
+    
   } catch (error) {
-    console.error('API Error:', error);
-    throw new Error(
-      error.message.includes('Failed to fetch') 
-        ? 'Network error - check your internet connection'
-        : error.message
-    );
+    console.error('Network Error:', {
+      action,
+      error: error.message,
+      stack: error.stack
+    });
+    throw new Error('Connection failed. Check network and try again.');
   }
 }
 
