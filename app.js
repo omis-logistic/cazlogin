@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw4_2q72VVztvXa2WmYURraU3PA6ZMQo1r2LA8P9vayKyMoQa1NXHoJtnbXZuxCDbrD/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzbHR78lxpR7LK0aMlWD4OchX21AR6ViODu_S49kFGLxbrPo6rCI0QLYlxu0Qu8wKaG/exec';
 let currentUser = {
   phone: '',
   email: '',
