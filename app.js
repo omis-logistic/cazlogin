@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxOI_q_grl5KZR1dsax1biZH2nuJ-zYVFLtO9s_onYENQ6RacGRORnat0XcnTMSPjmG/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -7,10 +7,10 @@ let currentUser = {
 };
 
 // ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initializeEventListeners();
-  checkExistingSession();
-  showPage('login-page');
+  await checkExistingSession();
+  if (!currentUser.token) showPage('login-page');
 });
 
 // ================= EVENT MANAGEMENT =================
@@ -21,13 +21,14 @@ function initializeEventListeners() {
   document.getElementById('passwordRecoveryButton')?.addEventListener('click', handlePasswordRecovery);
   document.getElementById('changePasswordButton')?.addEventListener('click', handlePasswordChange);
   document.getElementById('changeEmailButton')?.addEventListener('click', handleEmailChange);
+  document.getElementById('submitParcelButton')?.addEventListener('click', handleParcelSubmission);
   
-  // Navigation
+  // Navigation Buttons
   document.querySelectorAll('[data-action]').forEach(button => {
     button.addEventListener('click', (e) => {
       e.preventDefault();
-      const page = button.dataset.action.replace('show-', '');
-      showPage(page);
+      const targetPage = button.dataset.action.replace('show-', '') + '-page';
+      showPage(targetPage);
     });
   });
 
@@ -35,13 +36,15 @@ function initializeEventListeners() {
   document.querySelectorAll('[data-action="logout"]').forEach(button => {
     button.addEventListener('click', handleLogout);
   });
+
+  // Dashboard Buttons
+  document.getElementById('backToDashboardButton')?.addEventListener('click', () => showPage('dashboard-page'));
+  document.getElementById('refreshTrackingButton')?.addEventListener('click', loadParcelData);
 }
 
 // ================= AUTH HANDLERS =================
 async function handleLogin(event) {
   event.preventDefault();
-  showLoading();
-  
   try {
     const phone = document.getElementById('phone').value.trim();
     const password = document.getElementById('password').value;
@@ -57,83 +60,55 @@ async function handleLogin(event) {
       localStorage.setItem('userSession', JSON.stringify(currentUser));
       response.tempPassword ? showPage('password-reset-page') : showDashboard();
     } else {
-      showError('login-error', response.message || 'Login failed');
+      showError('login-error', response.message);
     }
   } catch (error) {
     showError('global-error', 'Connection error. Please try again.');
-  } finally {
-    hideLoading();
   }
 }
 
 async function handleRegistration(event) {
   event.preventDefault();
-  showLoading();
-  
   try {
     const phone = document.getElementById('regPhone').value.trim();
     const password = document.getElementById('regPassword').value;
-    const confirmPass = document.getElementById('regConfirmPass').value;
     const email = document.getElementById('regEmail').value.trim();
-    const confirmEmail = document.getElementById('regConfirmEmail').value.trim();
 
     if (!validatePhone(phone)) throw new Error('Invalid phone format');
-    if (password !== confirmPass) throw new Error('Passwords do not match');
     if (!validatePassword(password)) throw new Error('Password requirements not met');
-    if (email !== confirmEmail) throw new Error('Emails do not match');
     if (!validateEmail(email)) throw new Error('Invalid email format');
 
     const response = await callBackend('createAccount', { phone, password, email });
     
-    if (response.success) {
-      showPage('login-page');
-      showSuccess('Registration successful! Please login');
-    } else {
-      throw new Error(response.message || 'Registration failed');
-    }
+    response.success ? showPage('login-page') : showError('registration-error', response.message);
+    if (response.success) showSuccess('Registration successful! Please login');
   } catch (error) {
     showError('registration-error', error.message);
-  } finally {
-    hideLoading();
   }
 }
 
+// ================= PASSWORD MANAGEMENT =================
 async function handlePasswordRecovery(event) {
   event.preventDefault();
-  showLoading();
-
   try {
     const phone = document.getElementById('recoveryPhone').value.trim();
     const email = document.getElementById('recoveryEmail').value.trim();
 
-    if (!phone || !email) throw new Error('Both fields are required');
-    
     const response = await callBackend('initiatePasswordReset', { phone, email });
     
-    if (response.success) {
-      showSuccess('Password reset instructions sent to email');
-      showPage('login-page');
-    } else {
-      throw new Error(response.message || 'Password reset failed');
-    }
+    response.success ? showPage('login-page') : showError('recoveryStatus', response.message);
+    if (response.success) showSuccess('Password reset instructions sent to email');
   } catch (error) {
     showError('recoveryStatus', error.message);
-  } finally {
-    hideLoading();
   }
 }
 
-// ================= USER ACTIONS =================
 async function handlePasswordChange(event) {
   event.preventDefault();
-  showLoading();
-
   try {
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('repeatNewPassword').value;
 
-    if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
     if (!validatePassword(newPassword)) throw new Error('Password requirements not met');
 
     const response = await callBackend('updateUserInfo', {
@@ -143,60 +118,45 @@ async function handlePasswordChange(event) {
       newPassword
     });
 
-    if (response.success) {
-      showSuccess('Password updated successfully');
-      clearPasswordFields();
-    } else {
-      throw new Error(response.message || 'Password update failed');
-    }
+    response.success ? showSuccess('Password updated') : showError('currentPasswordError', response.message);
   } catch (error) {
     showError('currentPasswordError', error.message);
-  } finally {
-    hideLoading();
   }
 }
 
-async function handleEmailChange(event) {
+// ================= PARCEL HANDLING =================
+async function handleParcelSubmission(event) {
   event.preventDefault();
-  showLoading();
-
   try {
-    const password = document.getElementById('verifyPassword').value;
-    const newEmail = document.getElementById('newEmail').value.trim();
-    const confirmEmail = document.getElementById('repeatNewEmail').value.trim();
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value,
+      phoneNumber: currentUser.phone,
+      itemDescription: document.getElementById('itemDescription').value,
+      quantity: document.getElementById('quantity').value,
+      price: document.getElementById('price').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
 
-    if (newEmail !== confirmEmail) throw new Error('Emails do not match');
-    if (!validateEmail(newEmail)) throw new Error('Invalid email format');
+    const files = document.getElementById('invoiceFiles').files;
+    const filesBase64 = await processFiles(files);
 
-    const response = await callBackend('updateUserInfo', {
-      phone: currentUser.phone,
-      token: currentUser.token,
-      currentPassword: password,
-      newEmail
+    const response = await callBackend('submitParcelDeclaration', {
+      data: formData,
+      filesBase64,
+      token: currentUser.token
     });
 
-    if (response.success) {
-      currentUser.email = newEmail;
-      localStorage.setItem('userSession', JSON.stringify(currentUser));
-      showSuccess('Email updated successfully');
-      document.getElementById('currentEmail').textContent = newEmail;
-    } else {
-      throw new Error(response.message || 'Email update failed');
-    }
+    response.success ? showDashboard() : showError('parcel-error', response.message);
   } catch (error) {
-    showError('verifyPasswordError', error.message);
-  } finally {
-    hideLoading();
+    showError('parcel-error', error.message);
   }
 }
 
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
+  showLoading();
   try {
-    const url = new URL(GAS_WEBAPP_URL);
-    url.searchParams.set('cache', Date.now());
-
-    const response = await fetch(url, {
+    const response = await fetch(GAS_WEBAPP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...data })
@@ -207,6 +167,8 @@ async function callBackend(action, data) {
   } catch (error) {
     console.error('API Error:', error);
     return { success: false, message: 'Network error' };
+  } finally {
+    hideLoading();
   }
 }
 
@@ -215,13 +177,13 @@ function showPage(pageId) {
   document.querySelectorAll('.container').forEach(page => {
     page.style.display = page.id === pageId ? 'block' : 'none';
   });
+  if (pageId === 'dashboard-page') loadParcelData();
 }
 
 function showDashboard() {
-  showPage('dashboard-page');
   document.getElementById('user-phone').textContent = currentUser.phone;
   document.getElementById('user-email').textContent = currentUser.email;
-  loadParcelData();
+  showPage('dashboard-page');
 }
 
 function showError(elementId, message) {
@@ -234,18 +196,38 @@ function showError(elementId, message) {
 }
 
 function showSuccess(message) {
-  const successElement = document.getElementById('success-message');
+  const successElement = document.createElement('div');
+  successElement.className = 'success-message';
   successElement.textContent = message;
-  successElement.style.display = 'block';
-  setTimeout(() => successElement.style.display = 'none', 5000);
+  document.body.appendChild(successElement);
+  setTimeout(() => successElement.remove(), 3000);
 }
 
-function showLoading() {
-  document.getElementById('loading').style.display = 'flex';
+// ================= SESSION MANAGEMENT =================
+async function checkExistingSession() {
+  const session = localStorage.getItem('userSession');
+  if (!session) return;
+
+  try {
+    currentUser = JSON.parse(session);
+    const response = await callBackend('validateSession', {
+      phone: currentUser.phone,
+      token: currentUser.token
+    });
+
+    if (!response.success) throw new Error('Session expired');
+    showDashboard();
+  } catch (error) {
+    handleLogout();
+    showError('global-error', 'Session expired. Please login again.');
+  }
 }
 
-function hideLoading() {
-  document.getElementById('loading').style.display = 'none';
+function handleLogout() {
+  localStorage.removeItem('userSession');
+  currentUser = { phone: '', email: '', token: '' };
+  document.querySelectorAll('input').forEach(input => input.value = '');
+  showPage('login-page');
 }
 
 // ================= UTILITIES =================
@@ -261,29 +243,18 @@ function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function checkExistingSession() {
-  const session = localStorage.getItem('userSession');
-  if (session) {
-    try {
-      currentUser = JSON.parse(session);
-      showDashboard();
-    } catch {
-      localStorage.removeItem('userSession');
-    }
-  }
-}
-
-function handleLogout() {
-  localStorage.removeItem('userSession');
-  currentUser = { phone: '', email: '', token: '' };
-  showPage('login-page');
-  clearPasswordFields();
-}
-
-function clearPasswordFields() {
-  document.querySelectorAll('input[type="password"]').forEach(field => {
-    field.value = '';
-  });
+async function processFiles(files) {
+  return Promise.all(Array.from(files).map(file => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve({
+        name: file.name,
+        type: file.type,
+        base64: e.target.result.split(',')[1]
+      });
+      reader.readAsDataURL(file);
+    });
+  }));
 }
 
 async function loadParcelData() {
@@ -294,24 +265,24 @@ async function loadParcelData() {
     });
 
     if (response.success) {
-      renderParcelList(response.data);
+      const container = document.getElementById('trackingList');
+      container.innerHTML = response.data.map(parcel => `
+        <div class="parcel-item">
+          <div>${parcel.trackingNumber}</div>
+          <div>${parcel.status}</div>
+          <div>${new Date(parcel.lastUpdate).toLocaleDateString()}</div>
+        </div>
+      `).join('');
     }
   } catch (error) {
-    showError('parcel-error', 'Failed to load parcel data');
+    showError('parcel-error', 'Failed to load parcels');
   }
 }
 
-function renderParcelList(parcels) {
-  const container = document.getElementById('trackingList');
-  container.innerHTML = '';
-  
-  parcels.forEach(parcel => {
-    const element = document.createElement('div');
-    element.className = 'tracking-item';
-    element.innerHTML = `
-      <div>${parcel.trackingNumber}</div>
-      <div>${parcel.status}</div>
-    `;
-    container.appendChild(element);
-  });
+function showLoading() {
+  document.getElementById('loading').style.display = 'flex';
+}
+
+function hideLoading() {
+  document.getElementById('loading').style.display = 'none';
 }
