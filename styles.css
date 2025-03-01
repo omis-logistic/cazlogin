@@ -2,17 +2,21 @@
 :root {
   --dark-bg: #1a1a1a;
   --gold: #c5a047;
+  --gold-hover: #b38935;
   --text-light: #ffffff;
   --error-red: #ff4444;
   --success-green: #00C851;
-  --hover-gold: #b38935;
-  --trans-time: 0.3s;
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --transition: all 0.3s ease;
+  --radius: 8px;
+  --shadow: 0 4px 20px rgba(197, 160, 71, 0.2);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 html {
@@ -20,7 +24,6 @@ html {
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background-color: var(--dark-bg);
   color: var(--text-light);
   line-height: 1.6;
@@ -32,45 +35,54 @@ body {
   position: relative;
 }
 
-/* ================= LAYOUT & CONTAINERS ================= */
+/* ================= LAYOUT STRUCTURE ================= */
 .container {
   background: rgba(0, 0, 0, 0.9);
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(197, 160, 71, 0.2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   width: 100%;
   max-width: 400px;
-  margin: 1rem 0;
-  animation: slideIn var(--trans-time) ease-out;
-  position: relative;
+  margin: 1rem auto;
+  animation: slideIn 0.3s ease-out;
 }
 
-.login-page {
-  display: flex;
-  flex-direction: column;
+.dashboard-grid {
+  display: grid;
   gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  margin: 2rem 0;
 }
 
-.page-wrapper {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+.form-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
+  margin: 1rem 0;
 }
 
 /* ================= TYPOGRAPHY ================= */
-h1 {
+h1, h2, h3 {
   color: var(--gold);
-  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  font-size: 2rem;
   border-bottom: 2px solid var(--gold);
   padding-bottom: 1rem;
-  margin-bottom: 2rem;
-  font-size: 2rem;
+  text-align: center;
 }
 
 h2 {
-  color: var(--gold);
   font-size: 1.5rem;
-  margin-bottom: 1rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.user-email {
+  color: #888;
+  text-align: center;
+  margin-bottom: 2rem;
 }
 
 /* ================= FORM ELEMENTS ================= */
@@ -84,61 +96,54 @@ select,
 textarea {
   width: 100%;
   padding: 0.8rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--input-bg);
   border: 1px solid var(--gold);
   color: var(--text-light);
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 1rem;
-  transition: all var(--trans-time) ease;
+  transition: var(--transition);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
 }
 
 input:focus,
 select:focus,
 textarea:focus {
-  border-color: var(--hover-gold);
+  border-color: var(--gold-hover);
   outline: none;
   box-shadow: 0 0 0 3px rgba(197, 160, 71, 0.2);
 }
 
 input[type="file"] {
   padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
 }
 
-/* ================= BUTTONS & BUTTON GROUPS ================= */
-.button-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
+/* ================= BUTTON SYSTEM ================= */
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.8rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-weight: 600;
-  transition: all var(--trans-time) ease;
-  gap: 0.5rem;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+  transition: var(--transition);
+  width: 100%;
 }
 
 .primary-btn {
   background-color: var(--gold);
   color: var(--dark-bg);
+  margin: 1rem 0;
 }
 
 .primary-btn:hover {
-  background-color: var(--hover-gold);
+  background-color: var(--gold-hover);
   transform: translateY(-1px);
 }
 
@@ -146,19 +151,90 @@ button:disabled {
   background: transparent;
   color: var(--gold);
   border: 1px solid var(--gold);
+  margin: 0.5rem 0;
 }
 
 .secondary-btn:hover {
   background-color: rgba(197, 160, 71, 0.1);
 }
 
-#showRegistrationButton,
-#showForgotPasswordButton {
-  order: 1;
-  margin-top: 0.5rem;
+.text-button {
+  background: none;
+  border: none;
+  color: var(--gold);
+  padding: 0.5rem;
+  margin: 0 0.5rem;
 }
 
-/* ================= LOADING STATES ================= */
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.auth-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* ================= DASHBOARD COMPONENTS ================= */
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.5rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid transparent;
+  text-align: center;
+}
+
+.dashboard-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--gold);
+  transform: translateY(-3px);
+}
+
+.card-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+/* ================= TRACKING SYSTEM ================= */
+.tracking-container {
+  display: grid;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.tracking-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.parcel-item {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: var(--radius);
+  border-left: 4px solid transparent;
+  transition: var(--transition);
+}
+
+.parcel-item:hover {
+  border-left-color: var(--gold);
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.8rem 0;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #333;
+}
+
+/* ================= LOADING & STATUS ================= */
 .loading-indicator {
   position: fixed;
   top: 0;
@@ -182,21 +258,11 @@ button:disabled {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* ================= ERROR/SUCCESS STATES ================= */
 .error-message {
   color: var(--error-red);
   font-size: 0.9rem;
   margin-top: 0.5rem;
   display: none;
-  animation: slideIn var(--trans-time) ease-out;
-}
-
-.error-message.visible {
-  display: block;
 }
 
 .success-message {
@@ -207,64 +273,13 @@ button:disabled {
   background: var(--success-green);
   color: white;
   padding: 1rem 2rem;
-  border-radius: 6px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  animation: slideUp var(--trans-time) ease-out;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   z-index: 1001;
+  animation: slideUp 0.3s ease-out;
 }
 
-/* ================= DASHBOARD COMPONENTS ================= */
-.dashboard-page {
-  max-width: 800px;
-}
-
-.thumbnail-container {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-
-.thumbnail {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1.5rem;
-  border-radius: 8px;
-  transition: all var(--trans-time) ease;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.thumbnail:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--gold);
-  transform: translateY(-3px);
-}
-
-/* ================= TRACKING PAGE ================= */
-.tracking-container {
-  display: grid;
-  gap: 2rem;
-  grid-template-columns: 1fr 2fr;
-}
-
-.tracking-items {
-  display: grid;
-  gap: 1rem;
-}
-
-.parcel-item {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 1rem;
-  border-radius: 6px;
-  border-left: 4px solid transparent;
-  transition: all var(--trans-time) ease;
-}
-
-.parcel-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-left-color: var(--gold);
-}
-
-/* ================= MODAL STYLES ================= */
+/* ================= MODAL SYSTEM ================= */
 .modal {
   display: none;
   position: fixed;
@@ -283,46 +298,31 @@ button:disabled {
   margin: 2rem auto;
   padding: 2rem;
   border: 2px solid var(--gold);
-  border-radius: 12px;
+  border-radius: var(--radius);
   width: 90%;
   max-width: 600px;
-  animation: modalSlideIn 0.4s ease-out;
 }
 
-.modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: var(--text-light);
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: color var(--trans-time) ease;
-}
-
-.modal-close:hover {
-  color: var(--gold);
+.modal-scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 1rem;
+  margin: 1rem 0;
 }
 
 /* ================= RESPONSIVE DESIGN ================= */
 @media (max-width: 768px) {
   .container {
     padding: 1.5rem;
-    margin: 0.5rem;
+    margin: 1rem;
   }
 
-  .tracking-container {
+  .form-row {
     grid-template-columns: 1fr;
   }
 
   h1 {
     font-size: 1.75rem;
-  }
-
-  .modal-content {
-    margin: 1rem;
-    padding: 1.5rem;
   }
 }
 
@@ -333,17 +333,15 @@ button:disabled {
 
   .container {
     padding: 1rem;
-    border-radius: 8px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
   }
 
   button {
-    width: 100%;
     font-size: 0.9rem;
     padding: 0.8rem;
-  }
-
-  .button-group {
-    gap: 0.75rem;
   }
 }
 
@@ -353,14 +351,13 @@ button:disabled {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px) translateX(-50%); }
   to { opacity: 1; transform: translateY(0) translateX(-50%); }
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 @keyframes modalSlideIn {
@@ -369,22 +366,8 @@ button:disabled {
 }
 
 /* ================= UTILITY CLASSES ================= */
-.hidden {
-  display: none !important;
-}
-
-.visible {
-  display: block !important;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.mt-1 {
-  margin-top: 0.5rem;
-}
-
-.mb-2 {
-  margin-bottom: 1rem;
-}
+.hidden { display: none !important; }
+.visible { display: block !important; }
+.text-center { text-align: center; }
+.mt-1 { margin-top: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
