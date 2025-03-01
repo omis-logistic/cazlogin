@@ -1,125 +1,94 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwjfsbLN5vpDNz6ghqR8VJbHGA1_SMRkj53LSW7ZdqZot16GgMIPHqi8aedi1vkjrnV/exec';
-let currentUser = {
-  phone: '',
-  email: '',
-  token: ''
-};
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxZPJxUyBaN_-mprEBVQM-3yGrnJ6iYAwIDp5VbLwJPYCRIF9k2UXX1lMSoWfOapxv/exec'; // Must end with /exec
+let currentUser = null;
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
-  initializeEventListeners();
-  checkExistingSession();
+  bindEvents();
+  checkSession();
 });
 
-// ================= EVENT LISTENERS =================
-function initializeEventListeners() {
-  // Login Page
-  document.getElementById('loginButton')?.addEventListener('click', handleLogin);
-  document.getElementById('showRegistrationButton')?.addEventListener('click', () => showPage('registration-page'));
-  document.getElementById('showForgotPasswordButton')?.addEventListener('click', () => showPage('forgot-password-page'));
-
-  // Registration
-  document.getElementById('registerButton')?.addEventListener('click', handleRegistration);
-
-  // Password Recovery
-  document.getElementById('passwordRecoveryButton')?.addEventListener('click', handlePasswordRecovery);
-
-  // Dashboard
-  document.getElementById('dashboardLogoutButton')?.addEventListener('click', handleLogout);
-}
-
-// ================= CORE FUNCTIONS =================
-async function handleLogin(event) {
-  event.preventDefault();
-  showLoading();
-  
-  try {
-    const phone = document.getElementById('phone').value.trim();
+// ================= EVENT BINDING =================
+function bindEvents() {
+  // Login
+  document.getElementById('loginButton').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('phone').value;
     const password = document.getElementById('password').value;
     
-    const response = await callBackend('processLogin', { phone, password });
+    showLoading();
+    const response = await nuclearFetch('processLogin', { phone, password });
     
     if (response.success) {
-      currentUser = {
-        phone: response.phone,
-        email: response.email,
-        token: response.token
-      };
-      localStorage.setItem('userSession', JSON.stringify(currentUser));
-      showDashboard();
+      currentUser = response;
+      localStorage.setItem('userSession', JSON.stringify(response));
+      window.location.href = '#dashboard';
     } else {
-      showError('login-error', response.message);
+      alert('Login failed: ' + (response.message || 'Unknown error'));
     }
-  } catch (error) {
-    showError('global-error', 'Connection failed. Try again.');
-  } finally {
     hideLoading();
-  }
+  });
+
+  // Registration
+  document.getElementById('registerButton').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('regPhone').value;
+    const password = document.getElementById('regPassword').value;
+    const email = document.getElementById('regEmail').value;
+
+    showLoading();
+    const response = await nuclearFetch('createAccount', { phone, password, email });
+    alert(response.success ? 'Registration successful!' : 'Error: ' + response.message);
+    hideLoading();
+  });
+
+  // Password Reset
+  document.getElementById('passwordRecoveryButton').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const phone = document.getElementById('recoveryPhone').value;
+    const email = document.getElementById('recoveryEmail').value;
+
+    showLoading();
+    const response = await nuclearFetch('initiatePasswordReset', { phone, email });
+    alert(response.success ? 'Check your email for reset instructions' : 'Error: ' + response.message);
+    hideLoading();
+  });
+
+  // Logout
+  document.getElementById('logoutButton').addEventListener('click', () => {
+    localStorage.removeItem('userSession');
+    window.location.href = '#login';
+  });
 }
 
-async function callBackend(action, data) {
+// ================= NUCLEAR FETCH =================
+async function nuclearFetch(action, data) {
   try {
-    const response = await fetch(GAS_WEBAPP_URL, {
+    const response = await fetch(`${GAS_URL}?t=${Date.now()}`, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ action, ...data })
     });
-
-    const text = await response.text();
-    return JSON.parse(text);
+    return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
-    return { success: false, message: 'Server connection failed' };
+    return { success: false, message: 'Connection failed' };
   }
 }
 
-// ================= UI FUNCTIONS =================
-function showPage(pageId) {
-  document.querySelectorAll('.container').forEach(page => {
-    page.style.display = page.id === pageId ? 'block' : 'none';
-  });
-}
-
-function showDashboard() {
-  showPage('dashboard-page');
-  document.getElementById('user-phone').textContent = currentUser.phone;
-  document.getElementById('user-email').textContent = currentUser.email;
-}
-
-function showError(elementId, message) {
-  const element = document.getElementById(elementId);
-  if (element) {
-    element.textContent = message;
-    element.style.display = 'block';
+// ================= SESSION MANAGEMENT =================
+function checkSession() {
+  const session = localStorage.getItem('userSession');
+  if (session) {
+    currentUser = JSON.parse(session);
+    window.location.href = '#dashboard';
   }
 }
 
+// ================= UI HELPERS =================
 function showLoading() {
   document.getElementById('loading').style.display = 'flex';
 }
 
 function hideLoading() {
   document.getElementById('loading').style.display = 'none';
-}
-
-// ================= SESSION MANAGEMENT =================
-function checkExistingSession() {
-  const session = localStorage.getItem('userSession');
-  if (session) {
-    try {
-      currentUser = JSON.parse(session);
-      showDashboard();
-    } catch {
-      localStorage.removeItem('userSession');
-    }
-  } else {
-    showPage('login-page');
-  }
-}
-
-function handleLogout() {
-  localStorage.removeItem('userSession');
-  currentUser = { phone: '', email: '', token: '' };
-  showPage('login-page');
 }
