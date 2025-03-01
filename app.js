@@ -1,90 +1,283 @@
 // ================= CONFIGURATION =================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzxZPJxUyBaN_-mprEBVQM-3yGrnJ6iYAwIDp5VbLwJPYCRIF9k2UXX1lMSoWfOapxv/exec'; // Must end with /exec
-let currentUser = null;
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyK_TMjYpIZiEXFOcBYYTHAi9PwzCAkKXwLqSGRwSyQhLdO25PSpN9XuzK2lnv6dJy3/exec';
+let currentUser = {
+  phone: '',
+  email: '',
+  token: ''
+};
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
-  bindEvents();
-  checkSession();
+  initializeEventListeners();
+  checkExistingSession();
+  showPage('login-page');
 });
 
-// ================= EVENT BINDING =================
-function bindEvents() {
-  // Login
-  document.getElementById('loginButton').addEventListener('click', async (e) => {
-    e.preventDefault();
-    const phone = document.getElementById('phone').value;
-    const password = document.getElementById('password').value;
-    
-    showLoading();
-    const response = await nuclearFetch('processLogin', { phone, password });
-    
-    if (response.success) {
-      currentUser = response;
-      localStorage.setItem('userSession', JSON.stringify(response));
-      window.location.href = '#dashboard';
-    } else {
-      alert('Login failed: ' + (response.message || 'Unknown error'));
-    }
-    hideLoading();
+// ================= EVENT MANAGEMENT =================
+function initializeEventListeners() {
+  // Auth Section
+  document.getElementById('loginButton').addEventListener('click', handleLogin);
+  document.getElementById('registerButton').addEventListener('click', handleRegistration);
+  document.getElementById('passwordRecoveryButton').addEventListener('click', handlePasswordRecovery);
+  
+  // User Actions
+  document.getElementById('changePasswordButton').addEventListener('click', handlePasswordChange);
+  document.getElementById('changeEmailButton').addEventListener('click', handleEmailChange);
+  document.getElementById('submitParcelButton').addEventListener('click', handleParcelSubmission);
+  
+  // Navigation
+  document.querySelectorAll('[data-action]').forEach(button => {
+    button.addEventListener('click', handleNavigation);
   });
 
-  // Registration
-  document.getElementById('registerButton').addEventListener('click', async (e) => {
-    e.preventDefault();
-    const phone = document.getElementById('regPhone').value;
-    const password = document.getElementById('regPassword').value;
-    const email = document.getElementById('regEmail').value;
+  // File Handling
+  document.getElementById('invoiceFiles').addEventListener('change', handleFileUpload);
 
-    showLoading();
-    const response = await nuclearFetch('createAccount', { phone, password, email });
-    alert(response.success ? 'Registration successful!' : 'Error: ' + response.message);
-    hideLoading();
-  });
-
-  // Password Reset
-  document.getElementById('passwordRecoveryButton').addEventListener('click', async (e) => {
-    e.preventDefault();
-    const phone = document.getElementById('recoveryPhone').value;
-    const email = document.getElementById('recoveryEmail').value;
-
-    showLoading();
-    const response = await nuclearFetch('initiatePasswordReset', { phone, email });
-    alert(response.success ? 'Check your email for reset instructions' : 'Error: ' + response.message);
-    hideLoading();
-  });
-
-  // Logout
-  document.getElementById('logoutButton').addEventListener('click', () => {
-    localStorage.removeItem('userSession');
-    window.location.href = '#login';
+  // Modals
+  document.querySelectorAll('[data-modal]').forEach(btn => {
+    btn.addEventListener('click', handleModal);
   });
 }
 
-// ================= NUCLEAR FETCH =================
-async function nuclearFetch(action, data) {
+// ================= CORE HANDLERS =================
+async function handleLogin(event) {
+  event.preventDefault();
+  showLoading();
+  
   try {
-    const response = await fetch(`${GAS_URL}?t=${Date.now()}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action, ...data })
-    });
-    return await response.json();
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!validatePhone(phone)) {
+      throw new Error('Invalid phone number format');
+    }
+
+    const response = await callBackend('processLogin', { phone, password });
+    
+    if (response.success) {
+      currentUser = {
+        phone: response.phone,
+        email: response.email,
+        token: response.token
+      };
+      localStorage.setItem('userSession', JSON.stringify(currentUser));
+      
+      if (response.tempPassword) {
+        showPage('password-reset-page');
+      } else {
+        showDashboard();
+        showWelcomeModal();
+      }
+    } else {
+      throw new Error(response.message || 'Login failed');
+    }
   } catch (error) {
-    return { success: false, message: 'Connection failed' };
+    showError('login-error', error.message);
+  } finally {
+    hideLoading();
   }
+}
+
+async function handleRegistration(event) {
+  event.preventDefault();
+  showLoading();
+  
+  try {
+    const phone = document.getElementById('regPhone').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const email = document.getElementById('regEmail').value.trim();
+
+    // Client-side validation
+    if (!validatePhone(phone)) throw new Error('Invalid phone format');
+    if (!validatePassword(password)) throw new Error('Password must contain 6+ characters with at least 1 uppercase and 1 number');
+    if (!validateEmail(email)) throw new Error('Invalid email format');
+
+    const response = await callBackend('createAccount', { phone, password, email });
+    
+    if (response.success) {
+      showPage('login-page');
+      showSuccess('Registration successful! Please login');
+    } else {
+      throw new Error(response.message || 'Registration failed');
+    }
+  } catch (error) {
+    showError('registration-error', error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ================= PARCEL MANAGEMENT =================
+async function handleParcelSubmission(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const files = await processUploadedFiles();
+    const parcelData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
+      phoneNumber: currentUser.phone,
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: parseInt(document.getElementById('quantity').value),
+      price: parseFloat(document.getElementById('price').value),
+      itemCategory: document.getElementById('itemCategory').value
+    };
+
+    const response = await callBackend('submitParcelDeclaration', {
+      token: currentUser.token,
+      phone: currentUser.phone,
+      data: JSON.stringify(parcelData),
+      filesBase64: JSON.stringify(files)
+    });
+
+    if (response.success) {
+      showDashboard();
+      showSuccess(`Parcel submitted! ID: ${response.submissionId}`);
+    }
+  } catch (error) {
+    showError('parcel-error', error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ================= FILE HANDLING =================
+async function processUploadedFiles() {
+  const fileInput = document.getElementById('invoiceFiles');
+  const files = Array.from(fileInput.files);
+  const processedFiles = [];
+
+  for (const file of files) {
+    const base64 = await readFileAsBase64(file);
+    processedFiles.push({
+      name: file.name,
+      type: file.type,
+      base64: base64.split(',')[1] // Remove data URL prefix
+    });
+  }
+
+  return processedFiles;
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ================= SESSION MANAGEMENT =================
-function checkSession() {
+function checkExistingSession() {
   const session = localStorage.getItem('userSession');
   if (session) {
-    currentUser = JSON.parse(session);
-    window.location.href = '#dashboard';
+    try {
+      currentUser = JSON.parse(session);
+      validateSessionWithBackend();
+    } catch {
+      handleLogout();
+    }
   }
 }
 
-// ================= UI HELPERS =================
+async function validateSessionWithBackend() {
+  try {
+    const response = await callBackend('validateSession', currentUser);
+    if (response.success) {
+      showDashboard();
+    } else {
+      handleLogout();
+    }
+  } catch {
+    handleLogout();
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem('userSession');
+  currentUser = { phone: '', email: '', token: '' };
+  clearFormFields();
+  showPage('login-page');
+}
+
+// ================= API COMMUNICATION =================
+async function callBackend(action, data) {
+  try {
+    const formData = new FormData();
+    formData.append('action', action);
+    
+    // Add all data properties to FormData
+    for (const [key, value] of Object.entries(data)) {
+      formData.append(key, value);
+    }
+
+    const response = await fetch(GAS_WEBAPP_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Action failed');
+    }
+
+    return result;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw new Error(
+      error.message.includes('Failed to fetch') 
+        ? 'Network error - check your internet connection'
+        : error.message
+    );
+  }
+}
+
+// ================= UI MANAGEMENT =================
+function showPage(pageId) {
+  document.querySelectorAll('.container').forEach(page => {
+    page.style.display = page.id === pageId ? 'block' : 'none';
+  });
+  
+  if (pageId === 'dashboard-page') {
+    updateUserInfoDisplay();
+    loadParcelData();
+  }
+}
+
+function showDashboard() {
+  showPage('dashboard-page');
+  document.getElementById('user-phone').textContent = currentUser.phone;
+  document.getElementById('user-email').textContent = currentUser.email;
+}
+
+function updateUserInfoDisplay() {
+  document.getElementById('infoPhone').value = currentUser.phone;
+  document.getElementById('currentEmail').textContent = currentUser.email;
+}
+
+function showError(elementId, message) {
+  const errorElement = document.getElementById(elementId);
+  if (errorElement) {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    setTimeout(() => errorElement.style.display = 'none', 5000);
+  }
+}
+
+function showSuccess(message) {
+  const successElement = document.createElement('div');
+  successElement.className = 'global-success';
+  successElement.textContent = message;
+  document.body.appendChild(successElement);
+  setTimeout(() => successElement.remove(), 3000);
+}
+
 function showLoading() {
   document.getElementById('loading').style.display = 'flex';
 }
@@ -92,3 +285,183 @@ function showLoading() {
 function hideLoading() {
   document.getElementById('loading').style.display = 'none';
 }
+
+// ================= PARCEL TRACKING =================
+async function loadParcelData() {
+  try {
+    const response = await callBackend('getParcelData', {
+      phone: currentUser.phone,
+      token: currentUser.token
+    });
+
+    if (response.success) {
+      renderParcelList(response.data);
+    }
+  } catch (error) {
+    showError('parcel-error', 'Failed to load parcel data');
+  }
+}
+
+function renderParcelList(parcels) {
+  const container = document.getElementById('trackingList');
+  container.innerHTML = '';
+
+  parcels.forEach(parcel => {
+    const element = document.createElement('div');
+    element.className = 'parcel-item';
+    element.innerHTML = `
+      <div class="parcel-number">${parcel.trackingNumber}</div>
+      <div class="parcel-status ${parcel.status.toLowerCase()}">${parcel.status}</div>
+      <div class="parcel-date">${new Date(parcel.declarationDate).toLocaleDateString()}</div>
+      <button class="parcel-detail-btn" data-id="${parcel.trackingNumber}">Details</button>
+    `;
+    container.appendChild(element);
+  });
+
+  // Add click handlers for detail buttons
+  document.querySelectorAll('.parcel-detail-btn').forEach(btn => {
+    btn.addEventListener('click', showParcelDetails);
+  });
+}
+
+// ================= UTILITIES =================
+function validatePhone(phone) {
+  return /^(673\d{7}|60\d{8,10})$/.test(phone);
+}
+
+function validatePassword(password) {
+  return /^(?=.*[A-Z])(?=.*\d).{6,}$/.test(password);
+}
+
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function clearFormFields() {
+  document.querySelectorAll('input, textarea').forEach(field => {
+    if (field.type !== 'button') field.value = '';
+  });
+}
+
+function handleNavigation(event) {
+  event.preventDefault();
+  const targetPage = event.target.dataset.action.replace('show-', '') + '-page';
+  showPage(targetPage);
+}
+
+function showWelcomeModal() {
+  document.getElementById('welcomeModal').style.display = 'block';
+}
+
+// ================= MODAL HANDLING =================
+function handleModal(event) {
+  const modalId = event.target.dataset.modal;
+  if (modalId) {
+    const modal = document.getElementById(modalId);
+    modal.style.display = 'block';
+  }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  if (event.target.className === 'modal') {
+    event.target.style.display = 'none';
+  }
+}
+
+// ================= PASSWORD MANAGEMENT =================
+async function handlePasswordChange(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('repeatNewPassword').value;
+
+    if (newPassword !== confirmPassword) throw new Error('Passwords do not match');
+    if (!validatePassword(newPassword)) throw new Error('Password does not meet requirements');
+
+    const response = await callBackend('updateUserInfo', {
+      phone: currentUser.phone,
+      token: currentUser.token,
+      currentPassword,
+      newPassword
+    });
+
+    if (response.success) {
+      showSuccess('Password updated successfully');
+      clearFormFields();
+    }
+  } catch (error) {
+    showError('password-change-error', error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ================= PASSWORD RECOVERY =================
+async function handlePasswordRecovery(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const phone = document.getElementById('recoveryPhone').value.trim();
+    const email = document.getElementById('recoveryEmail').value.trim();
+
+    if (!validatePhone(phone)) throw new Error('Invalid phone format');
+    if (!validateEmail(email)) throw new Error('Invalid email format');
+
+    const response = await callBackend('initiatePasswordReset', { phone, email });
+    
+    if (response.success) {
+      showSuccess('Temporary password sent to your email');
+      showPage('login-page');
+    }
+  } catch (error) {
+    showError('recovery-error', error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ================= EMAIL MANAGEMENT =================
+async function handleEmailChange(event) {
+  event.preventDefault();
+  showLoading();
+
+  try {
+    const password = document.getElementById('verifyPassword').value;
+    const newEmail = document.getElementById('newEmail').value.trim();
+    const confirmEmail = document.getElementById('repeatNewEmail').value.trim();
+
+    if (newEmail !== confirmEmail) throw new Error('Emails do not match');
+    if (!validateEmail(newEmail)) throw new Error('Invalid email format');
+
+    const response = await callBackend('updateUserInfo', {
+      phone: currentUser.phone,
+      token: currentUser.token,
+      currentPassword: password,
+      newEmail
+    });
+
+    if (response.success) {
+      currentUser.email = newEmail;
+      localStorage.setItem('userSession', JSON.stringify(currentUser));
+      updateUserInfoDisplay();
+      showSuccess('Email updated successfully');
+    }
+  } catch (error) {
+    showError('email-change-error', error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// ================= INITIALIZATION COMPLETION =================
+// Initialize any remaining components
+document.querySelectorAll('[data-modal-close]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.modal').style.display = 'none';
+  });
+});
