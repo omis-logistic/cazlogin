@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbz33x6suCJMBrnaIU2CZ3wzhdpVsSiKfG_EtYuJWxKVzFZ1vrE3a1LapTSpt7Q07_JQ/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyXfHbl3I5n3BNBGWmUjCg9Mrqjxwr0hGj7wRNvobr29NTj3IO_rLYTqU7acdQUC-Kw/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -233,42 +233,20 @@ function handleLogout() {
 
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
+  const params = new URLSearchParams();
+  params.append('action', action);
+  
+  // Flatten all data to strings
+  Object.entries(data).forEach(([key, value]) => {
+    params.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+  });
+
   try {
-    const formData = new FormData();
-    formData.append('action', action);
-    
-    // Stringify nested objects
-    for (const [key, value] of Object.entries(data)) {
-      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
-    }
-
-    const response = await fetch(GAS_WEBAPP_URL, {
-      method: 'POST',
-      body: formData
-    });
-
-    const result = await response.json();
-    
-    // Enhanced error diagnostics
-    if (!result.success) {
-      console.error('Backend Error:', {
-        action,
-        inputData: data,
-        error: result.message,
-        rawResponse: result
-      });
-      throw new Error(result.message || `Action ${action} failed`);
-    }
-
-    return result;
-    
+    const response = await fetch(`${GAS_WEBAPP_URL}?${params.toString()}`);
+    return await response.json();
   } catch (error) {
-    console.error('Network Error:', {
-      action,
-      error: error.message,
-      stack: error.stack
-    });
-    throw new Error('Connection failed. Check network and try again.');
+    console.error('RAW ERROR:', error);
+    return { success: false, message: 'Network connection failed' };
   }
 }
 
