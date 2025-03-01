@@ -22,24 +22,20 @@ async function callBackend(action, data) {
   try {
     const response = await fetch(GAS_WEBAPP_URL, {
       method: 'POST',
-      mode: 'cors',
-      headers: {
+      redirect: 'follow', // Add this line
+      headers: { 
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ action, ...data })
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    
+    // Handle Google's redirect
+    const responseData = await response.text();
+    return JSON.parse(responseData);
+    
   } catch (error) {
     console.error('API Error:', error);
-    return { 
-      success: false, 
-      message: error.message || 'Network error occurred' 
-    };
+    return { success: false, message: 'Network error' };
   }
 }
 
