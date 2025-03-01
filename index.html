@@ -33,36 +33,56 @@
     </div>
 
     <!-- Registration Page -->
-    <div id="registration-page" class="container" style="display: none;">
-        <h1>New Registration</h1>
-        
-        <div class="input-group">
-            <input type="tel" id="regPhone" 
-                   placeholder="Phone (673/60 format)" 
-                   required>
-            <div class="error-message" id="phoneError"></div>
-        </div>
-
-        <div class="input-group">
-            <input type="password" id="regPassword" 
-                   placeholder="Create Password"
-                   required>
-            <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
-        </div>
-
-        <div class="input-group">
-            <input type="email" id="regEmail" 
-                   placeholder="Email Address" 
-                   required>
-        </div>
-
-        <div class="button-group">
-            <button id="registerButton" class="primary-btn">Register</button>
-            <button data-action="show-login" class="secondary-btn">
-                Back to Login
-            </button>
-        </div>
+<div id="registration-page" class="container" style="display: none;">
+    <h1>New Registration</h1>
+    
+    <div class="input-group">
+        <input type="tel" id="regPhone" 
+               placeholder="Phone (673/60 format)" 
+               pattern="^(673\d{7,}|60\d{9,})$" 
+               required>
+        <div class="error-message" id="phoneError"></div>
     </div>
+
+    <div class="input-group">
+        <input type="password" id="regPassword" 
+               placeholder="Create Password"
+               pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" 
+               required>
+        <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+        <div class="error-message" id="passError"></div>
+    </div>
+
+    <!-- ADDED CONFIRM PASSWORD FIELD -->
+    <div class="input-group">
+        <input type="password" id="regConfirmPass" 
+               placeholder="Confirm Password" 
+               required>
+        <div class="error-message" id="confirmPassError"></div>
+    </div>
+
+    <div class="input-group">
+        <input type="email" id="regEmail" 
+               placeholder="Email Address" 
+               required>
+        <div class="error-message" id="emailError"></div>
+    </div>
+
+    <!-- ADDED CONFIRM EMAIL FIELD -->
+    <div class="input-group">
+        <input type="email" id="regConfirmEmail" 
+               placeholder="Confirm Email" 
+               required>
+        <div class="error-message" id="confirmEmailError"></div>
+    </div>
+
+    <div class="button-group">
+        <button id="registerButton" class="primary-btn">Register</button>
+        <button data-action="show-login" class="secondary-btn">
+            Back to Login
+        </button>
+    </div>
+</div>
 
     <!-- Forgot Password Page -->
     <div id="forgot-password-page" class="container" style="display: none;">
