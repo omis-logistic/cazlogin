@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwOAmAvpFeTakSItOF2x-RUqktdtp5OB_v0wv3TVJGAlCkigry-tYu-v8nqHRJMqUue/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbx5MgB8U-1XTMjy6wXj0lkUwW5w_3_f0jN_8yNQwFXBLbDP0Kgi08x5sFfzXtZRvx56/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -14,26 +14,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ================= EVENT MANAGEMENT =================
+function handleFileUpload(event) {
+  const files = event.target.files;
+  document.getElementById('invoiceFilesError').textContent = 
+    files.length > 0 ? `${files.length} files selected` : '';
+}
+
 function initializeEventListeners() {
-  // Auth Section
-  document.getElementById('loginButton').addEventListener('click', handleLogin);
-  document.getElementById('registerButton').addEventListener('click', handleRegistration);
-  document.getElementById('passwordRecoveryButton').addEventListener('click', handlePasswordRecovery);
-  
+  // Auth Buttons
+  document.getElementById('loginButton')?.addEventListener('click', handleLogin);
+  document.getElementById('registerButton')?.addEventListener('click', handleRegistration);
+  document.getElementById('passwordRecoveryButton')?.addEventListener('click', handlePasswordRecovery);
+
   // User Actions
-  document.getElementById('changePasswordButton').addEventListener('click', handlePasswordChange);
-  document.getElementById('changeEmailButton').addEventListener('click', handleEmailChange);
-  document.getElementById('submitParcelButton').addEventListener('click', handleParcelSubmission);
-  
+  document.getElementById('changePasswordButton')?.addEventListener('click', handlePasswordChange);
+  document.getElementById('changeEmailButton')?.addEventListener('click', handleEmailChange);
+  document.getElementById('submitParcelButton')?.addEventListener('click', handleParcelSubmission);
+
+  // Conditional File Input
+  const fileInput = document.getElementById('invoiceFiles');
+  if (fileInput) {
+    fileInput.addEventListener('change', handleFileUpload);
+  } else {
+    console.warn('Invoice file input not found');
+  }
+
   // Navigation
   document.querySelectorAll('[data-action]').forEach(button => {
     button.addEventListener('click', handleNavigation);
   });
 
-  // File Handling
-  document.getElementById('invoiceFiles').addEventListener('change', handleFileUpload);
+  // Logout Buttons
+  document.querySelectorAll('[data-action="logout"]').forEach(button => {
+    button.addEventListener('click', handleLogout);
+  });
 
-  // Modals
+  // Dashboard Actions
+  document.getElementById('backToDashboardButton')?.addEventListener('click', () => showPage('dashboard-page'));
+  document.getElementById('refreshTrackingButton')?.addEventListener('click', loadParcelData);
+
+  // Modal Handling
   document.querySelectorAll('[data-modal]').forEach(btn => {
     btn.addEventListener('click', handleModal);
   });
@@ -48,50 +68,36 @@ async function handleLogin(event) {
     const phone = document.getElementById('phone').value.trim();
     const password = document.getElementById('password').value;
 
-    // Basic validation
-    if (!phone || !password) {
-      throw new Error('Please fill in all fields');
-    }
+    // Validate input format
+    if (!validatePhone(phone)) throw new Error('Invalid phone format');
+    if (!password) throw new Error('Password required');
 
-    // Make login request
+    // Debug: Log input values
+    console.log('Login attempt:', { phone, password });
+
     const response = await callBackend('processLogin', { 
       phone: sanitizePhone(phone),
       password 
     });
 
-    if (!response.success) {
-      throw new Error(response.message || 'Login failed');
+    // Debug: Log full response
+    console.log('Login response:', response);
+
+    if (response.success) {
+      localStorage.setItem('userSession', JSON.stringify({
+        phone: response.phone,
+        email: response.email,
+        token: response.token
+      }));
+      
+      // Force page reload to clear state
+      window.location.reload();
     }
-
-    // Store session data
-    const sessionData = {
-      phone: response.phone,
-      email: response.email,
-      token: response.token
-    };
-    localStorage.setItem('userSession', JSON.stringify(sessionData));
-
-    // ▼▼▼ ADDED TOKEN VERIFICATION ▼▼▼
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
     
-    // Verify token storage
-    const storedSession = JSON.parse(localStorage.getItem('userSession'));
-    if (!storedSession?.token) {
-      throw new Error('Session initialization failed');
-    }
-
-    // Handle temp password redirect
-    if (response.tempPassword) {
-      showPage('password-reset-page');
-    } else {
-      showDashboard();
-      showWelcomeModal();
-    }
-
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Login failed:', error);
     showError('login-error', error.message);
-    handleLogout(); // Clear invalid session
+    handleLogout();
   } finally {
     hideLoading();
   }
