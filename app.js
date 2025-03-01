@@ -154,19 +154,25 @@ async function handleParcelSubmission(event) {
 
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
-  showLoading();
   try {
+    showLoading();
+    
     const response = await fetch(GAS_WEBAPP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...data })
+      body: JSON.stringify({ action, ...data }),
+      redirect: 'follow',
+      mode: 'no-cors' // Add this for CORS fallback
     });
 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error('API Error:', error);
-    return { success: false, message: 'Network error' };
+    return { 
+      success: false, 
+      message: 'Connection error. Please try again.' 
+    };
   } finally {
     hideLoading();
   }
