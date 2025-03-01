@@ -1,207 +1,213 @@
 // ================= CONFIGURATION =================
 const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwPfN5hpeGqBXuFe2PTKTZmPdE5_pUmjFMgUlEuqdX43AG0C_n6Or5vy_IQvFMmjtf_/exec'; // Replace with actual URL
+let currentUser = {
+  phone: '',
+  email: '',
+  token: ''
+};
 
-// ================= STATE MANAGEMENT =================
-let currentUserPhone = '';
-let currentUserEmail = '';
+// ================= INITIALIZATION =================
+document.addEventListener('DOMContentLoaded', () => {
+  initializeEventListeners();
+  showPage('login-page');
+  checkExistingSession();
+});
 
-// ================= PAGE NAVIGATION =================
-function showPage(pageClass) {
-  const pages = document.querySelectorAll('.container');
-  pages.forEach(page => {
-    page.style.display = 'none';
-  });
-  const activePage = document.querySelector(`.${pageClass}`);
-  if (activePage) {
-    activePage.style.display = 'block';
+// ================= EVENT MANAGEMENT =================
+function initializeEventListeners() {
+  // Auth Handlers
+  addListener('[data-action="login"]', handleLogin);
+  addListener('[data-action="register"]', handleRegistration);
+  addListener('[data-action="forgot-password"]', handlePasswordRecovery);
+  
+  // Navigation
+  addListener('[data-action="show-login"]', () => showPage('login-page'));
+  addListener('[data-action="show-register"]', () => showPage('registration-page'));
+  addListener('[data-action="show-dashboard"]', () => showPage('dashboard-page'));
+  
+  // Parcel Handling
+  addListener('[data-action="submit-parcel"]', handleParcelSubmission);
+  
+  // User Actions
+  addListener('[data-action="logout"]', handleLogout);
+  addListener('[data-action="update-password"]', handlePasswordReset);
+}
+
+function addListener(selector, handler) {
+  document.querySelector(selector)?.addEventListener('click', handler);
+}
+
+// ================= CORE FUNCTIONS =================
+async function handleLogin(event) {
+  event.preventDefault();
+  showLoading();
+  
+  try {
+    const phone = getValue('phone');
+    const password = getValue('password');
+    
+    const response = await callBackend('processLogin', { phone, password });
+    
+    if (response.success) {
+      currentUser = {
+        phone: response.phone,
+        email: response.email,
+        token: response.token
+      };
+      response.tempPassword ? showPage('password-reset-page') : showDashboard();
+    } else {
+      showError('login-error', response.message);
+    }
+  } catch (error) {
+    showError('login-error', 'Login failed. Please try again.');
+  } finally {
+    hideLoading();
+  }
+}
+
+async function handleRegistration(event) {
+  event.preventDefault();
+  showLoading();
+  
+  try {
+    const phone = getValue('regPhone');
+    const password = getValue('regPassword');
+    const email = getValue('regEmail');
+    
+    if (!validateRegistration(phone, password, email)) return;
+    
+    const response = await callBackend('createAccount', { phone, password, email });
+    
+    if (response.success) {
+      showPage('login-page');
+      showSuccess('Registration successful! Please login');
+    } else {
+      showError('registration-error', response.message);
+    }
+  } catch (error) {
+    showError('registration-error', 'Registration failed');
+  } finally {
+    hideLoading();
   }
 }
 
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
   try {
-    const response = await fetch(`${GAS_WEBAPP_URL}?action=${action}`, {
+    const response = await fetch(GAS_WEBAPP_URL, {
       method: 'POST',
       redirect: 'follow',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...data })
     });
 
-    // Handle Google's URL redirect
     const responseText = await response.text();
-    try {
-      return JSON.parse(responseText);
-    } catch {
-      throw new Error('Invalid JSON response');
-    }
+    return JSON.parse(responseText);
   } catch (error) {
     console.error('API Error:', error);
-    return { 
-      success: false, 
-      message: 'Network error: ' + error.message 
-    };
+    return { success: false, message: 'Network error' };
   }
 }
 
-// ================= AUTH HANDLERS =================
-async function handleLogin(event) {
-  event.preventDefault();
-  const phone = document.getElementById('phone').value;
-  const password = document.getElementById('password').value;
+// ================= UI MANAGEMENT =================
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(page => {
+    page.style.display = page.id === pageId ? 'block' : 'none';
+  });
+}
 
-  try {
-    const response = await callBackend('processLogin', { phone, password });
-    
-    if (response.success) {
-      currentUserPhone = response.phone;
-      currentUserEmail = response.email;
-      
-      if (response.tempPassword) {
-        showPage('password-reset-page');
-      } else {
-        showPage('dashboard-page');
-        showWelcomeModal();
-      }
-    } else {
-      showError('loginError', response.message || 'Invalid credentials');
-    }
-  } catch (error) {
-    showError('loginError', 'Login failed. Please try again.');
+function showDashboard() {
+  showPage('dashboard-page');
+  loadUserData();
+  loadParcelData();
+}
+
+function showError(containerId, message) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.textContent = message;
+    container.style.display = 'block';
   }
 }
 
-async function handleRegistration(event) {
-  event.preventDefault();
-  const phone = document.getElementById('regPhone').value;
-  const password = document.getElementById('regPassword').value;
-  const email = document.getElementById('regEmail').value;
-
-  if (!validateRegistrationForm()) return;
-
-  try {
-    const response = await callBackend('createAccount', { phone, password, email });
-    
-    if (response.success) {
-      showPage('login-page');
-      alert('Registration successful! Please login');
-    } else {
-      showError('registrationError', response.message);
-    }
-  } catch (error) {
-    showError('registrationError', 'Registration failed. Please try again.');
-  }
+function showSuccess(message) {
+  const successModal = document.getElementById('success-message');
+  successModal.textContent = message;
+  successModal.style.display = 'block';
+  setTimeout(() => successModal.style.display = 'none', 3000);
 }
 
-// ================= PASSWORD HANDLERS =================
-async function handlePasswordRecovery(event) {
-  event.preventDefault();
-  const phone = document.getElementById('recoveryPhone').value;
-  const email = document.getElementById('recoveryEmail').value;
-
-  try {
-    const response = await callBackend('initiatePasswordReset', { phone, email });
-    
-    if (response.success) {
-      showPage('login-page');
-      alert('Temporary password sent to your email');
-    } else {
-      showError('recoveryError', response.message);
-    }
-  } catch (error) {
-    showError('recoveryError', 'Password recovery failed');
-  }
+function showLoading() {
+  document.getElementById('loading').style.display = 'block';
 }
 
-async function handlePasswordReset(event) {
-  event.preventDefault();
-  const newPassword = document.getElementById('newPasswordReset').value;
-  const confirmPassword = document.getElementById('confirmNewPassword').value;
-
-  if (newPassword !== confirmPassword) {
-    showError('passwordResetError', 'Passwords do not match');
-    return;
-  }
-
-  try {
-    const response = await callBackend('updatePassword', {
-      phone: currentUserPhone,
-      newPassword
-    });
-
-    if (response.success) {
-      alert('Password updated successfully! Please login');
-      handleLogout();
-    } else {
-      showError('passwordResetError', response.message);
-    }
-  } catch (error) {
-    showError('passwordResetError', 'Password reset failed');
-  }
+function hideLoading() {
+  document.getElementById('loading').style.display = 'none';
 }
 
-// ================= PARCEL HANDLERS =================
-async function handleParcelSubmission(event) {
-  event.preventDefault();
-  // Add parcel submission logic here
+// ================= DATA MANAGEMENT =================
+function loadUserData() {
+  document.getElementById('user-phone').textContent = currentUser.phone;
+  document.getElementById('user-email').textContent = currentUser.email;
 }
 
 async function loadParcelData() {
   try {
-    const response = await callBackend('getParcelData', { phone: currentUserPhone });
+    const response = await callBackend('getParcelData', { 
+      phone: currentUser.phone,
+      token: currentUser.token
+    });
+    
     if (response.success) {
-      renderTrackingList(response.data);
+      renderParcelList(response.data);
     }
   } catch (error) {
-    console.error('Failed to load parcels:', error);
+    showError('parcel-error', 'Failed to load parcels');
   }
 }
 
-// ================= UTILITY FUNCTIONS =================
-function showError(elementId, message) {
-  const errorElement = document.getElementById(elementId);
-  if (errorElement) {
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-  }
+// ================= UTILITIES =================
+function getValue(elementId) {
+  return document.getElementById(elementId)?.value.trim();
 }
 
-function validateRegistrationForm() {
-  // Add validation logic here
+function validateRegistration(phone, password, email) {
+  const phoneRegex = /^(673\d{7,}|60\d{9,})$/;
+  const passRegex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+  
+  if (!phoneRegex.test(phone)) {
+    showError('registration-error', 'Invalid phone format');
+    return false;
+  }
+  
+  if (!passRegex.test(password)) {
+    showError('registration-error', 'Password must contain 6+ characters with 1 uppercase and 1 number');
+    return false;
+  }
+  
+  if (!validateEmail(email)) {
+    showError('registration-error', 'Invalid email format');
+    return false;
+  }
+  
   return true;
 }
 
+function validateEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ================= SESSION MANAGEMENT =================
+function checkExistingSession() {
+  const storedSession = localStorage.getItem('userSession');
+  if (storedSession) {
+    currentUser = JSON.parse(storedSession);
+    showDashboard();
+  }
+}
+
 function handleLogout() {
-  currentUserPhone = '';
-  currentUserEmail = '';
+  localStorage.removeItem('userSession');
+  currentUser = { phone: '', email: '', token: '' };
   showPage('login-page');
 }
-
-function showWelcomeModal() {
-  document.getElementById('welcomeModal').style.display = 'block';
-}
-
-function closeWelcomeModal() {
-  document.getElementById('welcomeModal').style.display = 'none';
-}
-
-// ================= INITIALIZE APP =================
-document.addEventListener('DOMContentLoaded', () => {
-  // Auth Handlers
-  document.getElementById('loginButton')?.addEventListener('click', handleLogin);
-  document.getElementById('registerButton')?.addEventListener('click', handleRegistration);
-  document.getElementById('passwordRecoveryButton')?.addEventListener('click', handlePasswordRecovery);
-  document.getElementById('passwordResetButton')?.addEventListener('click', handlePasswordReset);
-  
-  // Navigation Handlers
-  document.getElementById('showRegistrationButton')?.addEventListener('click', () => showPage('registration-page'));
-  document.getElementById('showForgotPasswordButton')?.addEventListener('click', () => showPage('forgot-password-page'));
-  document.getElementById('showDashboardButton')?.addEventListener('click', () => showPage('dashboard-page'));
-  
-  // Modal Handlers
-  document.getElementById('closeModalButton')?.addEventListener('click', closeWelcomeModal);
-
-  // Initial Page
-  showPage('login-page');
-});
