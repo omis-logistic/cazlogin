@@ -96,16 +96,15 @@ async function callBackend(action, data) {
   try {
     const response = await fetch(GAS_WEBAPP_URL, {
       method: 'POST',
-      redirect: 'follow',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...data })
     });
-
-    const responseText = await response.text();
-    return JSON.parse(responseText);
+    
+    if (!response.ok) throw new Error('Network error');
+    return await response.json();
+    
   } catch (error) {
-    console.error('API Error:', error);
-    return { success: false, message: 'Network error' };
+    return { success: false, message: error.message };
   }
 }
 
