@@ -24,10 +24,9 @@
              required>
     </div>
     
-    <button data-action="loginButton">Login</button>
+    <button data-action="login">Login</button>
     <button id="showRegistrationButton">Create Account</button>
     <button id="showForgotPasswordButton" class="secondary-btn">Forgot Password?</button>
-  </div>
   </div>
 
   <!-- Registration Page -->
@@ -64,7 +63,7 @@
 
     <div class="button-group">
       <button id="registerButton">Register</button>
-      <button class="secondary-btn" onclick="showLogin(); return false;">
+      <button class="secondary-btn" data-action="showLogin">
         Back to Login
       </button>
     </div>
@@ -131,7 +130,7 @@
 
   <div class="button-group">
     <button id="backToDashboardButton" class="secondary-btn">Back to Dashboard</button>
-    <button id="logoutButton" class="secondary-btn">Logout</button>
+    <button id="myInfoLogoutButton" class="secondary-btn">Logout</button>
   </div>
 </div>
 
@@ -300,7 +299,7 @@
      <button id="passwordRecoveryButton" class="gold-btn">
         Send Temporary Password
       </button>
-      <button class="secondary-btn" onclick="showLogin(); return false;">
+     <button class="secondary-btn" data-action="show-login">
         Back to Login
       </button>
     </div>
@@ -311,7 +310,7 @@
     <h1>Dashboard</h1>
     
     <div class="thumbnail-container">
-      <div class="thumbnail" onclick="showMyInfo(); return false;">
+      <div class="thumbnail" data-action="show-my-info">
         <h2>My Info</h2>
         <p>View and update your personal information.</p>
       </div>
@@ -327,9 +326,7 @@
       </div>
     </div>
     
-    <button id="logoutButton" class="secondary-btn">
-      Logout
-    </button>
+      <button id="dashboardLogoutButton" class="secondary-btn">Logout</button>
   </div>
 
   <!-- Welcome Modal -->
@@ -371,11 +368,16 @@
       <p><strong>● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
       <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
       <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
-      <button id="closeModalButton">Close</button>
+      <button data-action="closeModalButton">Close</button>
     </div>
   </div>
 
   <!-- Single JavaScript File -->
   <script src="app.js"></script>
+  <div id="loading" class="loading-indicator">
+  <div class="spinner"></div>
+  <p>Loading...</p>
+</div>
+  <div id="global-error" class="error-message" style="display: none;"></div>
 </body>
 </html>
