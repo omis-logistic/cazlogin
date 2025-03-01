@@ -1,5 +1,5 @@
 // Replace all google.script.run with:
-const API_URL = 'YOUR_GAS_DEPLOYMENT_URL';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzZJFomuSsv-4shW0BaArlf-kvIugE_XBR67E4cGqDgf1_Xu6Dw6HdhIDiT3HJ-T5hz/exec';
 
 async function callBackend(action, data) {
   try {
