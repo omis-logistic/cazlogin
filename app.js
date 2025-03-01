@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyK_TMjYpIZiEXFOcBYYTHAi9PwzCAkKXwLqSGRwSyQhLdO25PSpN9XuzK2lnv6dJy3/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbw4_2q72VVztvXa2WmYURraU3PA6ZMQo1r2LA8P9vayKyMoQa1NXHoJtnbXZuxCDbrD/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -48,34 +48,33 @@ async function handleLogin(event) {
     const phone = document.getElementById('phone').value.trim();
     const password = document.getElementById('password').value;
 
-    if (!validatePhone(phone)) {
-      throw new Error('Invalid phone number format');
+    // Add basic validation
+    if (!phone || !password) {
+      throw new Error('Please fill in all fields');
     }
 
-    const response = await callBackend('processLogin', { phone, password });
+    const response = await callBackend('processLogin', { 
+      phone: sanitizePhone(phone),
+      password 
+    });
     
     if (response.success) {
-      currentUser = {
+      localStorage.setItem('userSession', JSON.stringify({
         phone: response.phone,
         email: response.email,
         token: response.token
-      };
-      localStorage.setItem('userSession', JSON.stringify(currentUser));
-      
-      if (response.tempPassword) {
-        showPage('password-reset-page');
-      } else {
-        showDashboard();
-        showWelcomeModal();
-      }
-    } else {
-      throw new Error(response.message || 'Login failed');
+      }));
+      window.location.href = '/dashboard'; // Force page reload
     }
   } catch (error) {
     showError('login-error', error.message);
-  } finally {
     hideLoading();
   }
+}
+
+// Add phone sanitization helper
+function sanitizePhone(phone) {
+  return phone.replace(/[^\d]/g, '').slice(-10);
 }
 
 async function handleRegistration(event) {
