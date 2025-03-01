@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbzVGngMaRbvlPpAIv6IbfAg6lVH6Y5I0sTYkr_SscujYNprMIkPYQ6ti2tTHzXTPccx/exec'; // Replace with actual URL
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyABi1PlO109GK6CD-GGGFQNUMslawLTHVzDtptxSy_0nNuwIYaLMl09ur3hqGthv6Q/exec'; // Replace with actual URL
 let currentUser = {
   phone: '',
   email: '',
@@ -94,17 +94,21 @@ async function handleRegistration(event) {
 // ================= API COMMUNICATION =================
 async function callBackend(action, data) {
   try {
-    const response = await fetch(GAS_WEBAPP_URL, {
+    // Add timestamp to bypass cache
+    const url = new URL(GAS_WEBAPP_URL);
+    url.searchParams.set('t', Date.now());
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...data })
     });
-    
-    if (!response.ok) throw new Error('Network error');
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
-    
   } catch (error) {
-    return { success: false, message: error.message };
+    console.error('API Error:', error);
+    return { success: false, message: 'Network error' };
   }
 }
 
