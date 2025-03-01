@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyABi1PlO109GK6CD-GGGFQNUMslawLTHVzDtptxSy_0nNuwIYaLMl09ur3hqGthv6Q/exec'; // Replace with actual URL
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwOwz2oa1pYV62nMGGOVLxSDw1fO8Ae1EbL8eWPPrtdqVYr2Rh9egZwPfRYO1slOFvS/exec'; // Replace with actual URL
 let currentUser = {
   phone: '',
   email: '',
@@ -37,58 +37,43 @@ function addListener(selector, handler) {
   document.querySelector(selector)?.addEventListener('click', handler);
 }
 
-// ================= CORE FUNCTIONS =================
+// ================= AUTH HANDLERS =================
 async function handleLogin(event) {
   event.preventDefault();
   showLoading();
   
   try {
-    const phone = getValue('phone');
-    const password = getValue('password');
-    
-    const response = await callBackend('processLogin', { phone, password });
-    
+    const response = await callBackend('processLogin', {
+      phone: getValue('phone'),
+      password: getValue('password')
+    });
+
     if (response.success) {
-      currentUser = {
-        phone: response.phone,
-        email: response.email,
-        token: response.token
-      };
-      response.tempPassword ? showPage('password-reset-page') : showDashboard();
+      localStorage.setItem('userSession', JSON.stringify(response));
+      window.location.href = '#dashboard';
     } else {
       showError('login-error', response.message);
     }
   } catch (error) {
-    showError('login-error', 'Login failed. Please try again.');
+    showError('global-error', 'Connection failed. Try again later.');
   } finally {
     hideLoading();
   }
 }
 
-async function handleRegistration(event) {
-  event.preventDefault();
-  showLoading();
+// ================= EVENT LISTENERS =================
+function initializeEventListeners() {
+  // Explicit button bindings
+  document.getElementById('passwordRecoveryButton')?.addEventListener('click', handlePasswordRecovery);
+  document.getElementById('registerButton')?.addEventListener('click', handleRegistration);
+  document.getElementById('loginButton')?.addEventListener('click', handleLogin);
   
-  try {
-    const phone = getValue('regPhone');
-    const password = getValue('regPassword');
-    const email = getValue('regEmail');
-    
-    if (!validateRegistration(phone, password, email)) return;
-    
-    const response = await callBackend('createAccount', { phone, password, email });
-    
-    if (response.success) {
-      showPage('login-page');
-      showSuccess('Registration successful! Please login');
-    } else {
-      showError('registration-error', response.message);
-    }
-  } catch (error) {
-    showError('registration-error', 'Registration failed');
-  } finally {
-    hideLoading();
-  }
+  // Page navigation
+  document.querySelectorAll('[data-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      showPage(button.dataset.action.replace('show-', ''));
+    });
+  });
 }
 
 // ================= API COMMUNICATION =================
