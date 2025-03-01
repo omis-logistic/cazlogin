@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwPlfcv39zu5wdGNb4knmzqL7i_FKrilQTjeMgQShj7SscT9Oj58NDxTK1IIPR0Uog/exec';
 let currentUser = {
   phone: '',
   email: '',
