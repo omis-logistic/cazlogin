@@ -5,6 +5,25 @@ const CONFIG = {
   SESSION_TIMEOUT: 3600 // 1 hour in seconds
 };
 
+// ================= VIEWPORT MANAGEMENT =================
+function detectViewMode() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const viewport = document.querySelector('meta[name="viewport"]') || document.createElement('meta');
+  
+  if(isMobile) {
+    document.body.classList.add('mobile-view');
+    viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=1';
+  } else {
+    document.body.classList.add('desktop-view');
+    viewport.content = 'width=1200, initial-scale=1';
+  }
+  
+  viewport.name = 'viewport';
+  if(!document.querySelector('meta[name="viewport"]')) {
+    document.head.appendChild(viewport);
+  }
+}
+
 // ================= ERROR HANDLING =================
 function showError(message, targetId = 'error-message') {
   const errorElement = document.getElementById(targetId) || createErrorElement();
@@ -284,6 +303,10 @@ function formatDate(dateString) {
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
+  // Auto-detect view mode
+  detectViewMode();
+
+  // Session management
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
@@ -296,6 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Error cleanup
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
