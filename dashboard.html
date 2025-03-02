@@ -4,6 +4,50 @@
   <base target="_top">
   <title>Dashboard - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* Dashboard-specific styles */
+    .dashboard-page {
+      max-width: 600px;
+      margin: 20px auto;
+    }
+
+    .thumbnail {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 15px 0;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .thumbnail:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .thumbnail h2 {
+      color: #c5a047;
+      margin-bottom: 10px;
+    }
+
+    .thumbnail p {
+      color: #ffffff;
+      font-size: 0.9em;
+    }
+
+    @media (max-width: 480px) {
+      .dashboard-page {
+        padding: 15px;
+      }
+      
+      .thumbnail {
+        padding: 15px;
+      }
+      
+      .thumbnail h2 {
+        font-size: 1.2em;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container dashboard-page">
@@ -29,11 +73,24 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    // Session check
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
-    if (!userData) window.location.href = 'login.html';
+    // Session validation
+    (function initDashboard() {
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      
+      if (!userData) {
+        window.location.href = 'login.html';
+        return;
+      }
 
-    // Page-specific functions
+      if (userData.tempPassword) {
+        window.location.href = 'password-reset.html';
+      }
+      
+      // Display user info
+      document.getElementById('userPhone').textContent = userData.phone;
+    })();
+
+    // Navigation functions
     function showMyInfo() {
       window.location.href = 'my-info.html';
     }
@@ -50,13 +107,6 @@
       sessionStorage.removeItem('userData');
       window.location.href = 'login.html';
     }
-
-    // Initialize dashboard
-    document.addEventListener('DOMContentLoaded', () => {
-      if (userData.tempPassword) {
-        window.location.href = 'password-reset.html';
-      }
-    });
   </script>
 </body>
 </html>
