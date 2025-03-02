@@ -5,7 +5,6 @@
   <title>Register - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
-    /* Registration-specific styles */
     .registration-page {
       max-width: 500px;
       animation: slideUp 0.3s ease-out;
@@ -118,16 +117,20 @@
 
   <script src="scripts/app.js"></script>
   <script>
+    // Enhanced registration handler with CORS fixes
     async function handleRegistration(event) {
       event.preventDefault();
       
-      // Clear previous errors and status
+      // Clear previous errors
       document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-      document.getElementById('registrationStatus').style.display = 'none';
+      const statusElement = document.getElementById('registrationStatus');
+      statusElement.style.display = 'none';
 
       if (!validateRegistrationForm()) return;
 
       const btn = document.getElementById('registerBtn');
+      const originalBtnText = btn.innerHTML;
+      
       try {
         // Show loading state
         btn.disabled = true;
@@ -139,27 +142,41 @@
           email: document.getElementById('regEmail').value
         };
 
-        const result = await callAPI('createAccount', formData);
+        // Direct POST request with CORS headers
+        const response = await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            action: 'createAccount',
+            ...formData
+          }),
+          referrerPolicy: 'strict-origin-when-cross-origin'
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
+        const result = await response.json();
+
         if (result.success) {
-          document.getElementById('registrationStatus').className = 'status-message success';
-          document.getElementById('registrationStatus').textContent = 'Registration successful! Redirecting...';
-          document.getElementById('registrationStatus').style.display = 'block';
+          statusElement.className = 'status-message success';
+          statusElement.textContent = 'Registration successful! Redirecting...';
+          statusElement.style.display = 'block';
           
           setTimeout(() => safeRedirect('login.html'), 1500);
         } else {
-          showError(result.message, 'registrationStatus');
-          document.getElementById('registrationStatus').className = 'status-message error';
-          document.getElementById('registrationStatus').style.display = 'block';
+          throw new Error(result.message || 'Registration failed');
         }
       } catch (error) {
-        showError('Registration failed: ' + error.message, 'registrationStatus');
-        document.getElementById('registrationStatus').className = 'status-message error';
-        document.getElementById('registrationStatus').style.display = 'block';
+        statusElement.className = 'status-message error';
+        statusElement.textContent = `Error: ${error.message}`;
+        statusElement.style.display = 'block';
+        console.error('Registration error:', error);
       } finally {
-        // Reset button state
         btn.disabled = false;
-        btn.textContent = 'Create Account';
+        btn.innerHTML = originalBtnText;
       }
     }
 
@@ -187,6 +204,16 @@
     document.getElementById('regConfirmEmail').addEventListener('input', function() {
       document.getElementById('confirmEmailError').textContent = 
         this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
+    });
+
+    // Configuration check
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!CONFIG?.GAS_URL.includes('https://')) {
+        const statusElement = document.getElementById('registrationStatus');
+        statusElement.className = 'status-message error';
+        statusElement.textContent = 'System configuration error - please contact support';
+        statusElement.style.display = 'block';
+      }
     });
   </script>
 </body>
