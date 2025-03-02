@@ -205,11 +205,15 @@ function safeRedirect(path) {
 
 // Initialization checks
 document.addEventListener('DOMContentLoaded', () => {
-  if (!window.location.pathname.includes('login.html')) {
+  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+  const isPublicPage = publicPages.some(page => 
+    window.location.pathname.includes(page)
+  );
+
+  if (!isPublicPage) {
     checkSession();
   }
-  
-  // Clear error messages on page change
+
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
