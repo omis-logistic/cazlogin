@@ -126,6 +126,14 @@
       document.body.appendChild(script);
     }
 
+    function showRegistration() {
+      window.location.href = 'register.html';
+    }
+
+    function showForgotPassword() {
+      window.location.href = 'forgot-password.html';
+    }
+
     function showError(message) {
       const errorElement = document.getElementById('error-message');
       errorElement.textContent = message;
@@ -134,14 +142,6 @@
       setTimeout(() => {
         errorElement.style.display = 'none';
       }, 5000);
-    }
-
-    function showRegistration() {
-      window.location.href = 'register.html';
-    }
-
-    function showForgotPassword() {
-      window.location.href = 'forgot-password.html';
     }
 
   </script>
