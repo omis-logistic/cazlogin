@@ -1,5 +1,5 @@
 // scripts/app.js
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbycHjyaMMW5rrwWOpakXRiN8Xi742JYa2MukjRYWQo5Z-MKqi0L-apzQ9GswdJhijqG/exec'; // Replace with your actual URL
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzfsIWHEt0F9DZYW0X7KXjfGlaPerwCTHc100_RD9dUeg-EMLZlSS1Yd5UmbeEHP9CV/exec'; // Replace with your actual URL
 
 // ========== AUTHENTICATION SYSTEM ==========
 async function handleLogin() {
