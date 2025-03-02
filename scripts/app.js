@@ -97,10 +97,19 @@ function safeRedirect(path) {
 
 // ================= INITIALIZATION CHECKS =================
 document.addEventListener('DOMContentLoaded', () => {
-  if (!window.location.pathname.includes('login.html')) {
+  const publicPages = [
+    'login.html',
+    'register.html'
+  ];
+  
+  const isPublicPage = publicPages.some(page => 
+    window.location.pathname.includes(page)
+  );
+
+  if (!isPublicPage) {
     checkSession();
   }
-  
+
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
