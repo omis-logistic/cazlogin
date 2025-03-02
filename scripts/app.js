@@ -1,5 +1,5 @@
 
-const GAS_URL = 'YOUR_DEPLOYMENT_URL';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxKy9s6gIilX-4zjoL9jAOpQb6_-o83FrsP-7W4XJ-WQDkZFAzkOneM4_vIj9lTch7b/exec';
 
 // Shared authentication functions
 function handleLogin() {
