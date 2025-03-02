@@ -1,5 +1,7 @@
 // scripts/app.js
-// ================= ERROR HANDLING SYSTEM =================
+// ================= SHARED APPLICATION FUNCTIONS =================
+
+// Error handling system
 function showError(message, duration = 5000) {
   const errorElement = document.getElementById('error-message') || createErrorElement();
   errorElement.textContent = message;
@@ -30,7 +32,7 @@ function createErrorElement() {
   return errorDiv;
 }
 
-// ================= SESSION MANAGEMENT =================
+// Session management
 function checkSession() {
   try {
     const userData = JSON.parse(sessionStorage.getItem('userData'));
@@ -56,7 +58,7 @@ function handleLogout() {
   }
 }
 
-// ================= FORM VALIDATION UTILITIES =================
+// Form validation utilities
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
   return regex.test(phone);
@@ -72,9 +74,115 @@ function validateEmail(email) {
   return regex.test(email);
 }
 
-// ================= SAFE REDIRECT FUNCTION =================
+// ================= REGISTRATION FUNCTIONS =================
+function validateRegistrationForm() {
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPass').value;
+  const email = document.getElementById('regEmail').value;
+  const confirmEmail = document.getElementById('regConfirmEmail').value;
+
+  let isValid = true;
+
+  // Phone validation
+  if (!validatePhone(phone)) {
+    document.getElementById('phoneError').textContent = 'Invalid phone format';
+    isValid = false;
+  }
+
+  // Password validation
+  if (!validatePassword(password)) {
+    document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
+    isValid = false;
+  }
+
+  // Password match
+  if (password !== confirmPassword) {
+    document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
+    isValid = false;
+  }
+
+  // Email validation
+  if (!validateEmail(email)) {
+    document.getElementById('emailError').textContent = 'Invalid email format';
+    isValid = false;
+  }
+
+  // Email match
+  if (email !== confirmEmail) {
+    document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+function handleRegistration() {
+  if (!validateRegistrationForm()) return;
+  
+  // Get form data
+  const formData = {
+    phone: document.getElementById('regPhone').value,
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value
+  };
+
+  // Call GAS endpoint
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      action: 'createAccount',
+      ...formData
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Registration successful!');
+      window.location.href = 'login.html';
+    } else {
+      showError(data.message);
+    }
+  })
+  .catch(error => showError('Registration failed: ' + error.message));
+}
+
+// Parcel system utilities
+function formatTrackingNumber(trackingNumber) {
+  return trackingNumber.replace(/\s/g, '').toUpperCase();
+}
+
+function validateTrackingNumber(trackingNumber) {
+  return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
+}
+
+// Currency formatting
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ms-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2
+  }).format(amount);
+}
+
+// Date formatting
+function formatDate(dateString) {
+  const options = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Singapore'
+  };
+  return new Date(dateString).toLocaleDateString('en-MY', options);
+}
+
+// Safe redirect function
 function safeRedirect(path) {
   try {
+    if (typeof path !== 'string') throw new Error('Invalid path');
     const allowedPaths = [
       'login.html',
       'dashboard.html',
@@ -95,23 +203,16 @@ function safeRedirect(path) {
   }
 }
 
-// ================= INITIALIZATION CHECKS =================
+// Initialization checks
 document.addEventListener('DOMContentLoaded', () => {
-  const publicPages = [
-    'login.html',
-    'register.html'
-  ];
-  
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
-
-  if (!isPublicPage) {
+  if (!window.location.pathname.includes('login.html')) {
     checkSession();
   }
-
+  
+  // Clear error messages on page change
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
 });
+
