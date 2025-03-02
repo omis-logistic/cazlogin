@@ -74,6 +74,80 @@ function validateEmail(email) {
   return regex.test(email);
 }
 
+// ================= REGISTRATION FUNCTIONS =================
+function validateRegistrationForm() {
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPass').value;
+  const email = document.getElementById('regEmail').value;
+  const confirmEmail = document.getElementById('regConfirmEmail').value;
+
+  let isValid = true;
+
+  // Phone validation
+  if (!validatePhone(phone)) {
+    document.getElementById('phoneError').textContent = 'Invalid phone format';
+    isValid = false;
+  }
+
+  // Password validation
+  if (!validatePassword(password)) {
+    document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
+    isValid = false;
+  }
+
+  // Password match
+  if (password !== confirmPassword) {
+    document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
+    isValid = false;
+  }
+
+  // Email validation
+  if (!validateEmail(email)) {
+    document.getElementById('emailError').textContent = 'Invalid email format';
+    isValid = false;
+  }
+
+  // Email match
+  if (email !== confirmEmail) {
+    document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+function handleRegistration() {
+  if (!validateRegistrationForm()) return;
+  
+  // Get form data
+  const formData = {
+    phone: document.getElementById('regPhone').value,
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value
+  };
+
+  // Call GAS endpoint
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      action: 'createAccount',
+      ...formData
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Registration successful!');
+      window.location.href = 'login.html';
+    } else {
+      showError(data.message);
+    }
+  })
+  .catch(error => showError('Registration failed: ' + error.message));
+}
+
 // Parcel system utilities
 function formatTrackingNumber(trackingNumber) {
   return trackingNumber.replace(/\s/g, '').toUpperCase();
