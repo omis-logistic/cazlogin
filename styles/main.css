@@ -17,6 +17,11 @@
   padding: 0;
 }
 
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: 'Arial', sans-serif;
   background-color: var(--dark-bg);
@@ -70,6 +75,44 @@ button:hover {
   min-height: 1.2em;
 }
 
+/* ======== MOBILE FIRST STYLES ======== */
+body.mobile-view {
+  padding: 0.5rem !important;
+  font-size: 16px !important;
+  display: block !important;
+}
+
+body.mobile-view .container {
+  width: 95% !important;
+  max-width: 100% !important;
+  padding: 1rem !important;
+  margin: 0.5rem auto !important;
+}
+
+body.mobile-view input,
+body.mobile-view button,
+body.mobile-view select {
+  font-size: 16px !important;
+  padding: 12px !important;
+  min-height: 44px;
+}
+
+body.mobile-view .thumbnail {
+  margin: 15px 0 !important;
+  padding: 15px !important;
+}
+
+/* ======== DESKTOP OVERRIDES ======== */
+body.desktop-view {
+  padding: 2rem;
+  font-size: 14px;
+}
+
+body.desktop-view .container {
+  max-width: 1200px;
+  padding: 2rem;
+}
+
 /* ======== MODAL STYLES ======== */
 .welcome-modal {
   display: none;
@@ -95,88 +138,32 @@ button:hover {
   max-height: 90vh;
 }
 
-.modal-section {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background-color: var(--section-bg);
-  border-radius: 5px;
-}
-
-.modal-section.warning {
-  border-left: 4px solid var(--gold);
-  background: rgba(197, 160, 71, 0.1);
-}
-
-.guidelines li {
-  margin-bottom: 0.8rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--gold);
-}
-
-.modal-footer {
-  text-align: center;
-  padding-top: 1.5rem;
-  margin-top: 1.5rem;
-  border-top: 1px solid rgba(197, 160, 71, 0.3);
-}
-
-.close-modal {
-  color: var(--gold);
-  background: rgba(0, 0, 0, 0.7);
-  padding: 0.8rem 2rem;
-  border-radius: 25px;
-  border: 1px solid var(--gold);
-  transition: all 0.3s ease;
-}
-
-.close-modal:hover {
-  background: var(--gold);
-  color: var(--dark-bg);
+body.mobile-view .welcome-content {
+  width: 95% !important;
+  margin: 10px auto !important;
+  padding: 15px !important;
 }
 
 /* ======== RESPONSIVE DESIGN ======== */
 @media screen and (max-width: 768px) {
-  body.mobile-view {
-    padding: 0.5rem;
+  body {
     font-size: 16px;
   }
-
-  .container {
-    padding: 1rem;
-    margin: 0.5rem auto;
-    width: 95%;
-  }
-
-  .welcome-content {
-    margin: 5% auto;
-    padding: 1rem;
-    width: 95%;
-  }
-
+  
   h1 {
     font-size: 1.5rem;
   }
 
-  .modal-section {
-    padding: 0.8rem;
+  .container {
+    padding: 1rem;
+  }
+
+  button {
+    min-height: 44px;
   }
 }
 
 @media screen and (min-width: 769px) {
-  body.desktop-view {
-    padding: 2rem;
-    font-size: 14px;
-  }
-
-  .container {
-    max-width: 1200px;
-    padding: 2rem;
-  }
-
-  .welcome-content {
-    padding: 2rem;
-  }
-
   .thumbnail {
     width: 30%;
     display: inline-block;
@@ -186,12 +173,28 @@ button:hover {
 
 /* ======== UTILITY CLASSES ======== */
 .gold-text {
-  color: var(--gold);
+  color: var(--gold) !important;
 }
 
 .text-important {
   color: var(--gold);
   font-weight: bold;
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: block !important;
+}
+
+body.mobile-view .mobile-only {
+  display: block !important;
+}
+
+body.mobile-view .desktop-only {
+  display: none !important;
 }
 
 /* ======== ANIMATIONS ======== */
