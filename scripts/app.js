@@ -2,14 +2,14 @@
 // ================= SHARED APPLICATION FUNCTIONS =================
 
 // Error handling system
-function showError(message, duration = 5000) {
-  const errorElement = document.getElementById('error-message') || createErrorElement();
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
   errorElement.textContent = message;
   errorElement.style.display = 'block';
   
   setTimeout(() => {
     errorElement.style.display = 'none';
-  }, duration);
+  }, 5000);
 }
 
 function createErrorElement() {
@@ -56,6 +56,10 @@ function handleLogout() {
     console.error('Logout error:', error);
     showError('Failed to logout properly');
   }
+}
+
+function showForgotPassword() {
+  safeRedirect('forgot-password.html');
 }
 
 // Form validation utilities
