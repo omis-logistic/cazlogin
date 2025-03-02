@@ -1,22 +1,17 @@
 // scripts/app.js
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbz5fYBlIdyuodrGcoBTBsu8I4tHI-ViXOjHBPQwiJVA8sgiLpkNbERyNwcKOZeRmiXP/exec'; // Replace with your actual URL
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbycHjyaMMW5rrwWOpakXRiN8Xi742JYa2MukjRYWQo5Z-MKqi0L-apzQ9GswdJhijqG/exec'; // Replace with your actual URL
 
 // ========== AUTHENTICATION SYSTEM ==========
 async function handleLogin() {
   const phone = document.getElementById('phone').value;
   const password = document.getElementById('password').value;
 
-  if (!phone || !password) {
-    showError('Please fill in all fields');
-    return;
-  }
-
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
+      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
       },
       body: JSON.stringify({
         action: 'processLogin',
