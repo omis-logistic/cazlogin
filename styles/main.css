@@ -103,7 +103,30 @@ button.secondary-btn:hover {
   margin: 5px 0;
 }
 
-/* ======== LOGIN PAGE ======== */
+.status-message {
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 14px;
+  display: none;
+}
+
+.status-message.success {
+  background: rgba(0, 200, 81, 0.1);
+  border: 1px solid #00C851;
+  color: #00C851;
+  display: block;
+}
+
+.status-message.error {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid #ff4444;
+  color: #ff4444;
+  display: block;
+}
+
+/* ======== PAGE SPECIFIC STYLES ======== */
 .login-page {
   animation: fadeIn 0.3s ease-in;
 }
@@ -112,11 +135,38 @@ button.secondary-btn:hover {
   background: #333;
 }
 
-/* ======== DASHBOARD PAGE ======== */
 .dashboard-page {
   max-width: 600px;
 }
 
+.forgot-password-page {
+  animation: fadeIn 0.3s ease-in;
+}
+
+.forgot-password-page input {
+  background: #2a2a2a;
+  border: 1px solid var(--gold);
+  color: var(--text-light);
+  font-size: 14px;
+  padding: 14px;
+  margin: 8px 0;
+}
+
+.password-reset-page {
+  max-width: 500px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.password-reset-page input {
+  background: #2a2a2a;
+  border: 1px solid var(--gold);
+  color: var(--text-light);
+  font-size: 14px;
+  padding: 14px;
+  margin: 8px 0;
+}
+
+/* ======== DASHBOARD COMPONENTS ======== */
 .thumbnail {
   background: rgba(255, 255, 255, 0.1);
   padding: 20px;
@@ -199,9 +249,31 @@ button.secondary-btn:hover {
   .thumbnail {
     padding: 15px;
   }
+
+  .forgot-password-page,
+  .password-reset-page {
+    padding: 20px 15px;
+  }
+
+  .forgot-password-page input,
+  .password-reset-page input {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  button.gold-btn,
+  button.secondary-btn {
+    padding: 10px;
+    font-size: 14px;
+  }
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
