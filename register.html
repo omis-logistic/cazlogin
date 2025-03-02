@@ -5,6 +5,7 @@
   <title>Register - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
+    /* Maintained visual enhancements */
     .registration-page {
       max-width: 500px;
       animation: slideUp 0.3s ease-out;
@@ -17,21 +18,27 @@
       opacity: 0.8;
     }
 
-    .loader {
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid var(--gold);
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
-      animation: spin 0.8s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 8px;
+    .status-message {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 5px;
+      text-align: center;
+      font-size: 14px;
+      display: none;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .status-message.success {
+      background: rgba(0, 200, 81, 0.1);
+      border: 1px solid #00C851;
+      color: #00C851;
+      display: block;
+    }
+
+    .status-message.error {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid #ff4444;
+      color: #ff4444;
+      display: block;
     }
 
     @keyframes slideUp {
@@ -103,84 +110,52 @@
       <div class="error-message" id="confirmEmailError"></div>
     </div>
 
-    <button id="registerBtn" onclick="handleRegistration(event)">
-      Create Account
-    </button>
-    <button class="secondary-btn" 
-            onclick="safeRedirect('login.html')" 
-            style="margin-top: 10px;">
-      Back to Login
-    </button>
+    <button onclick="handleRegistration()">Register</button>
+    <button class="secondary-btn" onclick="safeRedirect('login.html')" style="margin-top: 10px;">Back to Login</button>
 
-    <div id="registrationStatus" class="status-message" style="display: none;"></div>
+    <!-- Maintained status message container -->
+    <div id="registrationStatus" class="status-message"></div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    // Enhanced registration handler with CORS fixes
-    async function handleRegistration(event) {
-      event.preventDefault();
-      
-      // Clear previous errors
+    // Original working version with JSONP
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyRBx9vTh6TVp7fHcftmjBg2d7wJYVZl9DrJfxucoGKFUh0OVQcoYyNfvQLV6Hexove/exec';
+
+    function handleRegistration() {
       document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
       const statusElement = document.getElementById('registrationStatus');
-      statusElement.style.display = 'none';
+      statusElement.className = '';
+      statusElement.textContent = '';
 
       if (!validateRegistrationForm()) return;
 
-      const btn = document.getElementById('registerBtn');
-      const originalBtnText = btn.innerHTML;
-      
-      try {
-        // Show loading state
-        btn.disabled = true;
-        btn.innerHTML = '<div class="loader"></div> Registering...';
+      const phone = document.getElementById('regPhone').value;
+      const password = document.getElementById('regPassword').value;
+      const email = document.getElementById('regEmail').value;
 
-        const formData = {
-          phone: document.getElementById('regPhone').value,
-          password: document.getElementById('regPassword').value,
-          email: document.getElementById('regEmail').value
-        };
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
-        // Direct POST request with CORS headers
-        const response = await fetch(CONFIG.GAS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            action: 'createAccount',
-            ...formData
-          }),
-          referrerPolicy: 'strict-origin-when-cross-origin'
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
         
-        const result = await response.json();
-
-        if (result.success) {
+        if (response.success) {
           statusElement.className = 'status-message success';
           statusElement.textContent = 'Registration successful! Redirecting...';
-          statusElement.style.display = 'block';
-          
           setTimeout(() => safeRedirect('login.html'), 1500);
         } else {
-          throw new Error(result.message || 'Registration failed');
+          statusElement.className = 'status-message error';
+          statusElement.textContent = response.message || 'Registration failed';
         }
-      } catch (error) {
-        statusElement.className = 'status-message error';
-        statusElement.textContent = `Error: ${error.message}`;
-        statusElement.style.display = 'block';
-        console.error('Registration error:', error);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = originalBtnText;
-      }
+      };
+
+      document.body.appendChild(script);
     }
 
-    // Real-time validation
+    // Maintained real-time validation
     document.getElementById('regPhone').addEventListener('input', function() {
       document.getElementById('phoneError').textContent = 
         !validatePhone(this.value) ? 'Invalid phone format' : '';
@@ -204,16 +179,6 @@
     document.getElementById('regConfirmEmail').addEventListener('input', function() {
       document.getElementById('confirmEmailError').textContent = 
         this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
-    });
-
-    // Configuration check
-    document.addEventListener('DOMContentLoaded', () => {
-      if (!CONFIG?.GAS_URL.includes('https://')) {
-        const statusElement = document.getElementById('registrationStatus');
-        statusElement.className = 'status-message error';
-        statusElement.textContent = 'System configuration error - please contact support';
-        statusElement.style.display = 'block';
-      }
     });
   </script>
 </body>
