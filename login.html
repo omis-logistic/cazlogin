@@ -4,32 +4,93 @@
   <base target="_top">
   <title>Login - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* Additional inline styles specific to login page */
+    .login-page {
+      max-width: 400px;
+      margin: 20px auto;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .login-page input {
+      background: #333;
+      border: 1px solid var(--gold);
+      color: var(--text-light);
+      transition: border-color 0.3s ease;
+    }
+
+    .login-page input:focus {
+      border-color: #d4af37;
+      outline: none;
+    }
+
+    .secondary-btn {
+      background: transparent !important;
+      border: 1px solid var(--gold) !important;
+      color: var(--gold) !important;
+      transition: all 0.3s ease;
+    }
+
+    .secondary-btn:hover {
+      background: var(--gold) !important;
+      color: var(--dark-bg) !important;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .login-page {
+        padding: 15px;
+        margin: 10px;
+      }
+
+      button {
+        font-size: 14px;
+        padding: 10px;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="container login-page">
     <h1>Cahaya Az Zahra Enterprise</h1>
     
     <div class="input-group">
-      <input type="tel" id="phone" placeholder="Phone Number" required>
+      <input type="tel" 
+             id="phone" 
+             placeholder="Phone Number"
+             pattern="^(673\d{7,}|60\d{9,})$" 
+             required>
     </div>
     
     <div class="input-group">
-      <input type="password" id="password" placeholder="Password" required>
+      <input type="password" 
+             id="password" 
+             placeholder="Password" 
+             required>
     </div>
     
     <button onclick="handleLogin()">Login</button>
     
     <div style="margin-top: 20px; text-align: center;">
-      <button onclick="safeRedirect('register.html')">Create Account</button>
-      <button class="secondary-btn" onclick="safeRedirect('password-reset.html')" style="margin-top: 10px;">
+      <button onclick="showRegistration()">Create Account</button>
+      <button class="secondary-btn" 
+              onclick="showForgotPassword()"
+              style="margin-top: 10px;">
         Forgot Password?
       </button>
     </div>
   </div>
 
-  <script src="scripts/app.js"></script>
+  <!-- Error message container -->
+  <div id="error-message" class="error-message" style="display: none; margin-top: 15px;"></div>
+
+  <!-- JSONP Login Handler -->
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxwlxwU9CeOST3lV8fg53cdhdsxil_UwaFFNSkhbyXm_CGENFtsT_vU_yiZQtAYBrEx/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw1VkhstHCVfkIzBNIVi7Ev9hLaFzdrM0Gn_q8kpviKRKHdiyY55PokWh0KG6xEYGEP/exec';
 
     function handleLogin() {
       const phone = document.getElementById('phone').value;
@@ -40,23 +101,49 @@
         return;
       }
 
+      // Create unique callback name
       const callbackName = `jsonp_${Date.now()}`;
+      
+      // Create script tag
       const script = document.createElement('script');
       script.src = `${GAS_URL}?phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
+      // Set up callback
       window[callbackName] = (response) => {
         delete window[callbackName];
         document.body.removeChild(script);
         
         if (response.success) {
           sessionStorage.setItem('userData', JSON.stringify(response));
-          window.location.href = response.tempPassword ? 'password-reset.html' : 'dashboard.html';
+          window.location.href = response.tempPassword 
+            ? 'password-reset.html' 
+            : 'dashboard.html';
         } else {
           showError(response.message || 'Login failed');
         }
       };
 
       document.body.appendChild(script);
+    }
+
+    // ======== ADD THESE FUNCTIONS ========
+    function showRegistration() {
+      window.location.href = 'register.html';
+    }
+
+    function showForgotPassword() {
+      window.location.href = 'forgot-password.html';
+    }
+    // =====================================
+
+    function showError(message) {
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+      
+      setTimeout(() => {
+        errorElement.style.display = 'none';
+      }, 5000);
     }
   </script>
 </body>
