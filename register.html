@@ -18,23 +18,21 @@
       opacity: 0.8;
     }
 
-    input[type="tel"],
-    input[type="password"],
-    input[type="email"] {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      background: #2a2a2a;
-      border: 1px solid var(--gold);
-      color: var(--text-light);
-      border-radius: 5px;
-      transition: all 0.3s ease;
+    .loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid var(--gold);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
     }
 
-    input:focus {
-      border-color: #d4af37;
-      box-shadow: 0 0 8px rgba(197, 160, 71, 0.3);
-      outline: none;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     @keyframes slideUp {
@@ -47,9 +45,7 @@
         padding: 15px;
       }
       
-      input[type="tel"],
-      input[type="password"],
-      input[type="email"] {
+      input {
         padding: 10px;
         font-size: 14px;
       }
@@ -66,72 +62,132 @@
     <h1>New Registration</h1>
     
     <div class="input-group">
-      <input type="tel" id="regPhone" placeholder="Phone (673/60 format)" 
-             pattern="^(673\d{7,}|60\d{9,})$" required>
+      <input type="tel" 
+             id="regPhone" 
+             placeholder="Phone (673/60 format)" 
+             pattern="^(673\d{7,}|60\d{9,})$" 
+             required>
       <div class="error-message" id="phoneError"></div>
     </div>
 
     <div class="input-group">
-      <input type="password" id="regPassword" placeholder="Create Password"
-             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" required>
+      <input type="password" 
+             id="regPassword" 
+             placeholder="Create Password"
+             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" 
+             required>
       <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
       <div class="error-message" id="passError"></div>
     </div>
 
     <div class="input-group">
-      <input type="password" id="regConfirmPass" placeholder="Confirm Password" required>
+      <input type="password" 
+             id="regConfirmPass" 
+             placeholder="Confirm Password" 
+             required>
       <div class="error-message" id="confirmPassError"></div>
     </div>
 
     <div class="input-group">
-      <input type="email" id="regEmail" placeholder="Email Address" required>
+      <input type="email" 
+             id="regEmail" 
+             placeholder="Email Address" 
+             required>
       <div class="error-message" id="emailError"></div>
     </div>
 
     <div class="input-group">
-      <input type="email" id="regConfirmEmail" placeholder="Confirm Email" required>
+      <input type="email" 
+             id="regConfirmEmail" 
+             placeholder="Confirm Email" 
+             required>
       <div class="error-message" id="confirmEmailError"></div>
     </div>
 
-    <button onclick="handleRegistration(); return false;">Register</button>
-    <button 
-  class="secondary-btn" onclick="safeRedirect('login.html')"style="margin-top: 10px;">Back to Login</button>
+    <button id="registerBtn" onclick="handleRegistration(event)">
+      Create Account
+    </button>
+    <button class="secondary-btn" 
+            onclick="safeRedirect('login.html')" 
+            style="margin-top: 10px;">
+      Back to Login
+    </button>
+
+    <div id="registrationStatus" class="status-message" style="display: none;"></div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8OqVQ6NuIDfZFgfrDHk0mUzUogWKTgx2EaEOJ27gtcnaYQp2iQUU_ygIcDBbrBZoJ/exec';
-
-    function handleRegistration() {
-    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-    
-    if (!validateRegistrationForm()) return;
-
-    // Get form data
-    const phone = document.getElementById('regPhone').value;
-    const password = document.getElementById('regPassword').value;
-    const email = document.getElementById('regEmail').value;
-
-    // Create unique callback name
-    const callbackName = `jsonp_${Date.now()}`;
-    const script = document.createElement('script');
-    script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
-
-    window[callbackName] = (response) => {
-      delete window[callbackName];
-      document.body.removeChild(script);
+    async function handleRegistration(event) {
+      event.preventDefault();
       
-      if (response.success) {
-        alert('Registration successful! Please login.');
-        window.location.href = 'login.html';
-      } else {
-        showError(response.message || 'Registration failed');
-      }
-    };
+      // Clear previous errors and status
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+      document.getElementById('registrationStatus').style.display = 'none';
 
-    document.body.appendChild(script);
-  }
-</script>
+      if (!validateRegistrationForm()) return;
+
+      const btn = document.getElementById('registerBtn');
+      try {
+        // Show loading state
+        btn.disabled = true;
+        btn.innerHTML = '<div class="loader"></div> Registering...';
+
+        const formData = {
+          phone: document.getElementById('regPhone').value,
+          password: document.getElementById('regPassword').value,
+          email: document.getElementById('regEmail').value
+        };
+
+        const result = await callAPI('createAccount', formData);
+        
+        if (result.success) {
+          document.getElementById('registrationStatus').className = 'status-message success';
+          document.getElementById('registrationStatus').textContent = 'Registration successful! Redirecting...';
+          document.getElementById('registrationStatus').style.display = 'block';
+          
+          setTimeout(() => safeRedirect('login.html'), 1500);
+        } else {
+          showError(result.message, 'registrationStatus');
+          document.getElementById('registrationStatus').className = 'status-message error';
+          document.getElementById('registrationStatus').style.display = 'block';
+        }
+      } catch (error) {
+        showError('Registration failed: ' + error.message, 'registrationStatus');
+        document.getElementById('registrationStatus').className = 'status-message error';
+        document.getElementById('registrationStatus').style.display = 'block';
+      } finally {
+        // Reset button state
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+    }
+
+    // Real-time validation
+    document.getElementById('regPhone').addEventListener('input', function() {
+      document.getElementById('phoneError').textContent = 
+        !validatePhone(this.value) ? 'Invalid phone format' : '';
+    });
+
+    document.getElementById('regPassword').addEventListener('input', function() {
+      document.getElementById('passError').textContent = 
+        !validatePassword(this.value) ? '6+ chars, 1 uppercase, 1 number' : '';
+    });
+
+    document.getElementById('regConfirmPass').addEventListener('input', function() {
+      document.getElementById('confirmPassError').textContent = 
+        this.value !== document.getElementById('regPassword').value ? 'Passwords mismatch' : '';
+    });
+
+    document.getElementById('regEmail').addEventListener('input', function() {
+      document.getElementById('emailError').textContent = 
+        !validateEmail(this.value) ? 'Invalid email format' : '';
+    });
+
+    document.getElementById('regConfirmEmail').addEventListener('input', function() {
+      document.getElementById('confirmEmailError').textContent = 
+        this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
+    });
   </script>
 </body>
 </html>
