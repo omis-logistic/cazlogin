@@ -59,16 +59,40 @@
       text-align: center;
     }
 
+    .welcome-modal h2 {
+      color: var(--gold);
+      margin-bottom: 15px;
+      font-size: 1.8em;
+    }
+
+    .modal-footer {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 15px;
+      border-top: 1px solid rgba(197, 160, 71, 0.3);
+      margin-top: 20px;
+    }
+
     .close-modal {
       color: var(--gold);
-      float: right;
-      font-size: 28px;
+      font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 25px;
+      border-radius: 25px;
+      border: 1px solid var(--gold);
+      transition: all 0.3s ease;
+      margin: 0 auto;
+      display: block;
+      width: max-content;
     }
 
     .close-modal:hover {
-      color: #d4af37;
+      background: var(--gold);
+      color: var(--dark-bg);
     }
 
     @keyframes fadeIn {
@@ -87,6 +111,15 @@
       
       .thumbnail h2 {
         font-size: 1.2em;
+      }
+
+      .welcome-content {
+        margin: 30% auto;
+        padding: 20px;
+      }
+
+      .welcome-modal h2 {
+        font-size: 1.4em;
       }
     }
   </style>
@@ -116,7 +149,6 @@
   <!-- Welcome Modal -->
   <div id="welcomeModal" class="welcome-modal">
     <div class="welcome-content">
-      <span class="close-modal">&times;</span>
       <h2>MAKLUMAN PENTING. SILA BACA</h2>
       <p><strong>Tolong submit tracking details biskita seawalnya jika biskita ada mengunakan shipping address alamat kami di limbang. Tidak perlu menunggu kiriman dari pihak kami lagi.</strong></p>
       <p>Sila check sea shipping, jika parcel sudah sampai Malaysia, perubahan tracking akan berlaku, sila update/submit tracking terkini yang telah sampai di Limbang.</p>
@@ -153,7 +185,10 @@
       <p><strong>● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
       <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
       <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
-      <button onclick="closeWelcomeModal()">Close</button>
+      
+      <div class="modal-footer">
+        <span class="close-modal">Close Welcome Message</span>
+      </div>
     </div>
   </div>
 
@@ -171,12 +206,17 @@
         window.location.href = 'password-reset.html';
       }
       
-      // Display welcome modal
+      // Display welcome modal once per session
       const modal = document.getElementById('welcomeModal');
-      modal.style.display = 'block';
+      const closeBtn = document.querySelector('.close-modal');
+      
+      if (!sessionStorage.getItem('welcomeShown')) {
+        modal.style.display = 'block';
+        sessionStorage.setItem('welcomeShown', 'true');
+      }
 
       // Close modal handlers
-      document.querySelector('.close-modal').onclick = () => modal.style.display = 'none';
+      closeBtn.onclick = () => modal.style.display = 'none';
       window.onclick = (event) => {
         if (event.target === modal) modal.style.display = 'none';
       }
@@ -196,6 +236,7 @@
 
       function handleLogout() {
         sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('welcomeShown');
         window.location.href = 'login.html';
       }
 
