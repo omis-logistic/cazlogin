@@ -1,15 +1,16 @@
 // scripts/app.js
-// ================= SHARED APPLICATION FUNCTIONS =================
+// ================= GLOBAL CONFIGURATION =================
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 
-// Error handling system
-function showError(message, duration = 5000) {
-  const errorElement = document.getElementById('error-message') || createErrorElement();
+// ================= ERROR HANDLING SYSTEM =================
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
   errorElement.textContent = message;
   errorElement.style.display = 'block';
   
   setTimeout(() => {
     errorElement.style.display = 'none';
-  }, duration);
+  }, 5000);
 }
 
 function createErrorElement() {
@@ -32,18 +33,18 @@ function createErrorElement() {
   return errorDiv;
 }
 
-// Session management
+// ================= SESSION MANAGEMENT =================
 function checkSession() {
   try {
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData) {
-      window.location.href = 'login.html';
+      safeRedirect('login.html');
       return null;
     }
     return userData;
   } catch (error) {
     console.error('Session check error:', error);
-    window.location.href = 'login.html';
+    safeRedirect('login.html');
     return null;
   }
 }
@@ -51,21 +52,14 @@ function checkSession() {
 function handleLogout() {
   try {
     sessionStorage.removeItem('userData');
-    window.location.href = 'login.html';
+    safeRedirect('login.html');
   } catch (error) {
     console.error('Logout error:', error);
     showError('Failed to logout properly');
   }
 }
 
-function showLogin() {
-  safeRedirect('login.html');
-}
-
-function showRegistration() {
-  safeRedirect('register.html');
-}
-
+// ================= NAVIGATION CONTROL =================
 function safeRedirect(path) {
   try {
     const allowedPaths = [
@@ -90,22 +84,15 @@ function safeRedirect(path) {
   }
 }
 
-function showForgotPassword() {
-  safeRedirect('forgot-password.html');
+function showLogin() {
+  safeRedirect('login.html');
 }
 
-// Enhanced error handling
-function showError(message, targetId = 'error-message') {
-  const errorElement = document.getElementById(targetId) || createErrorElement();
-  errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  
-  setTimeout(() => {
-    errorElement.style.display = 'none';
-  }, 5000);
+function showRegistration() {
+  safeRedirect('register.html');
 }
 
-// Form validation utilities
+// ================= FORM VALIDATION UTILITIES =================
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
   return regex.test(phone);
@@ -121,138 +108,54 @@ function validateEmail(email) {
   return regex.test(email);
 }
 
-// ================= REGISTRATION FUNCTIONS =================
-function validateRegistrationForm() {
-  const phone = document.getElementById('regPhone').value;
-  const password = document.getElementById('regPassword').value;
-  const confirmPassword = document.getElementById('regConfirmPass').value;
-  const email = document.getElementById('regEmail').value;
-  const confirmEmail = document.getElementById('regConfirmEmail').value;
+// ================= PASSWORD RECOVERY HANDLER =================
+function handlePasswordRecovery() {
+  const phone = document.getElementById('recoveryPhone').value;
+  const email = document.getElementById('recoveryEmail').value;
 
+  // Clear previous errors
+  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+  // Validate inputs
   let isValid = true;
-
-  // Phone validation
   if (!validatePhone(phone)) {
-    document.getElementById('phoneError').textContent = 'Invalid phone format';
+    showError('Invalid phone format', 'phoneRecoveryError');
     isValid = false;
   }
-
-  // Password validation
-  if (!validatePassword(password)) {
-    document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
-    isValid = false;
-  }
-
-  // Password match
-  if (password !== confirmPassword) {
-    document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
-    isValid = false;
-  }
-
-  // Email validation
   if (!validateEmail(email)) {
-    document.getElementById('emailError').textContent = 'Invalid email format';
+    showError('Invalid email format', 'emailRecoveryError');
     isValid = false;
   }
+  if (!isValid) return;
 
-  // Email match
-  if (email !== confirmEmail) {
-    document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
-    isValid = false;
-  }
+  // JSONP implementation
+  const callbackName = `jsonp_${Date.now()}`;
+  const script = document.createElement('script');
+  script.src = `${GAS_URL}?action=initiatePasswordReset&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
-  return isValid;
-}
-
-function handleRegistration() {
-  if (!validateRegistrationForm()) return;
-  
-  // Get form data
-  const formData = {
-    phone: document.getElementById('regPhone').value,
-    password: document.getElementById('regPassword').value,
-    email: document.getElementById('regEmail').value
-  };
-
-  // Call GAS endpoint
-  fetch(GAS_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      action: 'createAccount',
-      ...formData
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      alert('Registration successful!');
-      window.location.href = 'login.html';
+  window[callbackName] = function(response) {
+    delete window[callbackName];
+    document.body.removeChild(script);
+    
+    if (response.success) {
+      alert('Temporary password sent! Check your email.');
+      safeRedirect('login.html');
     } else {
-      showError(data.message);
+      showError(response.message || 'Password recovery failed');
     }
-  })
-  .catch(error => showError('Registration failed: ' + error.message));
-}
-
-// Parcel system utilities
-function formatTrackingNumber(trackingNumber) {
-  return trackingNumber.replace(/\s/g, '').toUpperCase();
-}
-
-function validateTrackingNumber(trackingNumber) {
-  return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
-}
-
-// Currency formatting
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('ms-MY', {
-    style: 'currency',
-    currency: 'MYR',
-    minimumFractionDigits: 2
-  }).format(amount);
-}
-
-// Date formatting
-function formatDate(dateString) {
-  const options = { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Singapore'
   };
-  return new Date(dateString).toLocaleDateString('en-MY', options);
+
+  document.body.appendChild(script);
 }
 
-// Safe redirect function
-function safeRedirect(path) {
-  try {
-    if (typeof path !== 'string') throw new Error('Invalid path');
-    const allowedPaths = [
-      'login.html',
-      'dashboard.html',
-      'password-reset.html',
-      'my-info.html',
-      'parcel-declaration.html',
-      'track-parcel.html'
-    ];
-    
-    if (!allowedPaths.includes(path)) {
-      throw new Error('Unauthorized redirect path');
-    }
-    
-    window.location.href = path;
-  } catch (error) {
-    console.error('Redirect error:', error);
-    showError('Unable to complete navigation');
-  }
-}
-
-// Initialization checks
+// ================= INITIALIZATION & EVENT HANDLERS =================
 document.addEventListener('DOMContentLoaded', () => {
-  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+  const publicPages = [
+    'login.html',
+    'register.html',
+    'forgot-password.html'
+  ];
+  
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
   );
