@@ -58,21 +58,6 @@ function handleLogout() {
   }
 }
 
-function showForgotPassword() {
-  safeRedirect('forgot-password.html');
-}
-
-// Enhanced error handling
-function showError(message, targetId = 'error-message') {
-  const errorElement = document.getElementById(targetId) || createErrorElement();
-  errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  
-  setTimeout(() => {
-    errorElement.style.display = 'none';
-  }, 5000);
-}
-
 function showLogin() {
   safeRedirect('login.html');
 }
@@ -103,6 +88,21 @@ function safeRedirect(path) {
     console.error('Redirect error:', error);
     showError('Navigation failed. Please try again.');
   }
+}
+
+function showForgotPassword() {
+  safeRedirect('forgot-password.html');
+}
+
+// Enhanced error handling
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  setTimeout(() => {
+    errorElement.style.display = 'none';
+  }, 5000);
 }
 
 // Form validation utilities
