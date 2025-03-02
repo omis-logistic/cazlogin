@@ -1,5 +1,5 @@
 // scripts/app.js
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzfsIWHEt0F9DZYW0X7KXjfGlaPerwCTHc100_RD9dUeg-EMLZlSS1Yd5UmbeEHP9CV/exec'; // Replace with your actual URL
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbx2jH63l-rWHN8EXsGhhLXQM054-Igq4EhL8AdnbQSOVjvMKeUB_Op8RgD926Zz_XM4/exec'; // Replace with your actual URL
 
 // ========== AUTHENTICATION SYSTEM ==========
 async function handleLogin() {
@@ -9,7 +9,6 @@ async function handleLogin() {
   try {
     const response = await fetch(GAS_URL, {
       method: 'POST',
-      mode: 'cors',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -45,6 +44,34 @@ async function handleLogin() {
     checkNetworkError(error);
   }
 }
+
+function showError(message) {
+  const errorElement = document.getElementById('error-message') || createErrorElement();
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  setTimeout(() => {
+    errorElement.style.display = 'none';
+  }, 5000);
+}
+
+function createErrorElement() {
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-message';
+  errorDiv.className = 'error-message';
+  errorDiv.style.display = 'none';
+  document.body.prepend(errorDiv);
+  return errorDiv;
+}
+
+function checkNetworkError(error) {
+  if (error.message.includes('Failed to fetch')) {
+    showError('Network error - check internet connection');
+    return true;
+  }
+  return false;
+}
+
 
 // ========== ERROR HANDLING ==========
 function showError(message) {
