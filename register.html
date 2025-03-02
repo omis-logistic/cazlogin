@@ -107,43 +107,35 @@
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbztxfNs9W6XqSKPD5ACbo-qUzKZIg3C_RDGIaRqUFUZTohzZyLpnVOsMj2hoe53s357/exec';
 
     function handleRegistration() {
-      // Clear previous errors
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    
+    if (!validateRegistrationForm()) return;
 
-      // Get form values
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPass').value;
-      const email = document.getElementById('regEmail').value;
-      const confirmEmail = document.getElementById('regConfirmEmail').value;
+    // Get form data
+    const phone = document.getElementById('regPhone').value;
+    const password = document.getElementById('regPassword').value;
+    const email = document.getElementById('regEmail').value;
 
-      // Validate inputs
-      if (!validateRegistration(phone, password, confirmPassword, email, confirmEmail)) {
-        return;
-      }
+    // Create unique callback name
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
-      // Create unique callback name
-      const callbackName = `jsonp_${Date.now()}`;
+    window[callbackName] = (response) => {
+      delete window[callbackName];
+      document.body.removeChild(script);
       
-      // Create script tag
-      const script = document.createElement('script');
-      script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
+      if (response.success) {
+        alert('Registration successful! Please login.');
+        window.location.href = 'login.html';
+      } else {
+        showError(response.message || 'Registration failed');
+      }
+    };
 
-      // Set up callback
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          alert('Registration successful! Please login.');
-          showLogin();
-        } else {
-          showError(response.message || 'Registration failed');
-        }
-      };
-
-      document.body.appendChild(script);
-    }
+    document.body.appendChild(script);
+  }
+</script>
 
     function validateRegistration(phone, password, confirmPassword, email, confirmEmail) {
       let isValid = true;
