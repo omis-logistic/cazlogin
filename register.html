@@ -5,7 +5,6 @@
   <title>Register - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
-    /* Maintained visual enhancements */
     .registration-page {
       max-width: 500px;
       animation: slideUp 0.3s ease-out;
@@ -113,15 +112,11 @@
     <button onclick="handleRegistration()">Register</button>
     <button class="secondary-btn" onclick="safeRedirect('login.html')" style="margin-top: 10px;">Back to Login</button>
 
-    <!-- Maintained status message container -->
     <div id="registrationStatus" class="status-message"></div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    // Original working version with JSONP
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyRBx9vTh6TVp7fHcftmjBg2d7wJYVZl9DrJfxucoGKFUh0OVQcoYyNfvQLV6Hexove/exec';
-
     function handleRegistration() {
       document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
       const statusElement = document.getElementById('registrationStatus');
@@ -136,7 +131,7 @@
 
       const callbackName = `jsonp_${Date.now()}`;
       const script = document.createElement('script');
-      script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
+      script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
       window[callbackName] = (response) => {
         delete window[callbackName];
@@ -155,7 +150,6 @@
       document.body.appendChild(script);
     }
 
-    // Maintained real-time validation
     document.getElementById('regPhone').addEventListener('input', function() {
       document.getElementById('phoneError').textContent = 
         !validatePhone(this.value) ? 'Invalid phone format' : '';
