@@ -7,6 +7,8 @@
   --hover-gold: #d4af37;
   --error-red: #ff4444;
   --success-green: #00C851;
+  --modal-bg: #1a1a1a;
+  --section-bg: rgba(255,255,255,0.05);
 }
 
 * {
@@ -19,109 +21,53 @@ body {
   font-family: 'Arial', sans-serif;
   background-color: var(--dark-bg);
   color: var(--text-light);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  line-height: 1.6;
   min-height: 100vh;
-  padding: 20px;
   position: relative;
 }
 
 /* ======== COMMON COMPONENTS ======== */
 .container {
   background: rgba(0, 0, 0, 0.7);
-  padding: 30px;
+  padding: 2rem;
   border-radius: 10px;
   box-shadow: 0 0 20px var(--gold);
-  width: 100%;
-  max-width: 400px;
-  margin: 20px auto;
+  margin: 1rem auto;
 }
 
-h1 {
+h1, h2, h3 {
   color: var(--gold);
-  text-align: center;
-  border-bottom: 2px solid var(--gold);
-  padding-bottom: 15px;
-  margin-bottom: 25px;
+  margin-bottom: 1.5rem;
 }
 
 .input-group {
-  margin-bottom: 20px;
+  margin-bottom: 1.5rem;
 }
 
-input, select {
+input, select, button {
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  background: #333;
+  padding: 0.8rem;
+  margin: 0.5rem 0;
   border: 1px solid var(--gold);
-  color: var(--text-light);
   border-radius: 5px;
-  transition: border-color 0.3s ease;
-}
-
-input:focus, select:focus {
-  border-color: var(--hover-gold);
-  outline: none;
-  box-shadow: 0 0 8px rgba(197, 160, 71, 0.3);
+  transition: all 0.3s ease;
 }
 
 button {
-  width: 100%;
-  padding: 12px;
   background-color: var(--gold);
   color: var(--dark-bg);
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
   font-weight: bold;
-  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 button:hover {
   opacity: 0.9;
 }
 
-button.secondary-btn {
-  background: transparent;
-  border: 1px solid var(--gold);
-  color: var(--gold);
-}
-
-button.secondary-btn:hover {
-  background: var(--gold);
-  color: var(--dark-bg);
-}
-
 .error-message {
   color: var(--error-red);
   font-size: 0.9em;
-  height: 18px;
-  margin-top: 4px;
-}
-
-.status-message {
-  padding: 12px;
-  margin: 15px 0;
-  border-radius: 5px;
-  text-align: center;
-  font-size: 14px;
-  display: none;
-}
-
-.status-message.success {
-  background: rgba(0, 200, 81, 0.1);
-  border: 1px solid var(--success-green);
-  color: var(--success-green);
-  display: block;
-}
-
-.status-message.error {
-  background: rgba(255, 68, 68, 0.1);
-  border: 1px solid var(--error-red);
-  color: var(--error-red);
-  display: block;
+  min-height: 1.2em;
 }
 
 /* ======== MODAL STYLES ======== */
@@ -132,135 +78,135 @@ button.secondary-btn:hover {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0,0,0,0.7);
+  background-color: rgba(0,0,0,0.9);
   z-index: 9999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .welcome-content {
-  background-color: var(--dark-bg);
-  margin: 15% auto;
-  padding: 25px;
-  border: 1px solid var(--gold);
-  width: 80%;
-  max-width: 400px;
-  border-radius: 8px;
+  background-color: var(--modal-bg);
+  margin: 2% auto;
+  padding: 2rem;
+  border: 2px solid var(--gold);
+  border-radius: 10px;
+  max-width: 800px;
   position: relative;
+  max-height: 90vh;
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: var(--section-bg);
+  border-radius: 5px;
+}
+
+.modal-section.warning {
+  border-left: 4px solid var(--gold);
+  background: rgba(197, 160, 71, 0.1);
+}
+
+.guidelines li {
+  margin-bottom: 0.8rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--gold);
+}
+
+.modal-footer {
   text-align: center;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  border-top: 1px solid rgba(197, 160, 71, 0.3);
 }
 
 .close-modal {
   color: var(--gold);
-  float: right;
-  font-size: 28px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.close-modal:hover {
-  color: var(--hover-gold);
-}
-
-/* ======== RESPONSIVE DESIGN ======== */
-@media (max-width: 767px) {
-  body {
-    padding: 10px;
-  }
-  
-  .container {
-    padding: 20px;
-    margin: 10px;
-    max-width: 100%;
-  }
-  
-  input, select, button {
-    padding: 10px;
-    font-size: 16px;
-  }
-  
-  .thumbnail {
-    padding: 15px;
-  }
-  
-  h1 {
-    font-size: 1.5em;
-  }
-}
-
-@media (min-width: 768px) {
-  .mobile-view .container {
-    max-width: 100%;
-    margin: 10px;
-  }
-  
-  .desktop-view .container {
-    max-width: 1200px;
-    margin: 20px auto;
-  }
-}
-
-/* ======== VIEW TOGGLE ======== */
-.view-toggle {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
-  background: var(--gold);
-  padding: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 0.8rem 2rem;
   border-radius: 25px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  display: flex;
-  gap: 10px;
-}
-
-.view-toggle button {
-  width: auto;
-  padding: 8px 15px;
-  margin: 0;
-  border-radius: 20px;
-  font-size: 14px;
+  border: 1px solid var(--gold);
   transition: all 0.3s ease;
 }
 
-.view-toggle button.active {
-  background: var(--dark-bg);
+.close-modal:hover {
+  background: var(--gold);
+  color: var(--dark-bg);
+}
+
+/* ======== RESPONSIVE DESIGN ======== */
+@media screen and (max-width: 768px) {
+  body.mobile-view {
+    padding: 0.5rem;
+    font-size: 16px;
+  }
+
+  .container {
+    padding: 1rem;
+    margin: 0.5rem auto;
+    width: 95%;
+  }
+
+  .welcome-content {
+    margin: 5% auto;
+    padding: 1rem;
+    width: 95%;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .modal-section {
+    padding: 0.8rem;
+  }
+}
+
+@media screen and (min-width: 769px) {
+  body.desktop-view {
+    padding: 2rem;
+    font-size: 14px;
+  }
+
+  .container {
+    max-width: 1200px;
+    padding: 2rem;
+  }
+
+  .welcome-content {
+    padding: 2rem;
+  }
+
+  .thumbnail {
+    width: 30%;
+    display: inline-block;
+    margin: 1rem;
+  }
+}
+
+/* ======== UTILITY CLASSES ======== */
+.gold-text {
   color: var(--gold);
+}
+
+.text-important {
+  color: var(--gold);
+  font-weight: bold;
 }
 
 /* ======== ANIMATIONS ======== */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ======== MOBILE/DESKTOP VIEW OVERRIDES ======== */
-.mobile-view {
-  font-size: 16px;
-}
-
-.mobile-view input,
-.mobile-view button,
-.mobile-view .thumbnail {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-}
-
-.desktop-view {
-  zoom: 0.8;
-  min-width: 1200px;
-  overflow-x: auto;
-}
-
-.desktop-view .container {
-  min-width: 1200px;
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
