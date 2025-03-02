@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbw12nXz_hQTcTmBgN1L01t03326WENonegWCy1DofE3Z2_A6siapN_QYPOQ9EokELxu/exec',
+  GAS_URL: 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec',
   SESSION_TIMEOUT: 3600 // 1 hour in seconds
 };
 
@@ -48,7 +48,13 @@ function checkSession() {
   }
 
   localStorage.setItem('lastActivity', Date.now());
-  return JSON.parse(sessionData);
+  const userData = JSON.parse(sessionData);
+  
+  if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+    safeRedirect('password-reset.html');
+  }
+  
+  return userData;
 }
 
 function handleLogout() {
@@ -85,97 +91,31 @@ async function callAPI(action, payload = {}) {
   }
 }
 
-// ================= AUTHENTICATION HANDLERS =================
-async function handleLogin() {
-  const phone = document.getElementById('phone').value;
-  const password = document.getElementById('password').value;
+// ================= VIEW TOGGLE SYSTEM =================
+function initViewToggle() {
+  const savedView = localStorage.getItem('viewMode') || 'mobile';
+  document.body.classList.add(`${savedView}-view`);
   
-  if (!phone || !password) {
-    showError('Please fill in all fields');
-    return;
-  }
-
-  const result = await callAPI('processLogin', { phone, password });
-  
-  if (result.success) {
-    sessionStorage.setItem('userData', JSON.stringify(result));
-    localStorage.setItem('lastActivity', Date.now());
-    safeRedirect(result.tempPassword ? 'password-reset.html' : 'dashboard.html');
-  } else {
-    showError(result.message);
-  }
+  const toggleHTML = `
+    <div class="view-toggle">
+      <button onclick="switchView('mobile')" class="${savedView === 'mobile' ? 'active' : ''}">📱 Mobile</button>
+      <button onclick="switchView('desktop')" class="${savedView === 'desktop' ? 'active' : ''}">🖥 Desktop</button>
+    </div>
+  `;
+  document.body.insertAdjacentHTML('beforeend', toggleHTML);
 }
 
-async function handleRegistration() {
-  if (!validateRegistrationForm()) return;
-
-  const formData = {
-    phone: document.getElementById('regPhone').value,
-    password: document.getElementById('regPassword').value,
-    email: document.getElementById('regEmail').value
-  };
-
-  const result = await callAPI('createAccount', formData);
+function switchView(mode) {
+  document.body.classList.remove('mobile-view', 'desktop-view');
+  document.body.classList.add(`${mode}-view`);
+  localStorage.setItem('viewMode', mode);
   
-  if (result.success) {
-    alert('Registration successful! Please login.');
-    safeRedirect('login.html');
-  } else {
-    showError(result.message);
-  }
-}
-
-// ================= PASSWORD MANAGEMENT =================
-async function handlePasswordRecovery() {
-  const phone = document.getElementById('recoveryPhone').value.trim();
-  const email = document.getElementById('recoveryEmail').value.trim();
-  
-  if (!validatePhone(phone)) {
-    showError('Invalid phone format', 'phoneRecoveryError');
-    return;
-  }
-  
-  if (!validateEmail(email)) {
-    showError('Invalid email format', 'emailRecoveryError');
-    return;
-  }
-
-  const result = await callAPI('initiatePasswordReset', { phone, email });
-  
-  if (result.success) {
-    alert('Temporary password sent to your email!');
-    safeRedirect('login.html');
-  } else {
-    showError(result.message);
-  }
-}
-
-async function handlePasswordReset() {
-  const newPass = document.getElementById('newPassword').value;
-  const confirmPass = document.getElementById('confirmNewPassword').value;
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-
-  if (!validatePassword(newPass)) {
-    showError('Invalid password format', 'newPasswordError');
-    return;
-  }
-
-  if (newPass !== confirmPass) {
-    showError('Passwords do not match', 'confirmPasswordError');
-    return;
-  }
-
-  const result = await callAPI('updatePassword', {
-    phone: userData.phone,
-    newPassword: newPass
+  document.querySelectorAll('.view-toggle button').forEach(btn => {
+    btn.classList.remove('active');
+    if(btn.textContent.includes(mode.charAt(0).toUpperCase())) {
+      btn.classList.add('active');
+    }
   });
-
-  if (result.success) {
-    handleLogout();
-    alert('Password updated successfully!');
-  } else {
-    showError(result.message);
-  }
 }
 
 // ================= FORM VALIDATION =================
@@ -194,56 +134,13 @@ function validateEmail(email) {
   return regex.test(email);
 }
 
-function validateRegistrationForm() {
-  const phone = document.getElementById('regPhone').value;
-  const password = document.getElementById('regPassword').value;
-  const confirmPassword = document.getElementById('regConfirmPass').value;
-  const email = document.getElementById('regEmail').value;
-  const confirmEmail = document.getElementById('regConfirmEmail').value;
-
-  let isValid = true;
-  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-
-  if (!validatePhone(phone)) {
-    document.getElementById('phoneError').textContent = 'Invalid phone format';
-    isValid = false;
-  }
-
-  if (!validatePassword(password)) {
-    document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
-    isValid = false;
-  }
-
-  if (password !== confirmPassword) {
-    document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
-    isValid = false;
-  }
-
-  if (!validateEmail(email)) {
-    document.getElementById('emailError').textContent = 'Invalid email format';
-    isValid = false;
-  }
-
-  if (email !== confirmEmail) {
-    document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
-    isValid = false;
-  }
-
-  return isValid;
-}
-
 // ================= NAVIGATION & UTILITIES =================
 function safeRedirect(path) {
   try {
     const allowedPaths = [
-      'login.html',
-      'register.html',
-      'dashboard.html',
-      'forgot-password.html',
-      'password-reset.html',
-      'my-info.html',
-      'parcel-declaration.html',
-      'track-parcel.html'
+      'login.html', 'register.html', 'dashboard.html',
+      'forgot-password.html', 'password-reset.html',
+      'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
     ];
     
     if (!allowedPaths.includes(path)) throw new Error('Unauthorized path');
@@ -254,36 +151,18 @@ function safeRedirect(path) {
   }
 }
 
-function formatTrackingNumber(trackingNumber) {
-  return trackingNumber.replace(/\s/g, '').toUpperCase();
-}
-
-function validateTrackingNumber(trackingNumber) {
-  return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('ms-MY', {
-    style: 'currency',
-    currency: 'MYR',
-    minimumFractionDigits: 2
-  }).format(amount);
-}
-
-function formatDate(dateString) {
-  const options = { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Singapore'
-  };
-  return new Date(dateString).toLocaleDateString('en-MY', options);
-}
-
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
+  // Viewport meta tag for responsiveness
+  const meta = document.createElement('meta');
+  meta.name = 'viewport';
+  meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=1';
+  document.head.appendChild(meta);
+
+  // Initialize view toggle
+  initViewToggle();
+
+  // Session check
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
@@ -296,6 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Cleanup errors on navigation
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
