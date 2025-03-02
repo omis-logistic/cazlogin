@@ -73,6 +73,38 @@ function showError(message, targetId = 'error-message') {
   }, 5000);
 }
 
+function showLogin() {
+  safeRedirect('login.html');
+}
+
+function showRegistration() {
+  safeRedirect('register.html');
+}
+
+function safeRedirect(path) {
+  try {
+    const allowedPaths = [
+      'login.html',
+      'register.html',
+      'dashboard.html',
+      'forgot-password.html',
+      'password-reset.html',
+      'my-info.html',
+      'parcel-declaration.html',
+      'track-parcel.html'
+    ];
+    
+    if (!allowedPaths.includes(path)) {
+      throw new Error('Unauthorized redirect path');
+    }
+    
+    window.location.href = path;
+  } catch (error) {
+    console.error('Redirect error:', error);
+    showError('Navigation failed. Please try again.');
+  }
+}
+
 // Form validation utilities
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
