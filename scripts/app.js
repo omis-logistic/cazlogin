@@ -1,6 +1,6 @@
 // scripts/app.js
 // ================= GLOBAL CONFIGURATION =================
-const GAS_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpyz7_tIXc6mYXePcdCNKD0qxM5Ls1LkQTivADJW9t2UGh9nEHP83S87dvQZyFlnFF/exec';
 
 // ================= ERROR HANDLING SYSTEM =================
 function showError(message, targetId = 'error-message') {
