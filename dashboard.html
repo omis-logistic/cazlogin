@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <div class="thumbnail" onclick="showMyInfo(); return false;">
+    <h2>My Info</h2>
+    <p>View and update your personal information.</p>
+  </div>
+  
+  <div class="thumbnail" onclick="showParcelDeclaration(); return false;">
+    <h2>Submit Parcel Declaration</h2>
+    <p>Declare your parcel for customs clearance.</p>
+  </div>
+  
+  <div class="thumbnail" onclick="showTrackParcel(); return false;"> 
+    <h2>Track My Parcel</h2>
+    <p>Track the status of your parcel.</p>
+  </div>
+  
+  <button 
+    style="margin-top: 20px; background: #444" 
+    onclick="handleLogout(); return false;"
+  >
+    Logout
+  </button>
+</div>
+
+<style>
+  .dashboard-page {
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  .thumbnail {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-bottom: 20px;
+  }
+  
+  .thumbnail:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+  }
+  
+  .thumbnail h2 {
+    color: var(--gold);
+    margin-bottom: 10px;
+    font-size: 1.4em;
+  }
+  
+  .thumbnail p {
+    color: var(--text-light);
+    font-size: 0.9em;
+    opacity: 0.8;
+  }
+  
+  @media (max-width: 480px) {
+    .dashboard-page {
+      padding: 15px;
+    }
+    
+    .thumbnail {
+      padding: 15px;
+    }
+    
+    .thumbnail h2 {
+      font-size: 1.2em;
+    }
+    
+    .thumbnail p {
+      font-size: 0.8em;
+    }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome <span id="userPhone"></span></h1>
+    <!-- Dashboard content -->
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <script>
+    // Check session
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    if (!userData) window.location.href = 'login.html';
+    
+    document.getElementById('userPhone').textContent = userData.phone;
+
+    function logout() {
+      sessionStorage.removeItem('userData');
+      window.location.href = 'login.html';
+    }
+  </script>
+</body>
+</html>
