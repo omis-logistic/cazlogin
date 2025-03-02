@@ -7,20 +7,22 @@ const CONFIG = {
 
 // ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMobile = (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) // iPad detection
+  );
+  
+  const bodyClass = isMobile ? 'mobile-view' : 'desktop-view';
+  document.body.classList.add(bodyClass);
+  
   const viewport = document.querySelector('meta[name="viewport"]') || document.createElement('meta');
-  
-  if(isMobile) {
-    document.body.classList.add('mobile-view');
-    viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=1';
-  } else {
-    document.body.classList.add('desktop-view');
-    viewport.content = 'width=1200, initial-scale=1';
-  }
-  
   viewport.name = 'viewport';
-  if(!document.querySelector('meta[name="viewport"]')) {
-    document.head.appendChild(viewport);
+  viewport.content = isMobile 
+    ? 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+    : 'width=1200';
+  
+  if (!document.querySelector('meta[name="viewport"]')) {
+    document.head.prepend(viewport);
   }
 }
 
