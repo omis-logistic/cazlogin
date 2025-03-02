@@ -13,20 +13,21 @@
 
     .password-rules {
       font-size: 0.8em;
-      color: #c5a047;
+      color: var(--gold);
       margin: 5px 0 10px;
+      opacity: 0.8;
     }
 
     input[type="tel"],
     input[type="password"],
     input[type="email"] {
-      background: #2a2a2a;
-      border: 1px solid #c5a047;
-      color: white;
+      width: 100%;
       padding: 12px;
       margin: 8px 0;
+      background: #2a2a2a;
+      border: 1px solid var(--gold);
+      color: var(--text-light);
       border-radius: 5px;
-      width: 100%;
       transition: all 0.3s ease;
     }
 
@@ -52,6 +53,11 @@
         padding: 10px;
         font-size: 14px;
       }
+      
+      button {
+        padding: 10px;
+        font-size: 14px;
+      }
     }
   </style>
 </head>
@@ -60,120 +66,76 @@
     <h1>New Registration</h1>
     
     <div class="input-group">
-      <input type="tel" 
-             id="regPhone" 
-             placeholder="Phone (673/60 format)" 
-             pattern="^(673\d{7,}|60\d{9,})$" 
-             required>
+      <input type="tel" id="regPhone" placeholder="Phone (673/60 format)" 
+             pattern="^(673\d{7,}|60\d{9,})$" required>
       <div class="error-message" id="phoneError"></div>
     </div>
 
     <div class="input-group">
-      <input type="password" 
-             id="regPassword" 
-             placeholder="Create Password"
-             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" 
-             required>
-      <div class="password-rules">6+ characters, 1 uppercase letter, 1 number</div>
+      <input type="password" id="regPassword" placeholder="Create Password"
+             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" required>
+      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
       <div class="error-message" id="passError"></div>
     </div>
 
     <div class="input-group">
-      <input type="password" 
-             id="regConfirmPass" 
-             placeholder="Confirm Password" 
-             required>
+      <input type="password" id="regConfirmPass" placeholder="Confirm Password" required>
       <div class="error-message" id="confirmPassError"></div>
     </div>
 
     <div class="input-group">
-      <input type="email" 
-             id="regEmail" 
-             placeholder="Email Address" 
-             required>
+      <input type="email" id="regEmail" placeholder="Email Address" required>
       <div class="error-message" id="emailError"></div>
     </div>
 
     <div class="input-group">
-      <input type="email" 
-             id="regConfirmEmail" 
-             placeholder="Confirm Email" 
-             required>
+      <input type="email" id="regConfirmEmail" placeholder="Confirm Email" required>
       <div class="error-message" id="confirmEmailError"></div>
     </div>
 
-    <button onclick="handleRegistration()">Register</button>
-    <button class="secondary-btn" 
-            onclick="safeRedirect('login.html')"
-            style="margin-top: 10px;">
+    <button onclick="handleRegistration(); return false;">Register</button>
+    <button 
+      style="margin-top:10px; background: #444" 
+      onclick="showLogin(); return false;"
+    >
       Back to Login
     </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxwlxwU9CeOST3lV8fg53cdhdsxil_UwaFFNSkhbyXm_CGENFtsT_vU_yiZQtAYBrEx/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbw1VkhstHCVfkIzBNIVi7Ev9hLaFzdrM0Gn_q8kpviKRKHdiyY55PokWh0KG6xEYGEP/exec';
 
     function handleRegistration() {
-      // Clear previous errors
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    
+    if (!validateRegistrationForm()) return;
 
-      // Get form values
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
-      const confirmPassword = document.getElementById('regConfirmPass').value;
-      const email = document.getElementById('regEmail').value;
-      const confirmEmail = document.getElementById('regConfirmEmail').value;
+    // Get form data
+    const phone = document.getElementById('regPhone').value;
+    const password = document.getElementById('regPassword').value;
+    const email = document.getElementById('regEmail').value;
 
-      // Perform validation
-      let isValid = true;
+    // Create unique callback name
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
-      if (!validatePhone(phone)) {
-        document.getElementById('phoneError').textContent = 'Invalid phone format';
-        isValid = false;
+    window[callbackName] = (response) => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      
+      if (response.success) {
+        alert('Registration successful! Please login.');
+        window.location.href = 'login.html';
+      } else {
+        showError(response.message || 'Registration failed');
       }
+    };
 
-      if (!validatePassword(password)) {
-        document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number required';
-        isValid = false;
-      }
-
-      if (password !== confirmPassword) {
-        document.getElementById('confirmPassError').textContent = 'Passwords do not match';
-        isValid = false;
-      }
-
-      if (!validateEmail(email)) {
-        document.getElementById('emailError').textContent = 'Invalid email format';
-        isValid = false;
-      }
-
-      if (email !== confirmEmail) {
-        document.getElementById('confirmEmailError').textContent = 'Emails do not match';
-        isValid = false;
-      }
-
-      if (!isValid) return;
-
-      // Create JSONP request
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
-
-      window[callbackName] = function(response) {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          alert('Registration successful! Please login.');
-          safeRedirect('login.html');
-        } else {
-          showError(response.message || 'Registration failed');
-        }
-      };
-
-      document.body.appendChild(script);
-    }
+    document.body.appendChild(script);
+  }
+</script>
   </script>
 </body>
 </html>
