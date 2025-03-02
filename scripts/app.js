@@ -157,6 +157,22 @@ function validateTrackingNumber(trackingNumber) {
   return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
 }
 
+// Add to existing app.js functions
+function showForgotPassword() {
+  safeRedirect('forgot-password.html');
+}
+
+// Enhanced error handling
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  setTimeout(() => {
+    errorElement.style.display = 'none';
+  }, 5000);
+}
+
 // Currency formatting
 function formatCurrency(amount) {
   return new Intl.NumberFormat('ms-MY', {
