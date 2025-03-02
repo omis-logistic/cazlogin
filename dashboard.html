@@ -7,206 +7,167 @@
   <style>
     /* Dashboard-specific styles */
     .dashboard-page {
-      max-width: 600px;
+      max-width: 1200px;
       margin: 20px auto;
+    }
+
+    .thumbnail-container {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     }
 
     .thumbnail {
       background: rgba(255, 255, 255, 0.1);
       padding: 20px;
       border-radius: 10px;
-      margin: 15px 0;
       cursor: pointer;
-      transition: background 0.3s ease;
+      transition: all 0.3s ease;
+      border: 1px solid var(--gold);
     }
 
     .thumbnail:hover {
-      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(197, 160, 71, 0.2);
     }
 
     .thumbnail h2 {
-      color: #c5a047;
+      color: var(--gold);
       margin-bottom: 10px;
+      font-size: 1.4em;
     }
 
     .thumbnail p {
-      color: #ffffff;
-      font-size: 0.9em;
-    }
-
-    /* Welcome Modal Styles */
-    .welcome-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0,0,0,0.9);
-      z-index: 9999;
-      overflow: hidden;
-    }
-
-    .welcome-content {
-      background-color: #1a1a1a;
-      margin: 2% auto;
-      padding: 25px;
-      border: 2px solid var(--gold);
-      width: 95%;
-      max-width: 800px;
-      border-radius: 10px;
-      position: relative;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    .welcome-modal h2 {
-      color: var(--gold);
-      font-size: 1.8em;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .welcome-modal p, .welcome-modal ul {
-      margin-bottom: 15px;
-      line-height: 1.6;
+      color: var(--text-light);
       font-size: 0.95em;
+      opacity: 0.9;
     }
 
-    .welcome-modal strong {
-      color: var(--gold);
-    }
-
-    .welcome-modal ul {
-      padding-left: 20px;
-      margin: 10px 0;
-    }
-
-    .welcome-modal li {
-      margin-bottom: 8px;
-    }
-
-    .modal-footer {
-      text-align: center;
-      padding: 15px;
-      margin-top: 20px;
-    }
-
-    .close-modal {
-      color: var(--gold);
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-      background: rgba(0, 0, 0, 0.7);
-      padding: 12px 30px;
-      border-radius: 25px;
-      border: 1px solid var(--gold);
-      transition: all 0.3s ease;
-      margin: 0 auto;
-      display: inline-block;
-    }
-
-    .close-modal:hover {
-      background: var(--gold);
-      color: var(--dark-bg);
-    }
-
+    /* Mobile-specific adjustments */
     @media (max-width: 768px) {
-      .welcome-content {
-        margin: 5% auto;
+      .dashboard-page {
+        padding: 10px;
+      }
+      
+      .thumbnail {
+        margin: 10px 0;
         padding: 15px;
-        width: 90%;
       }
       
-      .welcome-modal h2 {
-        font-size: 1.4em;
-      }
-      
-      .welcome-modal p, .welcome-modal ul {
-        font-size: 0.9em;
+      .thumbnail h2 {
+        font-size: 1.2em;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Existing dashboard content remains unchanged -->
+  <div class="container dashboard-page">
+    <h1>Dashboard Pengguna</h1>
+    
+    <div class="thumbnail-container">
+      <div class="thumbnail" onclick="showMyInfo()">
+        <h2>📁 Maklumat Saya</h2>
+        <p>Lihat dan kemas kini maklumat peribadi anda</p>
+      </div>
+      
+      <div class="thumbnail" onclick="showParcelDeclaration()">
+        <h2>📦 Deklarasi Parcel</h2>
+        <p>Isytihar parcel untuk clearance kastam</p>
+      </div>
+      
+      <div class="thumbnail" onclick="showTrackParcel()">
+        <h2>🚚 Track Parcel</h2>
+        <p>Semak status parcel anda</p>
+      </div>
+    </div>
+    
+    <button class="logout-btn" onclick="handleLogout()">Log Keluar</button>
+  </div>
 
-  <!-- Updated Welcome Modal -->
+  <!-- Welcome Modal -->
   <div id="welcomeModal" class="welcome-modal">
     <div class="welcome-content">
       <h2>MAKLUMAN PENTING. SILA BACA</h2>
-      <p><strong>Tolong submit tracking details biskita seawalnya jika biskita ada mengunakan shipping address alamat kami di limbang. Tidak perlu menunggu kiriman dari pihak kami lagi.</strong></p>
       
-      <p>Sila check sea shipping, jika parcel sudah sampai Malaysia, perubahan tracking akan berlaku, sila update/submit tracking terkini yang telah sampai di Limbang.</p>
+      <div class="modal-section">
+        <p class="text-important">Tolong submit tracking details biskita seawalnya jika menggunakan alamat kami di Limbang. Tidak perlu menunggu kiriman dari pihak kami.</p>
+      </div>
 
-      <p><strong>Please do not key in any Tracking details that is not yours or your not sure about it please do ask admin to make sure about it.</strong></p>
+      <div class="modal-section warning">
+        <p class="text-important">Parcel yang tidak diisytihar akan ditinggalkan di storage. Risiko kehilangan adalah tinggi dan bukan tanggungjawab kami.</p>
+      </div>
 
-      <p><strong>Parcel Items not key-in will be left at storage. Parcel staying at storage can have high chance of lost. If it is lost, it is not our responsibility anymore.</strong></p>
+      <div class="modal-section">
+        <h3 class="gold-text">Peraturan Utama:</h3>
+        <ul class="guidelines">
+          <li>Pastikan semua details adalah betul dan tepat</li>
+          <li>Nombor telefon penerima mesti nombor Brunei</li>
+          <li>Untuk parcel multiple items, perlu breakdown lengkap</li>
+          <li>Harga perlu termasuk kos postage</li>
+          <li>Sediakan dokumen permit untuk barang terkawal</li>
+        </ul>
+      </div>
 
-      <ul>
-        <li>Pastikan Details adalah betul.</li>
-        <li>Buat details nama yg mudah difahami sahaja, tidak perlu panjang.</li>
-        <li>Nombor telefon penerima di Brunei, pihak kami akan hubungi.</li>
-        <li>Jika parcel dalam satu tracking mempunyai banyak keterangan item, sila senaraikan "breakdown" satu persatu termasuk harga & kuantiti.</li>
-        <li>Harga termasuk postage.</li>
-        <li>Item yang memerlukan permit(under control), sila sediakan semua document yg diperlukan.</li>
-      </ul>
+      <div class="modal-section">
+        <h3 class="gold-text">Untuk Kosmetik & Makanan:</h3>
+        <ul class="guidelines">
+          <li>Sertakan screenshot invoice</li>
+          <li>Nama penerima dan alamat mesti jelas</li>
+          <li>Gambar IC depan/belakang atau berikan kepada admin</li>
+          <li>Had harga $200 untuk kegunaan personal (maksimum 2KG)</li>
+        </ul>
+      </div>
 
-      <p>Untuk Cosmetics ,Supplements, Foods or Drinks.</p>
-      <ul>
-        <li>Screenshot invoice adalah dimestikan.</li>
-        <li>Pastikan butiran nama penerima dan summary shipping dapat dilihat dengan jelas.</li>
-        <li>Gambar IC depan & belakang atau kirimkan nombor IC dan alamat kepada admin.</li>
-        <li>Untuk bungkusan cosmetic, pastikan barangan bukan untuk dijual, hanya personal use kegunaan sendiri sahaja, limit harga tidak boleh melebihi $200, berat maksimum 2KG kebawah *kecuali biskita ada DPS permit dibawah syarikat sendiri.</li>
-      </ul>
-
-      <p>Untuk AITI,</p>
-      <ul>
-        <li>Kesemua barangan yang mempunyai Bluetooth atau Wireless RC car yg mempunyai "remote control", Handphone & laptop hendak lah memohon permit di AITI dahulu, kuantiti tidak boleh melebihi 5 unit.</li>
-        <li>Invoice</li>
-        <li>Gambar IC depan belakang.</li>
-        <li>Copy link dari Shopee atau Lazada.</li>
-      </ul>
-
-      <p>Untuk buku,</p>
-      <ul>
-        <li>Sediakan invoice.</li>
-        <li>Gambar IC.</li>
-      </ul>
-
-      <p><strong>● SILA SEMAK SEBELUM SUBMIT.</strong></p>
-      <p><strong>● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
-
-      <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
-
-      <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
+      <div class="modal-section warning">
+        <p class="text-important">● SILA SEMAK SEBELUM SUBMIT<br>
+        ● PASTIKAN SEMUA MAKLUMAT BETUL</p>
+      </div>
 
       <div class="modal-footer">
-        <span class="close-modal">SAYA TELAH MEMAHAMI</span>
+        <span class="close-modal">SAYA FAHAM & SETUJU</span>
       </div>
     </div>
   </div>
 
+  <script src="scripts/app.js"></script>
   <script>
     (function initDashboard() {
-      // Auto-detect mobile devices
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      document.body.classList.add(isMobile ? 'mobile-view' : 'desktop-view');
+      // Check session and redirect if needed
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      if (!userData) return safeRedirect('login.html');
+      if (userData.tempPassword) return safeRedirect('password-reset.html');
 
-      // Session check and modal display code remains same
-      // ...
+      // Show welcome modal once per session
+      const modal = document.getElementById('welcomeModal');
+      const closeBtn = document.querySelector('.close-modal');
       
-      // Modal display logic
       if (!sessionStorage.getItem('welcomeShown')) {
         document.body.style.overflow = 'hidden';
         modal.style.display = 'block';
         sessionStorage.setItem('welcomeShown', 'true');
       }
 
-      // Close modal handler
+      // Close modal handlers
       closeBtn.onclick = () => {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
+      }
+
+      window.onclick = (event) => {
+        if(event.target === modal) {
+          modal.style.display = 'none';
+          document.body.style.overflow = 'auto';
+        }
+      }
+
+      // Navigation functions
+      window.showMyInfo = () => safeRedirect('my-info.html');
+      window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
+      window.showTrackParcel = () => safeRedirect('track-parcel.html');
+      
+      window.handleLogout = () => {
+        sessionStorage.clear();
+        safeRedirect('login.html');
       }
     })();
   </script>
