@@ -58,6 +58,21 @@ function handleLogout() {
   }
 }
 
+function showForgotPassword() {
+  safeRedirect('forgot-password.html');
+}
+
+// Enhanced error handling
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  setTimeout(() => {
+    errorElement.style.display = 'none';
+  }, 5000);
+}
+
 // Form validation utilities
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
@@ -155,22 +170,6 @@ function formatTrackingNumber(trackingNumber) {
 
 function validateTrackingNumber(trackingNumber) {
   return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
-}
-
-// Add to existing app.js functions
-function showForgotPassword() {
-  safeRedirect('forgot-password.html');
-}
-
-// Enhanced error handling
-function showError(message, targetId = 'error-message') {
-  const errorElement = document.getElementById(targetId) || createErrorElement();
-  errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  
-  setTimeout(() => {
-    errorElement.style.display = 'none';
-  }, 5000);
 }
 
 // Currency formatting
