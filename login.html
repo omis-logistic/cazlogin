@@ -90,7 +90,7 @@
 
   <!-- JSONP Login Handler -->
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbztxfNs9W6XqSKPD5ACbo-qUzKZIg3C_RDGIaRqUFUZTohzZyLpnVOsMj2hoe53s357/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycby7M3sysN_GiuMMaYO32VQTUWvwHZ69H19YLfcCvMBZL6Wp8fESloKAL_QrzovwVtq0/exec';
 
     function handleLogin() {
       const phone = document.getElementById('phone').value;
@@ -126,6 +126,7 @@
       document.body.appendChild(script);
     }
 
+    // ======== ADD THESE FUNCTIONS ========
     function showRegistration() {
       window.location.href = 'register.html';
     }
@@ -133,6 +134,7 @@
     function showForgotPassword() {
       window.location.href = 'forgot-password.html';
     }
+    // =====================================
 
     function showError(message) {
       const errorElement = document.getElementById('error-message');
@@ -143,7 +145,6 @@
         errorElement.style.display = 'none';
       }, 5000);
     }
-
   </script>
 </body>
 </html>
