@@ -1,5 +1,5 @@
 // ================= CONFIGURATION =================
-const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwyT9hmNXxF0EplZIA4xeN7AVamn6IHA9kHZThteFHk1Q8sZs_zsFOzI9na_J51BxpL/exec';
+const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxKBgVJtXyVO6CKO8TqbCZ4l7IsZlmf-JbSjG8EG6YD6Kf-QQkN8zU67DdbVx8LKLcT/exec';
 let currentUser = {
   phone: '',
   email: '',
@@ -235,18 +235,19 @@ function handleLogout() {
 async function callBackend(action, data) {
   const params = new URLSearchParams();
   params.append('action', action);
-  
-  // Flatten all data to strings
   Object.entries(data).forEach(([key, value]) => {
     params.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
   });
 
   try {
     const response = await fetch(`${GAS_WEBAPP_URL}?${params.toString()}`);
-    return await response.json();
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const result = await response.json();
+    console.log('Backend Response:', result); // Debug log
+    return result;
   } catch (error) {
-    console.error('RAW ERROR:', error);
-    return { success: false, message: 'Network connection failed' };
+    console.error('API Call Failed:', error);
+    return { success: false, message: 'Network error. Please try again.' };
   }
 }
 
