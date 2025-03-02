@@ -5,145 +5,161 @@
   <title>Login - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
-    /* Additional inline styles specific to login page */
+    /* Mobile-first styles */
     .login-page {
-      max-width: 400px;
-      margin: 20px auto;
-      animation: fadeIn 0.3s ease-in;
+      width: 100%;
+      max-width: 100%;
+      padding: 0;
+      margin: 0;
     }
 
-    .login-page input {
+    .login-container {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1.5rem;
+      border-radius: 10px;
+      width: 95%;
+      margin: 1rem auto;
+      box-shadow: 0 0 15px rgba(197, 160, 71, 0.3);
+    }
+
+    /* Desktop overrides */
+    body.desktop-view .login-container {
+      max-width: 400px;
+      padding: 2rem;
+      margin: 2rem auto;
+    }
+
+    input {
       background: #333;
       border: 1px solid var(--gold);
       color: var(--text-light);
-      transition: border-color 0.3s ease;
+      font-size: 16px;
+      margin: 1rem 0;
+      width: 100%;
+      padding: 12px;
+      border-radius: 5px;
     }
 
-    .login-page input:focus {
-      border-color: #d4af37;
-      outline: none;
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 0.5rem 0;
+      font-size: 16px;
+      min-height: 44px;
+    }
+
+    .auth-links {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
     }
 
     .secondary-btn {
       background: transparent !important;
       border: 1px solid var(--gold) !important;
       color: var(--gold) !important;
-      transition: all 0.3s ease;
     }
 
-    .secondary-btn:hover {
-      background: var(--gold) !important;
-      color: var(--dark-bg) !important;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 480px) {
-      .login-page {
-        padding: 15px;
-        margin: 10px;
+    @media (max-width: 768px) {
+      body.mobile-view {
+        padding: 10px !important;
       }
+      
+      body.mobile-view .login-container {
+        padding: 1rem;
+        margin: 10px auto;
+      }
+      
+      body.mobile-view input {
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
 
-      button {
-        font-size: 14px;
-        padding: 10px;
+    @media (min-width: 769px) {
+      .login-page {
+        padding: 20px;
       }
     }
   </style>
 </head>
 <body>
   <div class="container login-page">
-    <h1>Cahaya Az Zahra Enterprise</h1>
-    
-    <div class="input-group">
-      <input type="tel" 
-             id="phone" 
-             placeholder="Phone Number"
-             pattern="^(673\d{7,}|60\d{9,})$" 
-             required>
-    </div>
-    
-    <div class="input-group">
-      <input type="password" 
-             id="password" 
-             placeholder="Password" 
-             required>
-    </div>
-    
-    <button onclick="handleLogin()">Login</button>
-    
-    <div style="margin-top: 20px; text-align: center;">
-      <button onclick="showRegistration()">Create Account</button>
-      <button class="secondary-btn" 
-              onclick="showForgotPassword()"
-              style="margin-top: 10px;">
-        Forgot Password?
-      </button>
+    <div class="login-container">
+      <h1>Cahaya Az Zahra Enterprise</h1>
+      
+      <div class="input-group">
+        <input type="tel" 
+               id="phone" 
+               placeholder="Nombor Telefon"
+               pattern="^(673\d{7,}|60\d{9,})$" 
+               required>
+      </div>
+      
+      <div class="input-group">
+        <input type="password" 
+               id="password" 
+               placeholder="Kata Laluan" 
+               required>
+      </div>
+      
+      <button onclick="handleLogin()">Log Masuk</button>
+      
+      <div class="auth-links">
+        <button onclick="showRegistration()">Daftar Akaun Baru</button>
+        <button class="secondary-btn" 
+                onclick="showForgotPassword()">
+          Lupa Kata Laluan?
+        </button>
+      </div>
     </div>
   </div>
 
   <!-- Error message container -->
-  <div id="error-message" class="error-message" style="display: none; margin-top: 15px;"></div>
+  <div id="error-message" class="error-message" style="display: none;"></div>
 
-  <!-- JSONP Login Handler -->
+  <script src="scripts/app.js"></script>
   <script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx8OqVQ6NuIDfZFgfrDHk0mUzUogWKTgx2EaEOJ27gtcnaYQp2iQUU_ygIcDBbrBZoJ/exec';
+    // Mobile view initialization
+    document.addEventListener('DOMContentLoaded', () => {
+      // Auto-focus prevention for better mobile UX
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        input.addEventListener('focus', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      });
 
+      // Viewport height adjustment
+      const setVh = () => {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${vh}px`);
+      };
+      setVh();
+      window.addEventListener('resize', setVh);
+    });
+
+    // Login functions
     function handleLogin() {
       const phone = document.getElementById('phone').value;
       const password = document.getElementById('password').value;
 
       if (!phone || !password) {
-        showError('Please fill in all fields');
+        showError('Sila isi semua ruangan');
         return;
       }
 
-      // Create unique callback name
-      const callbackName = `jsonp_${Date.now()}`;
-      
-      // Create script tag
-      const script = document.createElement('script');
-      script.src = `${GAS_URL}?phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
-
-      // Set up callback
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          sessionStorage.setItem('userData', JSON.stringify(response));
-          window.location.href = response.tempPassword 
-            ? 'password-reset.html' 
-            : 'dashboard.html';
-        } else {
-          showError(response.message || 'Login failed');
-        }
-      };
-
-      document.body.appendChild(script);
+      // Call API through app.js handler
+      window.handleLogin();
     }
 
-    // ======== ADD THESE FUNCTIONS ========
     function showRegistration() {
-      window.location.href = 'register.html';
+      window.safeRedirect('register.html');
     }
 
     function showForgotPassword() {
-      window.location.href = 'forgot-password.html';
-    }
-    // =====================================
-
-    function showError(message) {
-      const errorElement = document.getElementById('error-message');
-      errorElement.textContent = message;
-      errorElement.style.display = 'block';
-      
-      setTimeout(() => {
-        errorElement.style.display = 'none';
-      }, 5000);
+      window.safeRedirect('forgot-password.html');
     }
   </script>
 </body>
