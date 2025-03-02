@@ -1,16 +1,13 @@
 // scripts/app.js
-// ================= GLOBAL CONFIGURATION =================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbxpyz7_tIXc6mYXePcdCNKD0qxM5Ls1LkQTivADJW9t2UGh9nEHP83S87dvQZyFlnFF/exec';
-
 // ================= ERROR HANDLING SYSTEM =================
-function showError(message, targetId = 'error-message') {
-  const errorElement = document.getElementById(targetId) || createErrorElement();
+function showError(message, duration = 5000) {
+  const errorElement = document.getElementById('error-message') || createErrorElement();
   errorElement.textContent = message;
   errorElement.style.display = 'block';
   
   setTimeout(() => {
     errorElement.style.display = 'none';
-  }, 5000);
+  }, duration);
 }
 
 function createErrorElement() {
@@ -38,13 +35,13 @@ function checkSession() {
   try {
     const userData = JSON.parse(sessionStorage.getItem('userData'));
     if (!userData) {
-      safeRedirect('login.html');
+      window.location.href = 'login.html';
       return null;
     }
     return userData;
   } catch (error) {
     console.error('Session check error:', error);
-    safeRedirect('login.html');
+    window.location.href = 'login.html';
     return null;
   }
 }
@@ -52,44 +49,11 @@ function checkSession() {
 function handleLogout() {
   try {
     sessionStorage.removeItem('userData');
-    safeRedirect('login.html');
+    window.location.href = 'login.html';
   } catch (error) {
     console.error('Logout error:', error);
     showError('Failed to logout properly');
   }
-}
-
-// ================= NAVIGATION CONTROL =================
-function safeRedirect(path) {
-  try {
-    const allowedPaths = [
-      'login.html',
-      'register.html',
-      'dashboard.html',
-      'forgot-password.html',
-      'password-reset.html',
-      'my-info.html',
-      'parcel-declaration.html',
-      'track-parcel.html'
-    ];
-    
-    if (!allowedPaths.includes(path)) {
-      throw new Error('Unauthorized redirect path');
-    }
-    
-    window.location.href = path;
-  } catch (error) {
-    console.error('Redirect error:', error);
-    showError('Navigation failed. Please try again.');
-  }
-}
-
-function showLogin() {
-  safeRedirect('login.html');
-}
-
-function showRegistration() {
-  safeRedirect('register.html');
 }
 
 // ================= FORM VALIDATION UTILITIES =================
@@ -108,62 +72,35 @@ function validateEmail(email) {
   return regex.test(email);
 }
 
-// ================= PASSWORD RECOVERY HANDLER =================
-function handlePasswordRecovery() {
-  const phone = document.getElementById('recoveryPhone').value;
-  const email = document.getElementById('recoveryEmail').value;
-
-  // Clear previous errors
-  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-
-  // Validate inputs
-  let isValid = true;
-  if (!validatePhone(phone)) {
-    showError('Invalid phone format', 'phoneRecoveryError');
-    isValid = false;
-  }
-  if (!validateEmail(email)) {
-    showError('Invalid email format', 'emailRecoveryError');
-    isValid = false;
-  }
-  if (!isValid) return;
-
-  // JSONP implementation
-  const callbackName = `jsonp_${Date.now()}`;
-  const script = document.createElement('script');
-  script.src = `${GAS_URL}?action=initiatePasswordReset&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
-
-  window[callbackName] = function(response) {
-    delete window[callbackName];
-    document.body.removeChild(script);
+// ================= SAFE REDIRECT FUNCTION =================
+function safeRedirect(path) {
+  try {
+    const allowedPaths = [
+      'login.html',
+      'dashboard.html',
+      'password-reset.html',
+      'my-info.html',
+      'parcel-declaration.html',
+      'track-parcel.html'
+    ];
     
-    if (response.success) {
-      alert('Temporary password sent! Check your email.');
-      safeRedirect('login.html');
-    } else {
-      showError(response.message || 'Password recovery failed');
+    if (!allowedPaths.includes(path)) {
+      throw new Error('Unauthorized redirect path');
     }
-  };
-
-  document.body.appendChild(script);
+    
+    window.location.href = path;
+  } catch (error) {
+    console.error('Redirect error:', error);
+    showError('Unable to complete navigation');
+  }
 }
 
-// ================= INITIALIZATION & EVENT HANDLERS =================
+// ================= INITIALIZATION CHECKS =================
 document.addEventListener('DOMContentLoaded', () => {
-  const publicPages = [
-    'login.html',
-    'register.html',
-    'forgot-password.html'
-  ];
-  
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
-
-  if (!isPublicPage) {
+  if (!window.location.pathname.includes('login.html')) {
     checkSession();
   }
-
+  
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
