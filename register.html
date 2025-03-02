@@ -187,6 +187,36 @@
     function showLogin() {
       window.location.href = 'login.html';
     }
+
+    function showError(message) {
+      const errorElement = document.getElementById('error-message') || createErrorElement();
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+      
+      setTimeout(() => {
+        errorElement.style.display = 'none';
+      }, 5000);
+    }
+
+    function createErrorElement() {
+      const errorDiv = document.createElement('div');
+      errorDiv.id = 'error-message';
+      errorDiv.className = 'error-message';
+      errorDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 15px;
+        background: #ff4444dd;
+        color: white;
+        border-radius: 5px;
+        z-index: 1000;
+        display: none;
+      `;
+      document.body.prepend(errorDiv);
+      return errorDiv;
+    }
   </script>
 </body>
 </html>
