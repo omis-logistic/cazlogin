@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Cahaya Az Zahra</title>
+  <style>
+  .login-page {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+  
+  /* Updated secondary button styling */
+  .secondary-btn {
+    background: transparent !important;
+    border: 1px solid var(--gold) !important;
+    color: var(--gold) !important;
+    transition: all 0.3s ease;
+  }
+
+  .secondary-btn:hover {
+    background: var(--gold) !important;
+    color: var(--dark-bg) !important;
+  }
+
+  .input-group input {
+    background: #333;
+    border: 1px solid var(--gold);
+    color: var(--text-light);
+    transition: border-color 0.3s ease;
+  }
+  
+  .input-group input:focus {
+    border-color: #d4af37;
+    outline: none;
+  }
+  
+  @media (max-width: 480px) {
+    .login-page {
+      padding: 15px;
+      margin: 10px;
+    }
+    
+    button {
+      font-size: 14px;
+      padding: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cahaya Az Zahra Enterprise</h1>
+    <div class="input-group">
+      <input type="tel" id="phone" placeholder="Phone Number" 
+             pattern="^(673\d{7,}|60\d{9,})$" required>
+    </div>
+    <div class="input-group">
+      <input type="password" id="password" placeholder="Password" required>
+    </div>
+    <button onclick="handleLogin()">Login</button>
+    <div style="margin-top: 20px; text-align: center;">
+      <button onclick="location.href='register.html'">Create Account</button>
+      <button class="secondary-btn" onclick="location.href='forgot-password.html'">
+        Forgot Password?
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const GAS_URL = 'YOUR_GAS_WEB_APP_URL'; // Replace with your deployment URL
+
+    function handleLogin() {
+      const phone = document.getElementById('phone').value;
+      const password = document.getElementById('password').value;
+
+      fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'processLogin',
+          phone: phone,
+          password: password
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Store session data
+          sessionStorage.setItem('userData', JSON.stringify({
+            phone: data.phone,
+            email: data.email,
+            tempPassword: data.tempPassword
+          }));
+          
+          // Redirect based on temp password status
+          if (data.tempPassword) {
+            window.location.href = 'password-reset.html';
+          } else {
+            window.location.href = 'dashboard.html';
+          }
+        } else {
+          alert(data.message || 'Login failed');
+        }
+      })
+      .catch(error => {
+        alert('Error: ' + error.message);
+      });
+    }
+  </script>
+</body>
+</html>
