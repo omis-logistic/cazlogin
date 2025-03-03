@@ -65,6 +65,8 @@
       padding: 25px;
       position: relative;
       color: var(--text-light);
+      overflow: hidden;
+      box-shadow: 0 0 15px rgba(197, 160, 71, 0.2);
     }
 
     .gold-text {
@@ -73,14 +75,17 @@
     }
 
     .modal-section {
-      margin: 15px 0;
-      padding: 10px;
+      margin: 15px -5px;
+      padding: 15px 20px;
       background: rgba(255,255,255,0.05);
       border-radius: 5px;
+      position: relative;
+      border: 1px solid rgba(197, 160, 71, 0.1);
     }
 
     .guidelines {
-      padding-left: 20px;
+      padding-left: 15px;
+      padding-right: 5px;
       margin: 10px 0;
     }
 
@@ -105,6 +110,12 @@
       opacity: 0.9;
     }
 
+    strong.gold-text {
+      display: block;
+      margin: 0 -5px 10px -5px;
+      padding: 0 5px;
+    }
+
     /* Mobile Optimization */
     @media (max-width: 768px) {
       .dashboard-page {
@@ -124,11 +135,12 @@
         width: 95%;
         padding: 15px;
         margin: 10px auto;
+        border-width: 1.5px;
       }
       
       .modal-section {
-        margin: 10px 0;
-        padding: 8px;
+        margin: 10px -3px;
+        padding: 10px 15px;
       }
       
       .guidelines {
@@ -141,7 +153,7 @@
         font-size: 1em;
       }
     }
-  </style>
+</style>
 </head>
 <body>
   <div class="container dashboard-page">
@@ -222,7 +234,7 @@
 
       <div class="modal-section warning">
         <p><strong class="gold-text">● SILA SEMAK SEBELUM SUBMIT.</strong></p>
-        <p><strong class="gold-text">● PASTIKAN SEMUA KETERANGAN</strong></p>
+        <p><strong class="gold-text">● PASTIKAN SEMUA KETERANGAN ADALAH BETUL.</strong></p>
         <p>Note: In completing this declaration, units and items for making an untrue or incorrect declaration will be taken risk by own consignee.</p>
         <p>Undeclared parcel will be hold in Limbang for anyone that did not provide their detail on time. Kindly please cooperate, Thank you.😊</p>
       </div>
