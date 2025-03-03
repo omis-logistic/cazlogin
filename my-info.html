@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>My Info - Cahaya Az Zahra Enterprise</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .my-info-page {
+      max-width: 500px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    #changePasswordSection,
+    #changeEmailSection {
+      border-left: 3px solid var(--gold);
+      padding-left: 15px;
+      margin: 15px 0;
+      overflow: hidden;
+      transition: all 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @media (max-width: 480px) {
+      .my-info-page {
+        padding: 15px;
+      }
+      
+      #changePasswordSection,
+      #changeEmailSection {
+        padding-left: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container my-info-page">
+    <h1>My Info</h1>
+    
+    <div class="input-group">
+      <input type="tel" id="infoPhone" placeholder="Phone Number" readonly>
+    </div>
+    
+    <div class="input-group">
+      <p>Registered Email: <span id="currentEmail" class="gold-text"></span></p>
+    </div>
+
+    <!-- Password Change Section -->
+    <div class="input-group">
+      <button id="changePassBtn" class="secondary-btn">
+        Change Password
+      </button>
+    </div>
+    
+    <div class="input-group" id="changePasswordSection" style="display: none;">
+      <input type="password" id="currentPassword" placeholder="Current Password" required>
+      <div class="error-message" id="currentPasswordError"></div>
+      
+      <input type="password" id="newPassword" placeholder="New Password" 
+             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" required>
+      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+      <div class="error-message" id="newPasswordError"></div>
+      
+      <input type="password" id="repeatNewPassword" placeholder="Repeat New Password" required>
+      <div class="error-message" id="repeatNewPasswordError"></div>
+      
+      <button id="savePassBtn" class="gold-btn">Save New Password</button>
+    </div>
+
+    <!-- Email Change Section -->
+    <div class="input-group">
+      <button id="changeEmailBtn" class="secondary-btn">
+        Change Email Address
+      </button>
+    </div>
+    
+    <div class="input-group" id="changeEmailSection" style="display: none;">
+      <input type="password" id="verifyPassword" placeholder="Verify Current Password" required>
+      <div class="error-message" id="verifyPasswordError"></div>
+      
+      <input type="email" id="newEmail" placeholder="New Email Address" required>
+      <div class="error-message" id="newEmailError"></div>
+      
+      <input type="email" id="repeatNewEmail" placeholder="Repeat New Email Address" required>
+      <div class="error-message" id="repeatNewEmailError"></div>
+      
+      <button id="saveEmailBtn" class="gold-btn">Save New Email</button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <button class="secondary-btn" onclick="safeRedirect('dashboard.html')">
+      Back to Dashboard
+    </button>
+    <button class="secondary-btn" onclick="handleLogout()" style="margin-top: 10px;">
+      Logout
+    </button>
+  </div>
+
+  <script src="scripts/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = checkSession();
+      if(!userData) return safeRedirect('login.html');
+
+      // Populate user info
+      document.getElementById('infoPhone').value = userData.phone;
+      document.getElementById('currentEmail').textContent = userData.email;
+
+      // Password Section
+      const passSection = document.getElementById('changePasswordSection');
+      document.getElementById('changePassBtn').addEventListener('click', () => {
+        passSection.style.display = passSection.style.display === 'none' ? 'block' : 'none';
+      });
+
+      document.getElementById('savePassBtn').addEventListener('click', handleChangePassword);
+
+      // Email Section
+      const emailSection = document.getElementById('changeEmailSection');
+      document.getElementById('changeEmailBtn').addEventListener('click', () => {
+        emailSection.style.display = emailSection.style.display === 'none' ? 'block' : 'none';
+      });
+
+      document.getElementById('saveEmailBtn').addEventListener('click', handleChangeEmail);
+    });
+
+    async function handleChangePassword() {
+      clearErrors();
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      
+      const currentPass = document.getElementById('currentPassword').value;
+      const newPass = document.getElementById('newPassword').value;
+      const repeatPass = document.getElementById('repeatNewPassword').value;
+
+      // Validation
+      if(!currentPass) return showError('Current password required', 'currentPasswordError');
+      if(!validatePassword(newPass)) return showError('Invalid password format', 'newPasswordError');
+      if(newPass !== repeatPass) return showError('Passwords do not match', 'repeatNewPasswordError');
+
+      try {
+        const result = await callAPI('updatePassword', {
+          phone: userData.phone,
+          currentPassword: currentPass,
+          newPassword: newPass
+        });
+
+        if(result.success) {
+          alert('Password updated successfully!');
+          safeRedirect('dashboard.html');
+        } else {
+          showError(result.message || 'Password update failed');
+        }
+      } catch(error) {
+        showError('Network error - please try again');
+      }
+    }
+
+    async function handleChangeEmail() {
+      clearErrors();
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      
+      const currentPass = document.getElementById('verifyPassword').value;
+      const newEmail = document.getElementById('newEmail').value;
+      const repeatEmail = document.getElementById('repeatNewEmail').value;
+
+      // Validation
+      if(!currentPass) return showError('Current password required', 'verifyPasswordError');
+      if(!validateEmail(newEmail)) return showError('Invalid email format', 'newEmailError');
+      if(newEmail !== repeatEmail) return showError('Emails do not match', 'repeatNewEmailError');
+
+      try {
+        const result = await callAPI('updateEmail', {
+          phone: userData.phone,
+          currentPassword: currentPass,
+          newEmail: newEmail.toLowerCase().trim()
+        });
+
+        if(result.success) {
+          // Update session data
+          userData.email = newEmail;
+          sessionStorage.setItem('userData', JSON.stringify(userData));
+          alert('Email updated successfully!');
+          safeRedirect('dashboard.html');
+        } else {
+          showError(result.message || 'Email update failed');
+        }
+      } catch(error) {
+        showError('Network error - please try again');
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+    }
+  </script>
+</body>
+</html>
