@@ -202,41 +202,71 @@
     });
 
     // Main submission handler
-    async function handleParcelSubmission() {
-        const userData = JSON.parse(sessionStorage.getItem('userData'));
-        if (!userData) return safeRedirect('login.html');
+    function handleParcelSubmission() {
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      if (!userData) return safeRedirect('login.html');
 
-        clearErrors();
-        const formData = getFormData();
-        const validation = validateForm(formData);
-        
-        if (!validation.isValid) {
-            showFormErrors(validation.errors);
-            return;
-        }
+      clearErrors();
+      const formData = getFormData();
+      const validation = validateForm(formData);
+      
+      if (!validation.isValid) {
+        showFormErrors(validation.errors);
+        return;
+      }
 
-        try {
-            let files = [];
-            if (validation.requiresInvoice || document.getElementById('invoiceFiles').files.length > 0) {
-                files = await handleFileUpload(document.getElementById('invoiceFiles').files);
-                if (!files) return;
-            }
+      // JSONP implementation matching register.html pattern
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams();
+      
+      // Build parameters matching register.html's format
+      params.append('action', 'submitParcelDeclaration');
+      params.append('data', JSON.stringify(formData));
+      params.append('phone', userData.phone);
 
-            const result = await callAPI('submitParcelDeclaration', {
-                data: formData,
-                filesBase64: files
-            });
+      // File handling matching existing pattern
+      const fileInput = document.getElementById('invoiceFiles');
+      if (fileInput.files.length > 0) {
+        Promise.all(Array.from(fileInput.files).map(file => 
+          readFileAsBase64(file)
+        )).then(files => {
+          params.append('filesBase64', JSON.stringify(files.map((b64, i) => ({
+            name: fileInput.files[i].name,
+            type: fileInput.files[i].type,
+            base64: b64
+          }))));
+          
+          executeRequest(params, callbackName, script);
+        }).catch(error => {
+          showError('File processing error: ' + error.message);
+        });
+      } else {
+        executeRequest(params, callbackName, script);
+      }
+    }
 
-            if (result.success) {
-                alert('Declaration submitted successfully!');
-                safeRedirect('dashboard.html');
-            } else {
-                showError(result.message || 'Submission failed. Please try again.');
-            }
-        } catch (error) {
-            console.error('Submission Error:', error);
-            showError(error.message || 'Network error - please check your connection');
-        }
+    // Shared request execution logic
+    function executeRequest(params, callbackName, script) {
+      script.src = `${CONFIG.GAS_URL}?${params.toString()}&callback=${callbackName}`;
+      
+      window[callbackName] = response => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+      
+      document.body.appendChild(script);
+    }
+
+    // Response handling matching register.html pattern
+    function handleSubmissionResponse(response) {
+      if (response.success) {
+        alert('Declaration submitted successfully!');
+        safeRedirect('dashboard.html');
+      } else {
+        showError(response.message || 'Submission failed. Please try again.');
+      }
     }
 
     // Get form data as object
