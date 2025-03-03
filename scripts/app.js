@@ -6,23 +6,43 @@ const CONFIG = {
 };
 
 async function updateUserPassword(currentPassword, newPassword, confirmPassword) {
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-  return await callAPI('updatePassword', {
-    phone: userData.phone,
-    currentPassword: currentPassword,
-    newPassword: newPassword,
-    confirmPassword: confirmPassword
-  });
+  try {
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'updatePassword',
+        phone: userData.phone,
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, message: 'Network error' };
+  }
 }
 
 async function updateUserEmail(currentPassword, newEmail, confirmEmail) {
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-  return await callAPI('updateEmail', {
-    phone: userData.phone,
-    currentPassword: currentPassword,
-    newEmail: newEmail,
-    confirmEmail: confirmEmail
-  });
+  try {
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'updateEmail',
+        phone: userData.phone,
+        currentPassword: currentPassword,
+        newEmail: newEmail,
+        confirmEmail: confirmEmail
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    return { success: false, message: 'Network error' };
+  }
 }
 
 // ================= VIEWPORT MANAGEMENT =================
