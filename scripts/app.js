@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzweYKHs1QpPnhtTZkICJAs434FeiWf0KWNnl8O4tBFNcWMXmZLZ72gXR1YfLWB5eVM/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxrq9LwaW8Z_4JEzx3BZDj_b0L6fDBO-faTKlo0xNcFB_gGImRjrHs8ga1Zt9CflsVi/exec',
   SESSION_TIMEOUT: 3600 // 1 hour in seconds
 };
 
@@ -108,6 +108,7 @@ function checkSession() {
     return null;
   }
 
+  // Update activity timestamp
   localStorage.setItem('lastActivity', Date.now());
   return JSON.parse(sessionData);
 }
@@ -190,24 +191,34 @@ async function handleRegistration() {
 async function handlePasswordRecovery() {
   const phone = document.getElementById('recoveryPhone').value.trim();
   const email = document.getElementById('recoveryEmail').value.trim();
-  
+
+  // Add validation
   if (!validatePhone(phone)) {
     showError('Invalid phone format', 'phoneRecoveryError');
     return;
   }
-  
-  if (!validateEmail(email)) {
-    showError('Invalid email format', 'emailRecoveryError');
-    return;
-  }
 
-  const result = await callAPI('initiatePasswordReset', { phone, email });
-  
-  if (result.success) {
-    alert('Temporary password sent to your email!');
-    safeRedirect('login.html');
-  } else {
-    showError(result.message);
+  try {
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'initiatePasswordReset',
+        phone: phone,
+        email: email
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Temporary password sent! Check your email.');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message);
+    }
+  } catch (error) {
+    showError('Network error - please try again');
   }
 }
 
