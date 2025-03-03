@@ -146,6 +146,26 @@ async function handleRegistration() {
   }
 }
 
+async function updateUserPassword(currentPassword, newPassword, confirmPassword) {
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+  return await callAPI('updatePassword', {
+    phone: userData.phone,
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+    confirmPassword: confirmPassword
+  });
+}
+
+async function updateUserEmail(currentPassword, newEmail, confirmEmail) {
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+  return await callAPI('updateEmail', {
+    phone: userData.phone,
+    currentPassword: currentPassword,
+    newEmail: newEmail,
+    confirmEmail: confirmEmail
+  });
+}
+
 // ================= PASSWORD MANAGEMENT =================
 async function handlePasswordRecovery() {
   const phone = document.getElementById('recoveryPhone').value.trim();
