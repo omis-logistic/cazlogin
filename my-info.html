@@ -179,6 +179,62 @@
     function clearErrors() {
         document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
     }
+async function handleChangePassword() {
+  clearErrors();
+  
+  const currentPass = document.getElementById('currentPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const repeatPass = document.getElementById('repeatNewPassword').value;
+
+  // Client-side validation
+  if (!currentPass) return showError('Current password required', 'currentPasswordError');
+  if (!validatePassword(newPass)) return showError('Invalid password format', 'newPasswordError');
+  if (newPass !== repeatPass) return showError('Passwords do not match', 'repeatNewPasswordError');
+
+  try {
+    const result = await updateUserPassword(currentPass, newPass, repeatPass);
+    
+    if (result.success) {
+      alert('Password updated! Please login again.');
+      handleLogout();
+    } else {
+      showError(result.message || 'Password update failed');
+    }
+  } catch (error) {
+    showError('Connection error - please check network');
+  }
+}
+
+async function handleChangeEmail() {
+  clearErrors();
+  
+  const currentPass = document.getElementById('verifyPassword').value;
+  const newEmail = document.getElementById('newEmail').value;
+  const repeatEmail = document.getElementById('repeatNewEmail').value;
+
+  // Client-side validation
+  if (!currentPass) return showError('Current password required', 'verifyPasswordError');
+  if (!validateEmail(newEmail)) return showError('Invalid email format', 'newEmailError');
+  if (newEmail !== repeatEmail) return showError('Emails do not match', 'repeatNewEmailError');
+
+  try {
+    const result = await updateUserEmail(currentPass, newEmail, repeatEmail);
+    
+    if (result.success) {
+      // Update session data
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      userData.email = newEmail;
+      sessionStorage.setItem('userData', JSON.stringify(userData));
+      alert('Email updated successfully!');
+      safeRedirect('dashboard.html');
+    } else {
+      showError(result.message || 'Email update failed');
+    }
+  } catch (error) {
+    showError('Connection error - please check network');
+  }
+}
+    
 </script>
 </body>
 </html>
