@@ -1,59 +1,20 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxfmRkpAYD1gtauYoVZaxsd_LvJ54CJnsYAiav5H5HEhBPrN1pNvL-6BAHjWoj8hDiD/exec',
-  SESSION_TIMEOUT: 3600 // 1 hour in seconds
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzf6wZpOaK433R-ZSA4Vi-9WiDTILCpdRabp_aukJtBaHrLHpn1DfYdE_seGLOwnIwx/exec',
+  SESSION_TIMEOUT: 3600, // 1 hour in seconds
+  MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+  ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
 };
-
-async function updateUserPassword(currentPassword, newPassword, confirmPassword) {
-  try {
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        action: 'updatePassword',
-        phone: userData.phone,
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-        confirmPassword: confirmPassword
-      })
-    });
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: 'Network error' };
-  }
-}
-
-async function updateUserEmail(currentPassword, newEmail, confirmEmail) {
-  try {
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        action: 'updateEmail',
-        phone: userData.phone,
-        currentPassword: currentPassword,
-        newEmail: newEmail,
-        confirmEmail: confirmEmail
-      })
-    });
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: 'Network error' };
-  }
-}
 
 // ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
   const isMobile = (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) // iPad detection
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   );
   
-  const bodyClass = isMobile ? 'mobile-view' : 'desktop-view';
-  document.body.classList.add(bodyClass);
+  document.body.classList.add(isMobile ? 'mobile-view' : 'desktop-view');
   
   const viewport = document.querySelector('meta[name="viewport"]') || document.createElement('meta');
   viewport.name = 'viewport';
@@ -108,9 +69,16 @@ function checkSession() {
     return null;
   }
 
-  // Update activity timestamp
   localStorage.setItem('lastActivity', Date.now());
-  return JSON.parse(sessionData);
+  const userData = JSON.parse(sessionData);
+  
+  // Force password reset if using temporary password
+  if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+    handleLogout();
+    return null;
+  }
+
+  return userData;
 }
 
 function handleLogout() {
@@ -125,46 +93,78 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-async function callAPI(action, payload = {}) {
+async function callAPI(action, payload = {}, method = 'auto') {
   try {
-    const isGetRequest = ['getParcelData', 'processLogin'].includes(action);
+    const isGetRequest = method === 'GET' || (method === 'auto' && 
+      ['getParcelData', 'processLogin'].includes(action));
+    
+    const params = new URLSearchParams();
+    let url = CONFIG.GAS_URL;
     
     if (isGetRequest) {
-      const params = new URLSearchParams({...payload, action});
-      const response = await fetch(`${CONFIG.GAS_URL}?${params}`);
-      return await response.json();
-    } else {
-      const response = await fetch(CONFIG.GAS_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({action, ...payload})
+      params.append('action', action);
+      Object.entries(payload).forEach(([key, value]) => {
+        params.append(key, value);
       });
-      return await response.json();
+      url += `?${params.toString()}`;
     }
+
+    const response = await fetch(url, {
+      method: isGetRequest ? 'GET' : 'POST',
+      headers: isGetRequest ? {} : {'Content-Type': 'application/json'},
+      body: isGetRequest ? null : JSON.stringify({ action, ...payload })
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    
+    // Handle session expiration
+    if (data.message?.includes('session')) {
+      handleLogout();
+      return { success: false, message: 'Session expired' };
+    }
+    
+    return data;
   } catch (error) {
-    showError(`API Error: ${error.message}`);
+    console.error('API Error:', error);
+    showError(`Network Error: ${error.message}`);
     return { success: false, message: 'Network error' };
   }
 }
 
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
-  const phone = document.getElementById('phone').value;
+  const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
-  
-  if (!phone || !password) {
-    showError('Please fill in all fields');
+
+  if (!validatePhone(phone)) {
+    showError('Invalid phone number format');
     return;
   }
 
-  const result = await callAPI('processLogin', { phone, password });
-  
-  if (result.success) {
-    sessionStorage.setItem('userData', JSON.stringify(result));
-    localStorage.setItem('lastActivity', Date.now());
-    safeRedirect(result.tempPassword ? 'password-reset.html' : 'dashboard.html');
-  } else {
-    showError(result.message);
+  if (!password) {
+    showError('Please enter your password');
+    return;
+  }
+
+  try {
+    const result = await callAPI('processLogin', { phone, password }, 'GET');
+    
+    if (result.success) {
+      sessionStorage.setItem('userData', JSON.stringify(result));
+      localStorage.setItem('lastActivity', Date.now());
+      
+      if (result.tempPassword) {
+        safeRedirect('password-reset.html');
+      } else {
+        safeRedirect('dashboard.html');
+      }
+    } else {
+      showError(result.message || 'Authentication failed');
+    }
+  } catch (error) {
+    showError('Login failed - please try again');
   }
 }
 
@@ -172,18 +172,22 @@ async function handleRegistration() {
   if (!validateRegistrationForm()) return;
 
   const formData = {
-    phone: document.getElementById('regPhone').value,
+    phone: document.getElementById('regPhone').value.trim(),
     password: document.getElementById('regPassword').value,
-    email: document.getElementById('regEmail').value
+    email: document.getElementById('regEmail').value.trim()
   };
 
-  const result = await callAPI('createAccount', formData);
-  
-  if (result.success) {
-    alert('Registration successful! Please login.');
-    safeRedirect('login.html');
-  } else {
-    showError(result.message);
+  try {
+    const result = await callAPI('createAccount', formData);
+    
+    if (result.success) {
+      alert('Registration successful! Please login.');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Registration failed');
+    }
+  } catch (error) {
+    showError('Registration failed - please try again');
   }
 }
 
@@ -192,33 +196,22 @@ async function handlePasswordRecovery() {
   const phone = document.getElementById('recoveryPhone').value.trim();
   const email = document.getElementById('recoveryEmail').value.trim();
 
-  // Add validation
-  if (!validatePhone(phone)) {
-    showError('Invalid phone format', 'phoneRecoveryError');
+  if (!validatePhone(phone) || !validateEmail(email)) {
+    showError('Please check your inputs');
     return;
   }
 
   try {
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        action: 'initiatePasswordReset',
-        phone: phone,
-        email: email
-      })
-    });
-    
-    const result = await response.json();
+    const result = await callAPI('initiatePasswordReset', { phone, email });
     
     if (result.success) {
-      alert('Temporary password sent! Check your email.');
+      alert('Temporary password sent to your email!');
       safeRedirect('login.html');
     } else {
-      showError(result.message);
+      showError(result.message || 'Password recovery failed');
     }
   } catch (error) {
-    showError('Network error - please try again');
+    showError('Password recovery failed - please try again');
   }
 }
 
@@ -228,25 +221,29 @@ async function handlePasswordReset() {
   const userData = JSON.parse(sessionStorage.getItem('userData'));
 
   if (!validatePassword(newPass)) {
-    showError('Invalid password format', 'newPasswordError');
+    showError('Password must contain 6+ characters with at least 1 uppercase letter and 1 number');
     return;
   }
 
   if (newPass !== confirmPass) {
-    showError('Passwords do not match', 'confirmPasswordError');
+    showError('Passwords do not match');
     return;
   }
 
-  const result = await callAPI('updatePassword', {
-    phone: userData.phone,
-    newPassword: newPass
-  });
+  try {
+    const result = await callAPI('forcePasswordReset', {
+      phone: userData.phone,
+      newPassword: newPass
+    });
 
-  if (result.success) {
-    handleLogout();
-    alert('Password updated successfully!');
-  } else {
-    showError(result.message);
+    if (result.success) {
+      alert('Password updated successfully! Please login with your new password.');
+      handleLogout();
+    } else {
+      showError(result.message || 'Password reset failed');
+    }
+  } catch (error) {
+    showError('Password reset failed - please try again');
   }
 }
 
@@ -318,7 +315,10 @@ function safeRedirect(path) {
       'track-parcel.html'
     ];
     
-    if (!allowedPaths.includes(path)) throw new Error('Unauthorized path');
+    if (!allowedPaths.includes(path)) {
+      throw new Error('Unauthorized path');
+    }
+    
     window.location.href = path;
   } catch (error) {
     console.error('Redirect error:', error);
@@ -354,9 +354,42 @@ function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString('en-MY', options);
 }
 
+// ================= FILE HANDLING =================
+async function handleFileUpload(files) {
+  const uploads = [];
+  
+  for (const file of files) {
+    if (file.size > CONFIG.MAX_FILE_SIZE) {
+      showError(`File ${file.name} exceeds 5MB limit`);
+      return null;
+    }
+    
+    if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+      showError(`Invalid file type for ${file.name}`);
+      return null;
+    }
+
+    uploads.push({
+      name: file.name,
+      type: file.type,
+      base64: await readFileAsBase64(file)
+    });
+  }
+  
+  return uploads;
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
-  // Auto-detect view mode
   detectViewMode();
 
   // Session management
@@ -367,8 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!isPublicPage) {
     const userData = checkSession();
-    if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-      safeRedirect('password-reset.html');
+    if (!userData) return;
+    
+    // Handle temporary password state
+    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+      handleLogout();
     }
   }
 
@@ -377,4 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
+
+  // Auto-focus first input
+  const firstInput = document.querySelector('input:not([type="hidden"])');
+  if (firstInput) firstInput.focus();
 });
