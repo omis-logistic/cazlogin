@@ -5,6 +5,26 @@ const CONFIG = {
   SESSION_TIMEOUT: 3600 // 1 hour in seconds
 };
 
+async function updateUserPassword(currentPassword, newPassword, confirmPassword) {
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+  return await callAPI('updatePassword', {
+    phone: userData.phone,
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+    confirmPassword: confirmPassword
+  });
+}
+
+async function updateUserEmail(currentPassword, newEmail, confirmEmail) {
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+  return await callAPI('updateEmail', {
+    phone: userData.phone,
+    currentPassword: currentPassword,
+    newEmail: newEmail,
+    confirmEmail: confirmEmail
+  });
+}
+
 // ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
   const isMobile = (
@@ -144,26 +164,6 @@ async function handleRegistration() {
   } else {
     showError(result.message);
   }
-}
-
-async function updateUserPassword(currentPassword, newPassword, confirmPassword) {
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-  return await callAPI('updatePassword', {
-    phone: userData.phone,
-    currentPassword: currentPassword,
-    newPassword: newPassword,
-    confirmPassword: confirmPassword
-  });
-}
-
-async function updateUserEmail(currentPassword, newEmail, confirmEmail) {
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-  return await callAPI('updateEmail', {
-    phone: userData.phone,
-    currentPassword: currentPassword,
-    newEmail: newEmail,
-    confirmEmail: confirmEmail
-  });
 }
 
 // ================= PASSWORD MANAGEMENT =================
