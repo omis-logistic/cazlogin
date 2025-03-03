@@ -203,36 +203,40 @@
 
     // Main submission handler
     async function handleParcelSubmission() {
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      if (!userData) return safeRedirect('login.html');
+        const userData = JSON.parse(sessionStorage.getItem('userData'));
+        if (!userData) return safeRedirect('login.html');
 
-      clearErrors();
-      const formData = getFormData();
-      const validation = validateForm(formData);
-      
-      if (!validation.isValid) {
-        showFormErrors(validation.errors);
-        return;
-      }
-
-      try {
-        const files = await handleFileUpload(document.getElementById('invoiceFiles').files);
-        if (!files) return;
-
-        const result = await callAPI('submitParcelDeclaration', {
-          data: formData,
-          filesBase64: files
-        });
-
-        if (result.success) {
-          alert('Declaration submitted successfully!');
-          safeRedirect('dashboard.html');
-        } else {
-          showError(result.message || 'Submission failed');
+        clearErrors();
+        const formData = getFormData();
+        const validation = validateForm(formData);
+        
+        if (!validation.isValid) {
+            showFormErrors(validation.errors);
+            return;
         }
-      } catch (error) {
-        showError(error.message);
-      }
+
+        try {
+            let files = [];
+            if (validation.requiresInvoice || document.getElementById('invoiceFiles').files.length > 0) {
+                files = await handleFileUpload(document.getElementById('invoiceFiles').files);
+                if (!files) return;
+            }
+
+            const result = await callAPI('submitParcelDeclaration', {
+                data: formData,
+                filesBase64: files
+            });
+
+            if (result.success) {
+                alert('Declaration submitted successfully!');
+                safeRedirect('dashboard.html');
+            } else {
+                showError(result.message || 'Submission failed. Please try again.');
+            }
+        } catch (error) {
+            console.error('Submission Error:', error);
+            showError(error.message || 'Network error - please check your connection');
+        }
     }
 
     // Get form data as object
@@ -251,27 +255,33 @@
 
     // Validate form inputs
     function validateForm(data) {
-      const errors = {};
-      
-      if (!data.trackingNumber) errors.trackingNumber = 'Required field';
-      if (!data.nameOnParcel) errors.nameOnParcel = 'Required field';
-      if (!data.itemDescription) errors.itemDescription = 'Required field';
-      if (!data.quantity || data.quantity < 1) errors.quantity = 'Invalid quantity';
-      if (!data.price || data.price <= 0) errors.price = 'Invalid price';
-      if (!data.collectionPoint) errors.collectionPoint = 'Required field';
-      if (!data.itemCategory) errors.itemCategory = 'Required field';
-      
-      const files = document.getElementById('invoiceFiles').files;
-      if (files.length < 1) {
-        errors.invoiceFiles = 'At least 1 file required';
-      } else if (files.length > 3) {
-        errors.invoiceFiles = 'Maximum 3 files allowed';
-      }
+        const errors = {};
+        const requiresInvoice = data.itemCategory.includes('*');
+        const files = document.getElementById('invoiceFiles').files;
 
-      return {
-        isValid: Object.keys(errors).length === 0,
-        errors
-      };
+        // Existing field validations
+        if (!data.trackingNumber) errors.trackingNumber = 'Required field';
+        if (!data.nameOnParcel) errors.nameOnParcel = 'Required field';
+        if (!data.itemDescription) errors.itemDescription = 'Required field';
+        if (!data.quantity || data.quantity < 1) errors.quantity = 'Invalid quantity';
+        if (!data.price || data.price <= 0) errors.price = 'Invalid price';
+        if (!data.collectionPoint) errors.collectionPoint = 'Required field';
+        if (!data.itemCategory) errors.itemCategory = 'Required field';
+
+        // Conditional invoice validation
+        if (requiresInvoice) {
+            if (files.length < 1) {
+                errors.invoiceFiles = 'At least 1 file required for this category';
+            } else if (files.length > 3) {
+                errors.invoiceFiles = 'Maximum 3 files allowed';
+            }
+        }
+
+        return {
+            isValid: Object.keys(errors).length === 0,
+            errors,
+            requiresInvoice
+        };
     }
 
     // Display validation errors
