@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxLTn-PcsM26oyD7y6vMegqcZB_RBiLk5Vpp4gj3ex0TW8RCeg3v-shNXrGPskdQDet/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxfQ-PznE_LA5bpTJhJau3EvDi935IQLb57DMQGSE3GRxGMT_aB0g5afZBEdfoRXrRv/exec',
   SESSION_TIMEOUT: 3600 // 1 hour in seconds
 };
 
