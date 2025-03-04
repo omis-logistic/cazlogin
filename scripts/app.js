@@ -104,13 +104,13 @@ async function callAPI(action, payload = {}) {
         const blob = new Blob([byteArray], { type: file.type });
         formData.append(`file${index}`, blob, file.name);
       });
-      delete payload.filesBase64;
     }
 
-    // Add other form data
+    // Add main data payload
     formData.append('data', JSON.stringify({
       action: action,
-      ...payload
+      ...payload,
+      filesBase64: undefined // Remove files from JSON payload
     }));
 
     const response = await fetch(CONFIG.GAS_URL, {
