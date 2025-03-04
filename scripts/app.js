@@ -93,38 +93,35 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}) {
-  try {
-    const formData = new FormData();
-    
-    if (payload.filesBase64 && payload.filesBase64.length > 0) {
-      payload.filesBase64.forEach((file, index) => {
-        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { 
-          type: file.type || 'application/octet-stream'
+    try {
+        const formData = new FormData();
+        const { data, files } = payload;
+
+        // Append files
+        if (files && files.length > 0) {
+            files.forEach((file, index) => {
+                formData.append(`file${index}`, file, file.name);
+            });
+        }
+
+        // Add main data payload
+        formData.append('data', JSON.stringify({
+            action: action,
+            ...data
+        }));
+
+        const response = await fetch(CONFIG.GAS_URL, {
+            method: 'POST',
+            body: formData
         });
-        formData.append(`file${index}`, blob, file.name);
-      });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        showError(error.message || 'Network error');
+        return { success: false, message: error.message };
     }
-
-    // Add main data payload
-    formData.append('data', JSON.stringify({
-      action: action,
-      ...payload,
-      filesBase64: undefined // Remove files from JSON payload
-    }));
-
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    showError(error.message || 'Network error');
-    return { success: false, message: error.message };
-  }
 }
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
