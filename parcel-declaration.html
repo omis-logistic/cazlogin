@@ -228,18 +228,19 @@
   <script>
 document.addEventListener('DOMContentLoaded', () => {
   const userData = checkSession();
+  const phoneField = document.getElementById('phoneNumber');
+  
   if (!userData) {
     safeRedirect('login.html');
     return;
   }
 
   // Populate phone number
-  const phoneField = document.getElementById('phoneNumber');
-  if (userData?.phone) {
+  if (userData.phone) {
     phoneField.value = userData.phone;
   } else {
-    showError('Failed to load account information');
-    setTimeout(() => safeRedirect('dashboard.html'), 2000);
+    showError('No registered phone number found');
+    safeRedirect('dashboard.html');
   }
 
   // Initialize other elements if needed
@@ -247,16 +248,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function handleParcelSubmission() {
   const loadingOverlay = document.getElementById('loadingOverlay');
+  const phoneField = document.getElementById('phoneNumber');
   
   try {
-    // Clear previous errors
     clearErrors();
     
     // Validate session and phone number
     const userData = checkSession();
-    const phoneNumber = document.getElementById('phoneNumber').value;
-    if (!userData || !phoneNumber) {
-      showError('Session expired or invalid');
+    if (!userData || !phoneField.value) {
+      showError('Session expired - please login again');
       safeRedirect('login.html');
       return;
     }
