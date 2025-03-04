@@ -201,7 +201,7 @@
 });
 
   // ================= FORM HANDLING =================
-  async function handleParcelSubmission() {
+async function handleParcelSubmission() {
   try {
     showLoading(true);
     clearErrors();
@@ -210,9 +210,9 @@
     const formData = validateForm();
     const fileInput = document.getElementById('invoiceFiles');
     
-    // Call API with proper payload structure
+    // Call API with properly structured payload
     const response = await callAPI('submitParcelDeclaration', {
-      data: formData,
+      data: formData,  // Will be nested under requestData.data
       files: Array.from(fileInput.files)
     });
 
