@@ -97,21 +97,17 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    if (payload.filesBase64 && payload.filesBase64.length > 0) {
-      payload.filesBase64.forEach((file, index) => {
-        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { 
-          type: file.type || 'application/octet-stream'
-        });
-        formData.append(`file${index}`, blob, file.name);
+    // Append files
+    if (payload.files && payload.files.length > 0) {
+      payload.files.forEach((file, index) => {
+        formData.append(`file${index}`, file);
       });
     }
 
     // Add main data payload
     formData.append('data', JSON.stringify({
       action: action,
-      ...payload,
-      filesBase64: undefined // Remove files from JSON payload
+      ...payload.data
     }));
 
     const response = await fetch(CONFIG.GAS_URL, {
