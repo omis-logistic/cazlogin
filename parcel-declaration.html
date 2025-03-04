@@ -226,8 +226,17 @@
   <script src="scripts/app.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      const userData = checkSession();
-      if (!userData) return safeRedirect('login.html');
+    const userData = checkSession();
+    if (!userData) return safeRedirect('login.html');
+    
+    // Auto-populate phone number
+    const phoneField = document.getElementById('phoneNumber');
+    if (userData && userData.phone) {
+      phoneField.value = userData.phone;
+    } else {
+      showError('No registered phone number found');
+      safeRedirect('login.html');
+    }
       document.getElementById('phoneNumber').value = userData.phone;
     });
 
