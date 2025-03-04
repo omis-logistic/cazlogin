@@ -95,28 +95,24 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}) {
   try {
-    const formData = new FormData();
-    
-    // Append files
-    if (payload.files && payload.files.length > 0) {
-      payload.files.forEach((file, index) => {
-        formData.append(`file${index}`, file);
-      });
-    }
-
-    // Add main data payload
-    formData.append('data', JSON.stringify({
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    const params = new URLSearchParams({
       action: action,
-      ...payload.data
-    }));
-
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData
+      callback: callbackName,
+      ...payload
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    script.src = `${CONFIG.GAS_URL}?${params}`;
+
+    return new Promise((resolve, reject) => {
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        resolve(response);
+      };
+      document.body.appendChild(script);
+    });
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
