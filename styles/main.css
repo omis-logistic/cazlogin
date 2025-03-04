@@ -32,14 +32,19 @@ body {
 }
 
 /* ======== FORM ELEMENTS ======== */
-input, select, button, textarea {
+input, select, button {
   width: 100%;
   padding: 0.8rem;
   margin: 0.5rem 0;
   border: 1px solid var(--gold);
   border-radius: 5px;
   transition: all 0.3s ease;
-  font-size: 14px;
+}
+
+#phoneNumber {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: none; /* Prevent editing */
 }
 
 input[readonly] {
