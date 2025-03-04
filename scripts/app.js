@@ -66,23 +66,7 @@ function createErrorElement() {
 /* ================= SESSION MANAGEMENT ================= */
 function checkSession() {
   const sessionData = sessionStorage.getItem('userData');
-  const lastActivity = localStorage.getItem('lastActivity');
-
-  if (!sessionData) {
-    handleLogout();
-    return null;
-  }
-
-  const userData = JSON.parse(sessionData);
-  
-  // Add phone number verification
-  if (!userData?.phone) {
-    showError('Invalid session data - missing phone number');
-    handleLogout();
-    return null;
-  }
-
-  return userData;
+  return sessionData ? JSON.parse(sessionData) : null;
 }
 
 function handleLogout() {
@@ -149,60 +133,24 @@ async function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
 
-  // Clear previous errors
-  clearErrors();
-
-  // Initial validation
-  if (!validatePhone(phone)) {
-    showError('Invalid phone number format');
-    return;
-  }
-
-  if (!password) {
-    showError('Please enter your password');
-    return;
-  }
-
   try {
-    const result = await callAPI('processLogin', { 
-      phone: phone,
-      password: password
-    });
-
-    // Handle API response
-    if (result.success) {
-      // Verify critical fields exist
-      if (!result.phone || !result.email) {
-        showError('Invalid login response - missing user data');
-        return;
-      }
-
-      // Store session data
-      sessionStorage.setItem('userData', JSON.stringify({
-        phone: result.phone,
-        email: result.email,
-        tempPassword: result.tempPassword || false
-      }));
-      
-      // Update last activity
-      localStorage.setItem('lastActivity', Date.now());
-
-      // Redirect based on password state
-      if (result.tempPassword) {
-        safeRedirect('password-reset.html');
-      } else {
-        safeRedirect('dashboard.html');
-      }
-      
-    } else {
-      // Handle backend errors
-      showError(result.message || 'Authentication failed');
-    }
+    const result = await callAPI('processLogin', { phone, password });
     
+    if (result.success) {
+      // Store raw API response (assuming it contains phone number)
+      sessionStorage.setItem('userData', JSON.stringify(result));
+      
+      // Simple redirect without additional checks
+      if (result.tempPassword) {
+        window.location.href = 'password-reset.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    } else {
+      alert(result.message || 'Login failed');
+    }
   } catch (error) {
-    // Handle network errors
-    console.error('Login error:', error);
-    showError('Login failed - please try again');
+    alert('Login error: ' + error.message);
   }
 }
 
