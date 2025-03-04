@@ -195,21 +195,42 @@
   <script>
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
-    detectViewMode();
     const userData = checkSession();
     if (!userData) return;
-    
     document.getElementById('phoneNumber').value = userData.phone;
-  });
+});
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
     try {
-      showLoading(true);
-      clearErrors();
+        showLoading(true);
+        clearErrors();
+        
+        // Form validation
+        const formData = validateForm();
+        const files = document.getElementById('invoiceFiles').files;
+        
+        // Call API
+        const response = await callAPI('submitParcelDeclaration', {
+            data: formData,
+            files: Array.from(files)
+        });
 
-      // Collect form data
-      const formData = {
+        if (response.success) {
+            alert('Declaration submitted! Tracking: ' + response.trackingNumber);
+            safeRedirect('dashboard.html');
+        } else {
+            showError(response.message);
+        }
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        showLoading(false);
+    }
+}
+
+function validateForm() {
+    const formData = {
         trackingNumber: document.getElementById('trackingNumber').value.trim(),
         nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
         phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -218,37 +239,29 @@
         price: document.getElementById('price').value,
         collectionPoint: document.getElementById('collectionPoint').value,
         itemCategory: document.getElementById('itemCategory').value
-      };
+    };
 
-      // Process files
-      const fileInput = document.getElementById('invoiceFiles');
-      const filesBase64 = await processFiles(fileInput);
-
-      // Create JSONP request
-      const callbackName = `parcel_${Date.now()}`;
-      const script = document.createElement('script');
-      const params = new URLSearchParams({
-        action: 'submitParcelDeclaration',
-        callback: callbackName,
-        ...formData,
-        filesBase64: JSON.stringify(filesBase64)
-      });
-
-      script.src = `${CONFIG.GAS_URL}?${params}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleSubmissionResponse(response);
-      };
-
-      document.body.appendChild(script);
-
-    } catch (error) {
-      showError(error.message);
-      showLoading(false);
+    // Tracking number validation
+    const trackingRegex = /^[A-Z0-9-]{5,}$/i;
+    if (!trackingRegex.test(formData.trackingNumber)) {
+        throw new Error('Tracking number must be minimum 5 characters (letters, numbers, hyphens only)');
     }
-  }
+
+    // Mandatory invoice check
+    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks', 
+                               'Gadgets', 'Oil Ointment', 'Supplement'];
+    const fileCount = document.getElementById('invoiceFiles').files.length;
+    if (mandatoryCategories.includes(formData.itemCategory) && fileCount < 1) {
+        throw new Error('At least 1 invoice required for this item category');
+    }
+
+    return formData;
+}
+
+// Update Back to Dashboard button
+function showDashboard() {
+    safeRedirect('dashboard.html');
+}
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
