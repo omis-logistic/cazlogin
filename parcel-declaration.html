@@ -203,48 +203,48 @@
 
     // Main submission handler
     async function handleParcelSubmission() {
-      try {
-        const userData = checkSession();
-        if (!userData) return safeRedirect('login.html');
+        try {
+            const userData = checkSession();
+            if (!userData) return safeRedirect('login.html');
 
-        clearErrors();
-        const formData = getFormData();
-        const validation = validateForm(formData);
-        
-        if (!validation.isValid) {
-          showFormErrors(validation.errors);
-          return;
+            clearErrors();
+            const formData = getFormData();
+            const validation = validateForm(formData);
+            
+            if (!validation.isValid) {
+                showFormErrors(validation.errors);
+                return;
+            }
+
+            // Process file uploads
+            const fileInput = document.getElementById('invoiceFiles');
+            let filesBase64 = [];
+            if (fileInput.files.length > 0) {
+                filesBase64 = await Promise.all(
+                    Array.from(fileInput.files).map(async file => ({
+                        name: file.name,
+                        type: file.type,
+                        base64: await readFileAsBase64(file)
+                    }))
+                );
+            }
+
+            // Submit with consistent API pattern
+            const result = await callAPI('submitParcelDeclaration', {
+                data: formData,
+                filesBase64: filesBase64
+            });
+
+            if (result.success) {
+                alert('Declaration submitted successfully!');
+                safeRedirect('dashboard.html');
+            } else {
+                showError(result.message || 'Submission failed');
+            }
+        } catch (error) {
+            console.error('Submission error:', error);
+            showError('Failed to submit declaration. Please try again.');
         }
-
-        // Process files
-        const fileInput = document.getElementById('invoiceFiles');
-        let filesBase64 = [];
-        if (fileInput.files.length > 0) {
-          filesBase64 = await Promise.all(
-            Array.from(fileInput.files).map(async (file) => ({
-              name: file.name,
-              type: file.type,
-              base64: await readFileAsBase64(file)
-            }))
-          );
-        }
-
-        // Use the standard API call method
-        const result = await callAPI('submitParcelDeclaration', {
-          data: formData,
-          filesBase64: filesBase64
-        });
-
-        if (result.success) {
-          alert('Declaration submitted successfully!');
-          safeRedirect('dashboard.html');
-        } else {
-          showError(result.message || 'Submission failed. Please try again.');
-        }
-      } catch (error) {
-        console.error('Submission error:', error);
-        showError('Failed to submit declaration. Please try again.');
-      }
     }
 
     // Shared request execution logic
