@@ -31,7 +31,24 @@ body {
   position: relative;
 }
 
-/* ======== FORM ELEMENTS ======== */
+/* ======== COMMON COMPONENTS ======== */
+.container {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 0 20px var(--gold);
+  margin: 1rem auto;
+}
+
+h1, h2, h3 {
+  color: var(--gold);
+  margin-bottom: 1.5rem;
+}
+
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
 input, select, button {
   width: 100%;
   padding: 0.8rem;
@@ -39,18 +56,6 @@ input, select, button {
   border: 1px solid var(--gold);
   border-radius: 5px;
   transition: all 0.3s ease;
-}
-
-input[readonly] {
-  background-color: #444;
-  color: #888;
-  border-color: #666;
-  cursor: not-allowed;
-}
-
-input:focus, select:focus, button:focus {
-  outline: 2px solid var(--hover-gold);
-  outline-offset: 2px;
 }
 
 button {
@@ -68,54 +73,47 @@ button:hover {
   color: var(--error-red);
   font-size: 0.9em;
   min-height: 1.2em;
-  display: none;
 }
 
-/* ======== COMPONENTS ======== */
-.container {
-  background: rgba(0, 0, 0, 0.7);
+/* ======== MOBILE FIRST STYLES ======== */
+body.mobile-view {
+  padding: 0.5rem !important;
+  font-size: 16px !important;
+  display: block !important;
+}
+
+body.mobile-view .container {
+  width: 95% !important;
+  max-width: 100% !important;
+  padding: 1rem !important;
+  margin: 0.5rem auto !important;
+}
+
+body.mobile-view input,
+body.mobile-view button,
+body.mobile-view select {
+  font-size: 16px !important;
+  padding: 12px !important;
+  min-height: 44px;
+}
+
+body.mobile-view .thumbnail {
+  margin: 15px 0 !important;
+  padding: 15px !important;
+}
+
+/* ======== DESKTOP OVERRIDES ======== */
+body.desktop-view {
   padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 0 20px var(--gold);
-  margin: 1rem auto;
+  font-size: 14px;
 }
 
-.thumbnail {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 20px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid var(--gold);
+body.desktop-view .container {
+  max-width: 1200px;
+  padding: 2rem;
 }
 
-.thumbnail:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(197, 160, 71, 0.2);
-}
-
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.8);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid var(--gold);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-}
-
+/* ======== MODAL STYLES ======== */
 .welcome-modal {
   display: none;
   position: fixed;
@@ -125,6 +123,8 @@ button:hover {
   height: 100%;
   background-color: rgba(0,0,0,0.9);
   z-index: 9999;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .welcome-content {
@@ -136,39 +136,49 @@ button:hover {
   max-width: 800px;
   position: relative;
   max-height: 90vh;
-  overflow-y: auto;
 }
 
-/* ======== TYPOGRAPHY ======== */
-h1, h2, h3 {
-  color: var(--gold);
-  margin-bottom: 1.5rem;
+body.mobile-view .welcome-content {
+  width: 95% !important;
+  margin: 10px auto !important;
+  padding: 15px !important;
 }
 
-h1 {
-  font-size: 2.5rem;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  padding: 1rem;
-  border-bottom: 3px solid var(--gold);
+/* ======== RESPONSIVE DESIGN ======== */
+@media screen and (max-width: 768px) {
+  body {
+    font-size: 16px;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .container {
+    padding: 1rem;
+  }
+
+  button {
+    min-height: 44px;
+  }
 }
 
+@media screen and (min-width: 769px) {
+  .thumbnail {
+    width: 30%;
+    display: inline-block;
+    margin: 1rem;
+  }
+}
+
+/* ======== UTILITY CLASSES ======== */
 .gold-text {
   color: var(--gold) !important;
+}
+
+.text-important {
+  color: var(--gold);
   font-weight: bold;
-}
-
-/* ======== UTILITIES ======== */
-.secondary-btn {
-  background: transparent !important;
-  border: 1px solid var(--gold) !important;
-  color: var(--gold) !important;
-}
-
-.secondary-btn:hover {
-  background: var(--gold) !important;
-  color: var(--dark-bg) !important;
 }
 
 .mobile-only {
@@ -177,6 +187,14 @@ h1 {
 
 .desktop-only {
   display: block !important;
+}
+
+body.mobile-view .mobile-only {
+  display: block !important;
+}
+
+body.mobile-view .desktop-only {
+  display: none !important;
 }
 
 /* ======== ANIMATIONS ======== */
@@ -194,129 +212,4 @@ h1 {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ======== RESPONSIVE DESIGN ======== */
-@media screen and (max-width: 768px) {
-  body {
-    padding: 0.5rem !important;
-    font-size: 16px !important;
-  }
-  
-  .container {
-    width: 95% !important;
-    max-width: 100% !important;
-    padding: 1rem !important;
-    margin: 0.5rem auto !important;
-  }
-
-  input, button, select {
-    font-size: 16px !important;
-    padding: 12px !important;
-    min-height: 44px;
-  }
-
-  /* Added phone number mobile styles */
-  #phoneNumber {
-    background: #f0f0f0;
-    cursor: not-allowed;
-  }
-
-  .welcome-content {
-    width: 95% !important;
-    margin: 10px auto !important;
-    padding: 15px !important;
-  }
-
-  .mobile-only {
-    display: block !important;
-  }
-
-  .desktop-only {
-    display: none !important;
-  }
-}
-
-@media screen and (min-width: 769px) {
-  body.desktop-view {
-    padding: 2rem;
-    font-size: 14px;
-  }
-
-  .container {
-    max-width: 1200px;
-    padding: 2rem;
-  }
-
-  .thumbnail {
-    width: 30%;
-    display: inline-block;
-    margin: 1rem;
-  }
-}
-
-/* ======== FORM SPECIFIC ======== */
-.password-rules {
-  font-size: 0.8em;
-  color: var(--gold);
-  margin: 5px 0 10px;
-  opacity: 0.8;
-}
-
-.status-message {
-  padding: 12px;
-  margin: 15px 0;
-  border-radius: 5px;
-  text-align: center;
-  font-size: 14px;
-  display: none;
-}
-
-.status-message.success {
-  background: rgba(0, 200, 81, 0.1);
-  border: 1px solid #00C851;
-  color: #00C851;
-}
-
-.status-message.error {
-  background: rgba(255, 68, 68, 0.1);
-  border: 1px solid #ff4444;
-  color: #ff4444;
-}
-
-/* ======== MODAL SPECIFIC ======== */
-.modal-section {
-  margin: 15px 0;
-  padding: 15px 20px;
-  background: var(--section-bg);
-  border-radius: 5px;
-  border: 1px solid rgba(197, 160, 71, 0.1);
-}
-
-.guidelines {
-  padding-left: 15px;
-  margin: 10px 0;
-}
-
-.guidelines li {
-  margin: 8px 0;
-  line-height: 1.5;
-}
-
-.agree-btn {
-  background: var(--gold);
-  color: var(--dark-bg);
-  padding: 12px 30px;
-  border: none;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-  display: block;
-  margin: 25px auto 15px;
-  transition: opacity 0.3s;
 }
