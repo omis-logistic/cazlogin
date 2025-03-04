@@ -225,137 +225,132 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-    const userData = checkSession();
-    if (!userData) return safeRedirect('login.html');
-    
-    // Auto-populate phone number
-    const phoneField = document.getElementById('phoneNumber');
-    if (userData && userData.phone) {
-      phoneField.value = userData.phone;
-    } else {
-      showError('No registered phone number found');
-      safeRedirect('login.html');
-    }
-      document.getElementById('phoneNumber').value = userData.phone;
+document.addEventListener('DOMContentLoaded', () => {
+  const userData = checkSession();
+  if (!userData) {
+    safeRedirect('login.html');
+    return;
+  }
+
+  // Populate phone number
+  const phoneField = document.getElementById('phoneNumber');
+  if (userData?.phone) {
+    phoneField.value = userData.phone;
+  } else {
+    showError('Failed to load account information');
+    setTimeout(() => safeRedirect('dashboard.html'), 2000);
+  }
+
+  // Initialize other elements if needed
+});
+
+async function handleParcelSubmission() {
+  clearErrors();
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  
+  try {
+    // Validate required fields
+    const requiredFields = {
+      trackingNumber: document.getElementById('trackingNumber'),
+      nameOnParcel: document.getElementById('nameOnParcel'),
+      itemDescription: document.getElementById('itemDescription'),
+      quantity: document.getElementById('quantity'),
+      price: document.getElementById('price'),
+      collectionPoint: document.getElementById('collectionPoint'),
+      itemCategory: document.getElementById('itemCategory')
+    };
+
+    let isValid = true;
+    Object.entries(requiredFields).forEach(([field, element]) => {
+      if (!element.value.trim()) {
+        showError('This field is required', `${field}Error`);
+        isValid = false;
+      }
     });
 
-    async function handleParcelSubmission() {
-      clearErrors();
-      const loadingOverlay = document.getElementById('loadingOverlay');
-      
-      try {
-        // Validate form
-        const requiredFields = [
-          'trackingNumber', 'nameOnParcel', 'itemDescription',
-          'quantity', 'price', 'collectionPoint', 'itemCategory'
-        ];
-        
-        let isValid = true;
-        requiredFields.forEach(field => {
-          const element = document.getElementById(field);
-          if (!element.value.trim()) {
-            showError('This field is required', `${field}Error`);
-            isValid = false;
-          }
-        });
+    // Validate tracking number format
+    const trackingNumber = requiredFields.trackingNumber.value.trim();
+    if (!/^[A-Za-z0-9-]{5,}$/.test(trackingNumber)) {
+      showError('Invalid tracking number format', 'trackingNumberError');
+      isValid = false;
+    }
 
-        // Validate tracking number format
-        const trackingNumber = document.getElementById('trackingNumber').value.trim();
-        if (!/^[A-Za-z0-9-]{5,}$/.test(trackingNumber)) {
-          showError('Invalid format (min 5 chars, only letters, numbers, or hyphens)', 'trackingNumberError');
-          isValid = false;
-        }
+    // Validate numeric fields
+    const quantity = parseInt(requiredFields.quantity.value);
+    const price = parseFloat(requiredFields.price.value);
+    if (isNaN(quantity) || quantity < 1) {
+      showError('Invalid quantity', 'quantityError');
+      isValid = false;
+    }
+    if (isNaN(price) || price <= 0) {
+      showError('Invalid price', 'priceError');
+      isValid = false;
+    }
 
-        // Validate numeric fields
-        const quantity = parseInt(document.getElementById('quantity').value);
-        const price = parseFloat(document.getElementById('price').value);
-        if (isNaN(quantity) {
-          showError('Invalid quantity', 'quantityError');
-          isValid = false;
-        }
-        if (isNaN(price)) {
-          showError('Invalid price', 'priceError');
-          isValid = false;
-        }
-
-        // Check mandatory invoices
-        const itemCategory = document.getElementById('itemCategory').value;
-        const mandatoryCategories = [
-          'Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-          'Gadgets', 'Oil Ointment', 'Supplement'
-        ];
-        const files = document.getElementById('invoiceFiles').files;
-        
-        if (mandatoryCategories.some(cat => itemCategory.includes(cat)) {
-          if (files.length === 0) {
-            showError('At least 1 invoice is required for this category', 'invoiceFilesError');
-            isValid = false;
-          }
-        }
-
-        if (!isValid) return;
-
-        // Show loading
-        loadingOverlay.style.display = 'flex';
-
-        // Prepare form data
-        const formData = new FormData();
-        formData.append('action', 'submitParcelDeclaration');
-        
-        // Add text fields
-        const textData = {
-          trackingNumber: trackingNumber,
-          nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-          phoneNumber: document.getElementById('phoneNumber').value.trim(),
-          itemDescription: document.getElementById('itemDescription').value.trim(),
-          quantity: quantity,
-          price: price.toFixed(2),
-          collectionPoint: document.getElementById('collectionPoint').value,
-          itemCategory: itemCategory
-        };
-        formData.append('data', JSON.stringify(textData));
-
-        // Add files
-        Array.from(files).forEach((file, index) => {
-          formData.append(`file${index}`, file);
-        });
-
-        // Submit to Google Apps Script
-        const response = await fetch(CONFIG.GAS_URL, {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-          alert(`Declaration submitted!\nTracking Number: ${result.trackingNumber}`);
-          safeRedirect('dashboard.html');
-        } else {
-          showError(result.message || 'Submission failed');
-        }
-      } catch (error) {
-        console.error('Submission error:', error);
-        showError('Failed to submit declaration. Please try again.');
-      } finally {
-        loadingOverlay.style.display = 'none';
+    // Check mandatory invoices
+    const itemCategory = requiredFields.itemCategory.value;
+    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 
+                               'Food Beverage/Drinks', 'Gadgets', 
+                               'Oil Ointment', 'Supplement'];
+    const files = document.getElementById('invoiceFiles').files;
+    
+    if (mandatoryCategories.includes(itemCategory)) {
+      if (files.length === 0) {
+        showError('At least 1 invoice is required for this category', 'invoiceFilesError');
+        isValid = false;
       }
     }
 
-    function clearErrors() {
-      document.querySelectorAll('.error-message').forEach(el => {
-        el.textContent = '';
-      });
-    }
+    if (!isValid) return;
 
-    function showError(message, targetId = 'error-message') {
-      const errorElement = document.getElementById(targetId);
-      if (errorElement) {
-        errorElement.textContent = message;
-        errorElement.style.display = 'block';
-      }
+    // Show loading
+    loadingOverlay.style.display = 'flex';
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'submitParcelDeclaration');
+    
+    // Add text data
+    const textData = {
+      trackingNumber: trackingNumber,
+      nameOnParcel: requiredFields.nameOnParcel.value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: requiredFields.itemDescription.value.trim(),
+      quantity: quantity,
+      price: price.toFixed(2),
+      collectionPoint: requiredFields.collectionPoint.value,
+      itemCategory: itemCategory
+    };
+    formData.append('data', JSON.stringify(textData));
+
+    // Add files
+    Array.from(files).forEach((file, index) => {
+      formData.append(`file${index}`, file);
+    });
+
+    // Submit to server
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert(`Declaration submitted!\nTracking Number: ${result.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      throw new Error(result.message || 'Submission failed');
     }
-  </script>
+  } catch (error) {
+    console.error('Submission error:', error);
+    showError(error.message || 'Failed to submit declaration. Please try again.');
+  } finally {
+    loadingOverlay.style.display = 'none';
+  }
+}
+</script>
 </body>
 </html>
