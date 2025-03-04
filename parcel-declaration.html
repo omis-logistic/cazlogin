@@ -1,3 +1,4 @@
+//parcel-declaration.html
 <!DOCTYPE html>
 <html>
 <head>
@@ -184,152 +185,93 @@
 
     <button onclick="handleParcelSubmission(); return false;">Submit</button>
     <button 
-  style="margin-top: 10px; background: #444" 
-  onclick="safeRedirect('dashboard.html'); return false;"
-  >
-  Back to Dashboard
-  </button>
+      style="margin-top: 10px; background: #444" 
+      onclick="showDashboard(); return false;"
+    >
+      Back to Dashboard
+    </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
+    detectViewMode();
     const userData = checkSession();
     if (!userData) return;
+    
     document.getElementById('phoneNumber').value = userData.phone;
-});
-
-  // ================= FORM HANDLING =================
-async function handleParcelSubmission() {
-  try {
-    // Clear previous errors
-    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-    showLoading(true);
-
-    // Validate form inputs
-    const formData = validateForm();
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = await processFiles(fileInput);
-
-    // Create JSONP request
-    const callbackName = `parcel_${Date.now()}`;
-    const script = document.createElement('script');
-    const params = new URLSearchParams({
-      action: 'submitParcelDeclaration',
-      callback: callbackName,
-      data: JSON.stringify(formData),
-      files: JSON.stringify(files)
-    });
-
-    script.src = `${CONFIG.GAS_URL}?${params}`;
-
-    // Handle response
-    window[callbackName] = (response) => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      showLoading(false);
-      
-      if (response.success) {
-        alert(`Declaration submitted!\nTracking Number: ${response.trackingNumber}`);
-        safeRedirect('dashboard.html');
-      } else {
-        showError(response.message || 'Submission failed');
-      }
-    };
-
-    // Handle script load errors
-    script.onerror = () => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      showLoading(false);
-      showError('Network error - failed to submit declaration');
-    };
-
-    document.body.appendChild(script);
-
-  } catch (error) {
-    showLoading(false);
-    showError(error.message);
-  }
-}
-
-// ================= FORM VALIDATION =================
-function validateForm() {
-  const getValue = (id) => document.getElementById(id).value.trim();
-  const numberFields = ['quantity', 'price'];
-
-  // Basic field validation
-  const formData = {
-    trackingNumber: getValue('trackingNumber'),
-    nameOnParcel: getValue('nameOnParcel'),
-    phoneNumber: getValue('phoneNumber'),
-    itemDescription: getValue('itemDescription'),
-    quantity: getValue('quantity'),
-    price: getValue('price'),
-    collectionPoint: getValue('collectionPoint'),
-    itemCategory: getValue('itemCategory')
-  };
-
-  // Check required fields
-  for (const [key, value] of Object.entries(formData)) {
-    if (!value) throw new Error(`Missing required field: ${key}`);
-  }
-
-  // Validate tracking number format
-  const trackingRegex = /^[A-Z0-9-]{5,}$/;
-  if (!trackingRegex.test(formData.trackingNumber)) {
-    throw new Error('Invalid tracking number format (min 5 chars, letters/numbers/dashes only)');
-  }
-
-  // Validate numeric fields
-  numberFields.forEach(field => {
-    if (isNaN(formData[field]) throw new Error(`Invalid ${field} value`);
-    if (Number(formData[field]) <= 0) throw new Error(`${field} must be positive`);
   });
 
-  // Validate file requirements
-  const mandatoryCategories = [
-    'Books', 'Cosmetics/Skincare/Bodycare', 
-    'Food Beverage/Drinks', 'Gadgets', 
-    'Oil Ointment', 'Supplement'
-  ];
-  
-  const fileInput = document.getElementById('invoiceFiles');
-  if (mandatoryCategories.includes(formData.itemCategory) && fileInput.files.length === 0) {
-    throw new Error('At least 1 invoice required for this item category');
+  // ================= FORM HANDLING =================
+  async function handleParcelSubmission() {
+    try {
+      showLoading(true);
+      clearErrors();
+
+      // Collect form data
+      const formData = {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value,
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      };
+
+      // Process files
+      const fileInput = document.getElementById('invoiceFiles');
+      const filesBase64 = await processFiles(fileInput);
+
+      // Create JSONP request
+      const callbackName = `parcel_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        action: 'submitParcelDeclaration',
+        callback: callbackName,
+        ...formData,
+        filesBase64: JSON.stringify(filesBase64)
+      });
+
+      script.src = `${CONFIG.GAS_URL}?${params}`;
+
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      showError(error.message);
+      showLoading(false);
+    }
   }
 
-  return formData;
-}
-
-// ================= FILE PROCESSING =================
-async function processFiles(fileInput) {
-  const files = Array.from(fileInput.files);
-  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
-
-  return Promise.all(files.map(file => 
-    new Promise((resolve, reject) => {
-      if (file.size > MAX_SIZE) {
-        reject(new Error(`File too large: ${file.name} (max 5MB)`));
-      }
-      
-      if (!ALLOWED_TYPES.includes(file.type)) {
-        reject(new Error(`Invalid file type: ${file.name} (JPEG, PNG, PDF only)`));
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => resolve({
+  // ================= FILE PROCESSING =================
+  async function processFiles(fileInput) {
+    if (!fileInput.files.length) return [];
+    
+    return Promise.all(
+      Array.from(fileInput.files).map(async file => ({
         name: file.name,
-        type: file.type,
-        base64: reader.result.split(',')[1]
-      });
-      reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+        type: file.type || 'application/octet-stream', // Default type
+        base64: await readFileAsBase64(file)
+      }))
+    );
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
       reader.readAsDataURL(file);
-    })
-  ));
-}
+    });
+  }
+
   // ================= RESPONSE HANDLING =================
   function handleSubmissionResponse(response) {
     showLoading(false);
@@ -344,34 +286,26 @@ async function processFiles(fileInput) {
 
   // ================= UTILITIES =================
   function showLoading(show) {
-  const loader = document.getElementById('loadingOverlay') || createLoader();
-  loader.style.display = show ? 'flex' : 'none';
-}
+    const loader = document.getElementById('loader') || createLoader();
+    loader.style.display = show ? 'block' : 'none';
+  }
 
-function createLoader() {
-  const loader = document.createElement('div');
-  loader.id = 'loadingOverlay';
-  loader.innerHTML = `
-    <div class="loader-spinner"></div>
-    <p>Submitting declaration...</p>
-  `;
-  loader.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    flex-direction: column;
-    z-index: 1000;
-  `;
-  document.body.appendChild(loader);
-  return loader;
-}
+  function createLoader() {
+    const loader = document.createElement('div');
+    loader.id = 'loader';
+    loader.innerHTML = `
+      <div class="loader-spinner"></div>
+      <p>Submitting declaration...</p>
+    `;
+    document.body.appendChild(loader);
+    return loader;
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.textContent = '';
+    });
+  }
 </script>
 </body>
 </html>
