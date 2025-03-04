@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyFx1Ht9RJf2hFlGltrAgo1Pa35stfWBcQR6Sb204WY_rU09i0m0sYy5ptooEb2Q7j2/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzEG_H2j6D4jFDAWUV0mCZYeYPODfHZwteRldj-OYA2hvnS-cUSwQhKb6iXf3E-6goX/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
