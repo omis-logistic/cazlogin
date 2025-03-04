@@ -227,22 +227,26 @@
   <script src="scripts/app.js"></script>
   <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const userData = checkSession();
-  const phoneField = document.getElementById('phoneNumber');
-  
-  // Session check
-  if (!userData) {
-    safeRedirect('login.html');
-    return;
-  }
+  try {
+    const userData = checkSession();
+    const phoneField = document.getElementById('phoneNumber');
+    
+    if (!userData || !phoneField) {
+      throw new Error('Missing session data or DOM element');
+    }
 
-  // Phone number enforcement
-  if (userData.phone) {
+    // Force-set phone number
     phoneField.value = userData.phone;
-    phoneField.style.display = 'block'; // Force visibility
-  } else {
-    showError('Account error: Missing phone number');
-    setTimeout(() => safeRedirect('dashboard.html'), 2000);
+    phoneField.style.display = 'block';
+    phoneField.readOnly = true;
+
+    // Debugging log
+    console.log('Phone number set:', userData.phone);
+    
+  } catch (error) {
+    console.error('Initialization error:', error);
+    showError('Failed to load page data');
+    safeRedirect('dashboard.html');
   }
 });
 
