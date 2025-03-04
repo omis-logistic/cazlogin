@@ -223,10 +223,8 @@ h1 {
 
   /* Added phone number mobile styles */
   #phoneNumber {
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: none;
+    background: #f0f0f0;
+    cursor: not-allowed;
   }
 
   .welcome-content {
