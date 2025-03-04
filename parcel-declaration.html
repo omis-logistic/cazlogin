@@ -202,47 +202,48 @@
     });
 
     // Main submission handler
-    function handleParcelSubmission() {
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      if (!userData) return safeRedirect('login.html');
+    async function handleParcelSubmission() {
+      try {
+        const userData = checkSession();
+        if (!userData) return safeRedirect('login.html');
 
-      clearErrors();
-      const formData = getFormData();
-      const validation = validateForm(formData);
-      
-      if (!validation.isValid) {
-        showFormErrors(validation.errors);
-        return;
-      }
+        clearErrors();
+        const formData = getFormData();
+        const validation = validateForm(formData);
+        
+        if (!validation.isValid) {
+          showFormErrors(validation.errors);
+          return;
+        }
 
-      // JSONP implementation matching register.html pattern
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      const params = new URLSearchParams();
-      
-      // Build parameters matching register.html's format
-      params.append('action', 'submitParcelDeclaration');
-      params.append('data', JSON.stringify(formData));
-      params.append('phone', userData.phone);
+        // Process files
+        const fileInput = document.getElementById('invoiceFiles');
+        let filesBase64 = [];
+        if (fileInput.files.length > 0) {
+          filesBase64 = await Promise.all(
+            Array.from(fileInput.files).map(async (file) => ({
+              name: file.name,
+              type: file.type,
+              base64: await readFileAsBase64(file)
+            }))
+          );
+        }
 
-      // File handling matching existing pattern
-      const fileInput = document.getElementById('invoiceFiles');
-      if (fileInput.files.length > 0) {
-        Promise.all(Array.from(fileInput.files).map(file => 
-          readFileAsBase64(file)
-        )).then(files => {
-          params.append('filesBase64', JSON.stringify(files.map((b64, i) => ({
-            name: fileInput.files[i].name,
-            type: fileInput.files[i].type,
-            base64: b64
-          }))));
-          
-          executeRequest(params, callbackName, script);
-        }).catch(error => {
-          showError('File processing error: ' + error.message);
+        // Use the standard API call method
+        const result = await callAPI('submitParcelDeclaration', {
+          data: formData,
+          filesBase64: filesBase64
         });
-      } else {
-        executeRequest(params, callbackName, script);
+
+        if (result.success) {
+          alert('Declaration submitted successfully!');
+          safeRedirect('dashboard.html');
+        } else {
+          showError(result.message || 'Submission failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        showError('Failed to submit declaration. Please try again.');
       }
     }
 
