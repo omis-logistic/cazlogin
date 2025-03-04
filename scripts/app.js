@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzHKeN_VQD5lyKlre9lXy-UgQFcbNgCrCNv9cACl5SmNHG16ZSsARAK5dXswdsTMNpa/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwfTTvDltY86NxfaPD7fdZpXoPh7UvPwIqg-Nmb9OVmzklBBckEmuT3cByktPgPrcQ-/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -92,15 +92,14 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-// In app.js
 async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    // Add main data payload
+    // Structure data with nested payload
     formData.append('data', JSON.stringify({
       action: action,
-      ...payload.data
+      data: payload.data // Nest form data under "data" property
     }));
 
     // Append files with proper indexing
