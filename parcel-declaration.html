@@ -202,32 +202,33 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-    try {
-        showLoading(true);
-        clearErrors();
-        
-        // Form validation
-        const formData = validateForm();
-        const files = document.getElementById('invoiceFiles').files;
-        
-        // Call API
-        const response = await callAPI('submitParcelDeclaration', {
-            data: formData,
-            files: Array.from(files)
-        });
+  try {
+    showLoading(true);
+    clearErrors();
+    
+    // Validate form data
+    const formData = validateForm();
+    const fileInput = document.getElementById('invoiceFiles');
+    
+    // Call API with proper payload structure
+    const response = await callAPI('submitParcelDeclaration', {
+      data: formData,
+      files: Array.from(fileInput.files)
+    });
 
-        if (response.success) {
-            alert('Declaration submitted! Tracking: ' + response.trackingNumber);
-            safeRedirect('dashboard.html');
-        } else {
-            showError(response.message);
-        }
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        showLoading(false);
+    if (response.success) {
+      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(response.message);
     }
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    showLoading(false);
+  }
 }
+
 
 function validateForm() {
     const formData = {
