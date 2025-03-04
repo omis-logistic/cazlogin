@@ -1,6 +1,7 @@
+// scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzEG_H2j6D4jFDAWUV0mCZYeYPODfHZwteRldj-OYA2hvnS-cUSwQhKb6iXf3E-6goX/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzWug_Yp-GnEOzWurrJyPRk__N48o3yzLMUQPLTR2EH_JvxBla0-ydNx_xfxYiIWVaN/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -96,84 +97,34 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    // Structure the main data payload
+    if (payload.filesBase64 && payload.filesBase64.length > 0) {
+      payload.filesBase64.forEach((file, index) => {
+        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
+        const blob = new Blob([byteArray], { 
+          type: file.type || 'application/octet-stream'
+        });
+        formData.append(`file${index}`, blob, file.name);
+      });
+    }
+
+    // Add main data payload
     formData.append('data', JSON.stringify({
       action: action,
-      data: payload.data // Nested form data
+      ...payload,
+      filesBase64: undefined // Remove files from JSON payload
     }));
 
-    // Append files with proper indexing
-    if (payload.files && payload.files.length > 0) {
-      payload.files.forEach((file, index) => {
-        formData.append(`file${index}`, file, file.name);
-      });
-    }
-
-    // Initial fetch request
-    let response = await fetch(CONFIG.GAS_URL, {
+    const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData,
-      redirect: 'follow',
-      headers: {
-        // Explicit content type header for FormData boundary
-        'Content-Type': 'multipart/form-data' 
-      }
+      body: formData
     });
 
-    // Handle Google's automatic URL redirection
-    if (response.redirected) {
-      // Recreate form data for redirected request
-      const redirectedFormData = new FormData();
-      redirectedFormData.append('data', JSON.stringify({
-        action: action,
-        data: payload.data
-      }));
-
-      if (payload.files) {
-        payload.files.forEach((file, index) => {
-          redirectedFormData.append(`file${index}`, file, file.name);
-        });
-      }
-
-      // Resend to final URL
-      response = await fetch(response.url, {
-        method: 'POST',
-        body: redirectedFormData,
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-    }
-
-    // Handle non-JSON responses
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Invalid response format: ${contentType}`);
-    }
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    
-    // Validate response structure
-    if (typeof result.success === 'undefined') {
-      throw new Error('Invalid API response format');
-    }
-
-    return result;
-
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
-    return { 
-      success: false, 
-      message: error.message,
-      errorType: error.name || 'NetworkError',
-      statusCode: error.status || 500
-    };
+    return { success: false, message: error.message };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
