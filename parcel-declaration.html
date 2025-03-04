@@ -67,33 +67,6 @@
         padding: 10px;
       }
     }
-
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .loader {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid var(--gold);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
@@ -102,11 +75,7 @@
 
     <div class="input-group">
       <label for="trackingNumber">Tracking Number</label>
-      <input type="text" id="trackingNumber" 
-             placeholder="Enter tracking number" 
-             pattern="[A-Za-z0-9-]{5,}" 
-             title="Minimum 5 characters, only letters, numbers, or hyphens allowed" 
-             required>
+      <input type="text" id="trackingNumber" placeholder="Enter tracking number" required>
       <div class="error-message" id="trackingNumberError"></div>
     </div>
 
@@ -118,7 +87,7 @@
 
     <div class="input-group">
       <label for="phoneNumber">Phone Number</label>
-      <input type="tel" id="phoneNumber" readonly>
+      <input type="tel" id="phoneNumber" placeholder="Phone Number" readonly>
     </div>
 
     <div class="input-group">
@@ -208,146 +177,134 @@
     </div>
 
     <div class="input-group">
-      <label for="invoiceFiles">Upload Invoices (Max 5 files, at least 1 required for * categories)</label>
+      <label for="invoiceFiles">Upload Invoices (Max 3 files, at least 1 required)</label>
       <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
       <div class="error-message" id="invoiceFilesError"></div>
     </div>
 
-    <button onclick="handleParcelSubmission()">Submit</button>
-    <button class="secondary-btn" onclick="safeRedirect('dashboard.html')" style="margin-top: 10px;">
+    <button onclick="handleParcelSubmission(); return false;">Submit</button>
+    <button 
+      style="margin-top: 10px; background: #444" 
+      onclick="showDashboard(); return false;"
+    >
       Back to Dashboard
     </button>
-
-    <div class="loading-overlay" id="loadingOverlay">
-      <div class="loader"></div>
-    </div>
-    <div id="error-message" class="error-message" style="display: none;"></div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const userData = checkSession();
-  if (userData) {
-    document.getElementById('phoneNumber').value = userData.phone;
-  }
-});
-
-async function handleParcelSubmission() {
-  const loadingOverlay = document.getElementById('loadingOverlay');
-  const phoneField = document.getElementById('phoneNumber');
-  
-  try {
-    clearErrors();
-    
-    // Validate session and phone number
+  // ================= INITIALIZATION =================
+  document.addEventListener('DOMContentLoaded', () => {
+    detectViewMode();
     const userData = checkSession();
-    if (!userData || !phoneField.value) {
-      showError('Session expired - please login again');
-      safeRedirect('login.html');
-      return;
-    }
-
-    // Get form elements
-    const formElements = {
-      trackingNumber: document.getElementById('trackingNumber'),
-      nameOnParcel: document.getElementById('nameOnParcel'),
-      itemDescription: document.getElementById('itemDescription'),
-      quantity: document.getElementById('quantity'),
-      price: document.getElementById('price'),
-      collectionPoint: document.getElementById('collectionPoint'),
-      itemCategory: document.getElementById('itemCategory'),
-      invoiceFiles: document.getElementById('invoiceFiles')
-    };
-
-    // Validate required fields
-    let isValid = true;
-    Object.entries(formElements).forEach(([key, element]) => {
-      if (key !== 'invoiceFiles' && !element.value.trim()) {
-        showError('This field is required', `${key}Error`);
-        isValid = false;
-      }
-    });
-
-    // Validate tracking number format
-    const trackingNumber = formElements.trackingNumber.value.trim();
-    if (!/^[A-Za-z0-9-]{5,}$/.test(trackingNumber)) {
-      showError('Invalid tracking number format (min 5 chars, letters/numbers/hyphens only)', 'trackingNumberError');
-      isValid = false;
-    }
-
-    // Validate numeric fields
-    const quantity = parseInt(formElements.quantity.value);
-    const price = parseFloat(formElements.price.value);
-    if (isNaN(quantity) {
-      showError('Invalid quantity', 'quantityError');
-      isValid = false;
-    }
-    if (isNaN(price)) {
-      showError('Invalid price', 'priceError');
-      isValid = false;
-    }
-
-    // Check mandatory invoices
-    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 
-                               'Food Beverage/Drinks', 'Gadgets', 
-                               'Oil Ointment', 'Supplement'];
-    const files = formElements.invoiceFiles.files;
-    if (mandatoryCategories.includes(formElements.itemCategory.value)) {
-      if (files.length === 0) {
-        showError('At least 1 invoice is required for this category', 'invoiceFilesError');
-        isValid = false;
-      }
-    }
-
-    if (!isValid) return;
-
-    // Show loading overlay
-    loadingOverlay.style.display = 'flex';
-
-    // Prepare form data
-    const formData = new FormData();
-    const submissionData = {
-      trackingNumber: trackingNumber,
-      nameOnParcel: formElements.nameOnParcel.value.trim(),
-      phoneNumber: phoneNumber,
-      itemDescription: formElements.itemDescription.value.trim(),
-      quantity: quantity,
-      price: price.toFixed(2),
-      collectionPoint: formElements.collectionPoint.value,
-      itemCategory: formElements.itemCategory.value
-    };
-
-    formData.append('data', JSON.stringify(submissionData));
-
-    // Add files
-    Array.from(files).forEach((file, index) => {
-      formData.append(`file${index}`, file);
-    });
-
-    // Submit to server
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!userData) return;
     
-    const result = await response.json();
+    document.getElementById('phoneNumber').value = userData.phone;
+  });
+
+  // ================= FORM HANDLING =================
+  async function handleParcelSubmission() {
+    try {
+      showLoading(true);
+      clearErrors();
+
+      // Collect form data
+      const formData = {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value,
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      };
+
+      // Process files
+      const fileInput = document.getElementById('invoiceFiles');
+      const filesBase64 = await processFiles(fileInput);
+
+      // Create JSONP request
+      const callbackName = `parcel_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        action: 'submitParcelDeclaration',
+        callback: callbackName,
+        ...formData,
+        filesBase64: JSON.stringify(filesBase64)
+      });
+
+      script.src = `${CONFIG.GAS_URL}?${params}`;
+
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      showError(error.message);
+      showLoading(false);
+    }
+  }
+
+  // ================= FILE PROCESSING =================
+  async function processFiles(fileInput) {
+    if (!fileInput.files.length) return [];
     
-    if (result.success) {
-      alert(`Declaration submitted!\nTracking Number: ${result.trackingNumber}`);
+    return Promise.all(
+      Array.from(fileInput.files).map(async file => ({
+        name: file.name,
+        type: file.type || 'application/octet-stream', // Default type
+        base64: await readFileAsBase64(file)
+      }))
+    );
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ================= RESPONSE HANDLING =================
+  function handleSubmissionResponse(response) {
+    showLoading(false);
+    
+    if (response.success) {
+      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
       safeRedirect('dashboard.html');
     } else {
-      throw new Error(result.message || 'Submission failed');
+      showError(response.message || 'Submission failed');
     }
-  } catch (error) {
-    console.error('Submission error:', error);
-    showError(error.message || 'Failed to submit declaration. Please try again.');
-  } finally {
-    loadingOverlay.style.display = 'none';
   }
-}
+
+  // ================= UTILITIES =================
+  function showLoading(show) {
+    const loader = document.getElementById('loader') || createLoader();
+    loader.style.display = show ? 'block' : 'none';
+  }
+
+  function createLoader() {
+    const loader = document.createElement('div');
+    loader.id = 'loader';
+    loader.innerHTML = `
+      <div class="loader-spinner"></div>
+      <p>Submitting declaration...</p>
+    `;
+    document.body.appendChild(loader);
+    return loader;
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.textContent = '';
+    });
+  }
 </script>
 </body>
 </html>
