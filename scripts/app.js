@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbysh-cRUOClg40_RlcXqUbLp7GhHBusu4g05mTleMJ7LlKBKtP0bAvUMoiFNvSRHarb/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbw6jPdtgHl09ileKheKU1ru086zURiiD77GAUTzHf_GekMEnIbXfWnvww5532tsW_3W/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -97,34 +97,55 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    if (payload.filesBase64 && payload.filesBase64.length > 0) {
-      payload.filesBase64.forEach((file, index) => {
-        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { 
-          type: file.type || 'application/octet-stream'
-        });
-        formData.append(`file${index}`, blob, file.name);
+    // Handle file uploads
+    if (payload.files && payload.files.length > 0) {
+      // Append main data
+      formData.append('data', JSON.stringify({
+        action: action,
+        ...payload,
+        files: undefined // Remove files from JSON payload
+      }));
+
+      // Append files
+      payload.files.forEach((file, index) => {
+        formData.append(`file${index}`, file, file.name);
       });
+
+      const response = await fetch(CONFIG.GAS_URL, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
     }
 
-    // Add main data payload
-    formData.append('data', JSON.stringify({
-      action: action,
-      ...payload,
-      filesBase64: undefined // Remove files from JSON payload
-    }));
-
+    // Handle regular JSON payload
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: action,
+        ...payload
+      })
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'API request failed');
+    }
+
     return await response.json();
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
-    return { success: false, message: error.message };
+    return { 
+      success: false, 
+      message: error.message,
+      errorType: error.name || 'APIConnectionError'
+    };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
