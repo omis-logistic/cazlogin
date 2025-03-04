@@ -193,86 +193,23 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    // Initialize form with user data
-    document.addEventListener('DOMContentLoaded', () => {
-      const userData = checkSession();
-      if (!userData) return safeRedirect('login.html');
-      
-      document.getElementById('phoneNumber').value = userData.phone;
-    });
+  // ================= INITIALIZATION =================
+  document.addEventListener('DOMContentLoaded', () => {
+    detectViewMode();
+    const userData = checkSession();
+    if (!userData) return;
+    
+    document.getElementById('phoneNumber').value = userData.phone;
+  });
 
-    // Main submission handler
-    async function handleParcelSubmission() {
-        try {
-            const userData = checkSession();
-            if (!userData) return safeRedirect('login.html');
+  // ================= FORM HANDLING =================
+  async function handleParcelSubmission() {
+    try {
+      showLoading(true);
+      clearErrors();
 
-            clearErrors();
-            const formData = getFormData();
-            const validation = validateForm(formData);
-            
-            if (!validation.isValid) {
-                showFormErrors(validation.errors);
-                return;
-            }
-
-            // Process file uploads
-            const fileInput = document.getElementById('invoiceFiles');
-            let filesBase64 = [];
-            if (fileInput.files.length > 0) {
-                filesBase64 = await Promise.all(
-                    Array.from(fileInput.files).map(async file => ({
-                        name: file.name,
-                        type: file.type,
-                        base64: await readFileAsBase64(file)
-                    }))
-                );
-            }
-
-            // Submit with consistent API pattern
-            const result = await callAPI('submitParcelDeclaration', {
-                data: formData,
-                filesBase64: filesBase64
-            });
-
-            if (result.success) {
-                alert('Declaration submitted successfully!');
-                safeRedirect('dashboard.html');
-            } else {
-                showError(result.message || 'Submission failed');
-            }
-        } catch (error) {
-            console.error('Submission error:', error);
-            showError('Failed to submit declaration. Please try again.');
-        }
-    }
-
-    // Shared request execution logic
-    function executeRequest(params, callbackName, script) {
-      script.src = `${CONFIG.GAS_URL}?${params.toString()}&callback=${callbackName}`;
-      
-      window[callbackName] = response => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleSubmissionResponse(response);
-      };
-      
-      document.body.appendChild(script);
-    }
-
-    // Response handling matching register.html pattern
-    function handleSubmissionResponse(response) {
-      if (response.success) {
-        alert('Declaration submitted successfully!');
-        safeRedirect('dashboard.html');
-      } else {
-        showError(response.message || 'Submission failed. Please try again.');
-      }
-    }
-
-    // Get form data as object
-    function getFormData() {
-      return {
+      // Collect form data
+      const formData = {
         trackingNumber: document.getElementById('trackingNumber').value.trim(),
         nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
         phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -282,60 +219,92 @@
         collectionPoint: document.getElementById('collectionPoint').value,
         itemCategory: document.getElementById('itemCategory').value
       };
-    }
 
-    // Validate form inputs
-    function validateForm(data) {
-        const errors = {};
-        const requiresInvoice = data.itemCategory.includes('*');
-        const files = document.getElementById('invoiceFiles').files;
+      // Process files
+      const fileInput = document.getElementById('invoiceFiles');
+      const filesBase64 = await processFiles(fileInput);
 
-        // Existing field validations
-        if (!data.trackingNumber) errors.trackingNumber = 'Required field';
-        if (!data.nameOnParcel) errors.nameOnParcel = 'Required field';
-        if (!data.itemDescription) errors.itemDescription = 'Required field';
-        if (!data.quantity || data.quantity < 1) errors.quantity = 'Invalid quantity';
-        if (!data.price || data.price <= 0) errors.price = 'Invalid price';
-        if (!data.collectionPoint) errors.collectionPoint = 'Required field';
-        if (!data.itemCategory) errors.itemCategory = 'Required field';
-
-        // Conditional invoice validation
-        if (requiresInvoice) {
-            if (files.length < 1) {
-                errors.invoiceFiles = 'At least 1 file required for this category';
-            } else if (files.length > 3) {
-                errors.invoiceFiles = 'Maximum 3 files allowed';
-            }
-        }
-
-        return {
-            isValid: Object.keys(errors).length === 0,
-            errors,
-            requiresInvoice
-        };
-    }
-
-    // Display validation errors
-    function showFormErrors(errors) {
-      Object.entries(errors).forEach(([field, message]) => {
-        const errorElement = document.getElementById(`${field}Error`);
-        if (errorElement) {
-          errorElement.textContent = message;
-        }
+      // Create JSONP request
+      const callbackName = `parcel_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        action: 'submitParcelDeclaration',
+        callback: callbackName,
+        ...formData,
+        filesBase64: JSON.stringify(filesBase64)
       });
-    }
 
-    // Clear all error messages
-    function clearErrors() {
-      document.querySelectorAll('.error-message').forEach(el => {
-        el.textContent = '';
-      });
-    }
+      script.src = `${CONFIG.GAS_URL}?${params}`;
 
-    // Navigation handler
-    function showDashboard() {
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      showError(error.message);
+      showLoading(false);
+    }
+  }
+
+  // ================= FILE PROCESSING =================
+  async function processFiles(fileInput) {
+    if (!fileInput.files.length) return [];
+    
+    return Promise.all(
+      Array.from(fileInput.files).map(async file => ({
+        name: file.name,
+        type: file.type || 'application/octet-stream', // Default type
+        base64: await readFileAsBase64(file)
+      }))
+    );
+  }
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ================= RESPONSE HANDLING =================
+  function handleSubmissionResponse(response) {
+    showLoading(false);
+    
+    if (response.success) {
+      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
       safeRedirect('dashboard.html');
+    } else {
+      showError(response.message || 'Submission failed');
     }
-  </script>
+  }
+
+  // ================= UTILITIES =================
+  function showLoading(show) {
+    const loader = document.getElementById('loader') || createLoader();
+    loader.style.display = show ? 'block' : 'none';
+  }
+
+  function createLoader() {
+    const loader = document.createElement('div');
+    loader.id = 'loader';
+    loader.innerHTML = `
+      <div class="loader-spinner"></div>
+      <p>Submitting declaration...</p>
+    `;
+    document.body.appendChild(loader);
+    return loader;
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.textContent = '';
+    });
+  }
+</script>
 </body>
 </html>
