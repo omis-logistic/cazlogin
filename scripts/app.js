@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbztdcor5Gn4crCVbqzNi1gQMkPEEtqPwmTlydZsGc711odkvi745OMjkR9x66fTtqEa/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbz423DFJnYXpTbG3cjtFP5iYrzRyoxFvVs-w05kgTVsf2xeBPH0AmQkCI8l6edYArHD/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -97,11 +97,12 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    // Handle file uploads
     if (payload.filesBase64 && payload.filesBase64.length > 0) {
       payload.filesBase64.forEach((file, index) => {
         const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { type: file.type });
+        const blob = new Blob([byteArray], { 
+          type: file.type || 'application/octet-stream'
+        });
         formData.append(`file${index}`, blob, file.name);
       });
     }
