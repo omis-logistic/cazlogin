@@ -93,46 +93,22 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-async function callAPI(action, payload = {}, method = 'auto') {
+async function callAPI(action, payload = {}, method = 'POST') {
   try {
-    const isGetRequest = method === 'GET' || (method === 'auto' && 
-      ['getParcelData', 'processLogin'].includes(action));
-    
-    const params = new URLSearchParams();
-    let url = CONFIG.GAS_URL;
-    
-    if (isGetRequest) {
-      params.append('action', action);
-      Object.entries(payload).forEach(([key, value]) => {
-        params.append(key, value);
-      });
-      url += `?${params.toString()}`;
-    }
-
-    const response = await fetch(url, {
-      method: isGetRequest ? 'GET' : 'POST',
-      headers: isGetRequest ? {} : {'Content-Type': 'application/json'},
-      body: isGetRequest ? null : JSON.stringify({ action, ...payload })
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action, ...payload })
     });
 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    
-    const data = await response.json();
-    
-    // Handle session expiration
-    if (data.message?.includes('session')) {
-      handleLogout();
-      return { success: false, message: 'Session expired' };
-    }
-    
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('API Error:', error);
     showError(`Network Error: ${error.message}`);
     return { success: false, message: 'Network error' };
   }
 }
-
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
