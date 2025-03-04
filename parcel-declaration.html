@@ -227,26 +227,9 @@
   <script src="scripts/app.js"></script>
   <script>
 document.addEventListener('DOMContentLoaded', () => {
-  try {
-    const userData = checkSession();
-    const phoneField = document.getElementById('phoneNumber');
-    
-    if (!userData || !phoneField) {
-      throw new Error('Missing session data or DOM element');
-    }
-
-    // Force-set phone number
-    phoneField.value = userData.phone;
-    phoneField.style.display = 'block';
-    phoneField.readOnly = true;
-
-    // Debugging log
-    console.log('Phone number set:', userData.phone);
-    
-  } catch (error) {
-    console.error('Initialization error:', error);
-    showError('Failed to load page data');
-    safeRedirect('dashboard.html');
+  const userData = checkSession();
+  if (userData) {
+    document.getElementById('phoneNumber').value = userData.phone;
   }
 });
 
