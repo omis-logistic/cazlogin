@@ -184,11 +184,11 @@
 
     <button onclick="handleParcelSubmission(); return false;">Submit</button>
     <button 
-      style="margin-top: 10px; background: #444" 
-      onclick="showDashboard(); return false;"
-    >
-      Back to Dashboard
-    </button>
+  style="margin-top: 10px; background: #444" 
+  onclick="safeRedirect('dashboard.html'); return false;"
+>
+  Back to Dashboard
+</button>
   </div>
 
   <script src="scripts/app.js"></script>
