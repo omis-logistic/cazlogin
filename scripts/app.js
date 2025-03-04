@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzD2hKnpy9DxDQ45qqJ8s1bDLeGq_4C-k_pRZIthaBLD1mKNxIC1RGLiQw8naPASsGo/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyFx1Ht9RJf2hFlGltrAgo1Pa35stfWBcQR6Sb204WY_rU09i0m0sYy5ptooEb2Q7j2/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -96,10 +96,10 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    // Structure data with nested payload
+    // Structure the main data payload
     formData.append('data', JSON.stringify({
       action: action,
-      data: payload.data // Nest form data under "data" property
+      data: payload.data // Nested form data
     }));
 
     // Append files with proper indexing
@@ -109,17 +109,71 @@ async function callAPI(action, payload = {}) {
       });
     }
 
-    const response = await fetch(CONFIG.GAS_URL, {
+    // Initial fetch request
+    let response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      body: formData,
+      redirect: 'follow',
+      headers: {
+        // Explicit content type header for FormData boundary
+        'Content-Type': 'multipart/form-data' 
+      }
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    // Handle Google's automatic URL redirection
+    if (response.redirected) {
+      // Recreate form data for redirected request
+      const redirectedFormData = new FormData();
+      redirectedFormData.append('data', JSON.stringify({
+        action: action,
+        data: payload.data
+      }));
+
+      if (payload.files) {
+        payload.files.forEach((file, index) => {
+          redirectedFormData.append(`file${index}`, file, file.name);
+        });
+      }
+
+      // Resend to final URL
+      response = await fetch(response.url, {
+        method: 'POST',
+        body: redirectedFormData,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Invalid response format: ${contentType}`);
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    // Validate response structure
+    if (typeof result.success === 'undefined') {
+      throw new Error('Invalid API response format');
+    }
+
+    return result;
+
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
-    return { success: false, message: error.message };
+    return { 
+      success: false, 
+      message: error.message,
+      errorType: error.name || 'NetworkError',
+      statusCode: error.status || 500
+    };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
