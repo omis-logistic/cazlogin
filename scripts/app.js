@@ -26,6 +26,13 @@ function detectViewMode() {
 }
 
 /* ================= ERROR HANDLING ================= */
+function clearErrors() {
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.textContent = '';
+    el.style.display = 'none';
+  });
+}
+
 function showError(message, targetId = 'error-message') {
   const errorElement = document.getElementById(targetId) || createErrorElement();
   errorElement.textContent = message;
