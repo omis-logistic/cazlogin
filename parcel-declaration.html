@@ -67,6 +67,33 @@
         padding: 10px;
       }
     }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .loader {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--gold);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -75,7 +102,11 @@
 
     <div class="input-group">
       <label for="trackingNumber">Tracking Number</label>
-      <input type="text" id="trackingNumber" placeholder="Enter tracking number" required>
+      <input type="text" id="trackingNumber" 
+             placeholder="Enter tracking number" 
+             pattern="[A-Za-z0-9-]{5,}" 
+             title="Minimum 5 characters, only letters, numbers, or hyphens allowed" 
+             required>
       <div class="error-message" id="trackingNumberError"></div>
     </div>
 
@@ -177,134 +208,145 @@
     </div>
 
     <div class="input-group">
-      <label for="invoiceFiles">Upload Invoices (Max 3 files, at least 1 required)</label>
+      <label for="invoiceFiles">Upload Invoices (Max 5 files, at least 1 required for * categories)</label>
       <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
       <div class="error-message" id="invoiceFilesError"></div>
     </div>
 
-    <button onclick="handleParcelSubmission(); return false;">Submit</button>
-    <button 
-      style="margin-top: 10px; background: #444" 
-      onclick="showDashboard(); return false;"
-    >
+    <button onclick="handleParcelSubmission()">Submit</button>
+    <button class="secondary-btn" onclick="safeRedirect('dashboard.html')" style="margin-top: 10px;">
       Back to Dashboard
     </button>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loader"></div>
+    </div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-  // ================= INITIALIZATION =================
-  document.addEventListener('DOMContentLoaded', () => {
-    detectViewMode();
-    const userData = checkSession();
-    if (!userData) return;
-    
-    document.getElementById('phoneNumber').value = userData.phone;
-  });
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = checkSession();
+      if (!userData) return safeRedirect('login.html');
+      document.getElementById('phoneNumber').value = userData.phone;
+    });
 
-  // ================= FORM HANDLING =================
-  async function handleParcelSubmission() {
-    try {
-      showLoading(true);
+    async function handleParcelSubmission() {
       clearErrors();
+      const loadingOverlay = document.getElementById('loadingOverlay');
+      
+      try {
+        // Validate form
+        const requiredFields = [
+          'trackingNumber', 'nameOnParcel', 'itemDescription',
+          'quantity', 'price', 'collectionPoint', 'itemCategory'
+        ];
+        
+        let isValid = true;
+        requiredFields.forEach(field => {
+          const element = document.getElementById(field);
+          if (!element.value.trim()) {
+            showError('This field is required', `${field}Error`);
+            isValid = false;
+          }
+        });
 
-      // Collect form data
-      const formData = {
-        trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
-        quantity: document.getElementById('quantity').value,
-        price: document.getElementById('price').value,
-        collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
-      };
+        // Validate tracking number format
+        const trackingNumber = document.getElementById('trackingNumber').value.trim();
+        if (!/^[A-Za-z0-9-]{5,}$/.test(trackingNumber)) {
+          showError('Invalid format (min 5 chars, only letters, numbers, or hyphens)', 'trackingNumberError');
+          isValid = false;
+        }
 
-      // Process files
-      const fileInput = document.getElementById('invoiceFiles');
-      const filesBase64 = await processFiles(fileInput);
+        // Validate numeric fields
+        const quantity = parseInt(document.getElementById('quantity').value);
+        const price = parseFloat(document.getElementById('price').value);
+        if (isNaN(quantity) {
+          showError('Invalid quantity', 'quantityError');
+          isValid = false;
+        }
+        if (isNaN(price)) {
+          showError('Invalid price', 'priceError');
+          isValid = false;
+        }
 
-      // Create JSONP request
-      const callbackName = `parcel_${Date.now()}`;
-      const script = document.createElement('script');
-      const params = new URLSearchParams({
-        action: 'submitParcelDeclaration',
-        callback: callbackName,
-        ...formData,
-        filesBase64: JSON.stringify(filesBase64)
+        // Check mandatory invoices
+        const itemCategory = document.getElementById('itemCategory').value;
+        const mandatoryCategories = [
+          'Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
+          'Gadgets', 'Oil Ointment', 'Supplement'
+        ];
+        const files = document.getElementById('invoiceFiles').files;
+        
+        if (mandatoryCategories.some(cat => itemCategory.includes(cat)) {
+          if (files.length === 0) {
+            showError('At least 1 invoice is required for this category', 'invoiceFilesError');
+            isValid = false;
+          }
+        }
+
+        if (!isValid) return;
+
+        // Show loading
+        loadingOverlay.style.display = 'flex';
+
+        // Prepare form data
+        const formData = new FormData();
+        formData.append('action', 'submitParcelDeclaration');
+        
+        // Add text fields
+        const textData = {
+          trackingNumber: trackingNumber,
+          nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+          phoneNumber: document.getElementById('phoneNumber').value.trim(),
+          itemDescription: document.getElementById('itemDescription').value.trim(),
+          quantity: quantity,
+          price: price.toFixed(2),
+          collectionPoint: document.getElementById('collectionPoint').value,
+          itemCategory: itemCategory
+        };
+        formData.append('data', JSON.stringify(textData));
+
+        // Add files
+        Array.from(files).forEach((file, index) => {
+          formData.append(`file${index}`, file);
+        });
+
+        // Submit to Google Apps Script
+        const response = await fetch(CONFIG.GAS_URL, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(`Declaration submitted!\nTracking Number: ${result.trackingNumber}`);
+          safeRedirect('dashboard.html');
+        } else {
+          showError(result.message || 'Submission failed');
+        }
+      } catch (error) {
+        console.error('Submission error:', error);
+        showError('Failed to submit declaration. Please try again.');
+      } finally {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
       });
-
-      script.src = `${CONFIG.GAS_URL}?${params}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleSubmissionResponse(response);
-      };
-
-      document.body.appendChild(script);
-
-    } catch (error) {
-      showError(error.message);
-      showLoading(false);
     }
-  }
 
-  // ================= FILE PROCESSING =================
-  async function processFiles(fileInput) {
-    if (!fileInput.files.length) return [];
-    
-    return Promise.all(
-      Array.from(fileInput.files).map(async file => ({
-        name: file.name,
-        type: file.type || 'application/octet-stream', // Default type
-        base64: await readFileAsBase64(file)
-      }))
-    );
-  }
-
-  function readFileAsBase64(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  // ================= RESPONSE HANDLING =================
-  function handleSubmissionResponse(response) {
-    showLoading(false);
-    
-    if (response.success) {
-      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
-      safeRedirect('dashboard.html');
-    } else {
-      showError(response.message || 'Submission failed');
+    function showError(message, targetId = 'error-message') {
+      const errorElement = document.getElementById(targetId);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+      }
     }
-  }
-
-  // ================= UTILITIES =================
-  function showLoading(show) {
-    const loader = document.getElementById('loader') || createLoader();
-    loader.style.display = show ? 'block' : 'none';
-  }
-
-  function createLoader() {
-    const loader = document.createElement('div');
-    loader.id = 'loader';
-    loader.innerHTML = `
-      <div class="loader-spinner"></div>
-      <p>Submitting declaration...</p>
-    `;
-    document.body.appendChild(loader);
-    return loader;
-  }
-
-  function clearErrors() {
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.textContent = '';
-    });
-  }
-</script>
+  </script>
 </body>
 </html>
