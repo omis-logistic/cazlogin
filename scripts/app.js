@@ -149,27 +149,59 @@ async function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
 
+  // Clear previous errors
+  clearErrors();
+
+  // Initial validation
   if (!validatePhone(phone)) {
     showError('Invalid phone number format');
     return;
   }
 
+  if (!password) {
+    showError('Please enter your password');
+    return;
+  }
+
   try {
-    const result = await callAPI('processLogin', { phone, password });
-    
+    const result = await callAPI('processLogin', { 
+      phone: phone,
+      password: password
+    });
+
+    // Handle API response
     if (result.success) {
-      sessionStorage.setItem('userData', JSON.stringify(result));
-      localStorage.setItem('lastActivity', Date.now());
+      // Verify critical fields exist
+      if (!result.phone || !result.email) {
+        showError('Invalid login response - missing user data');
+        return;
+      }
+
+      // Store session data
+      sessionStorage.setItem('userData', JSON.stringify({
+        phone: result.phone,
+        email: result.email,
+        tempPassword: result.tempPassword || false
+      }));
       
+      // Update last activity
+      localStorage.setItem('lastActivity', Date.now());
+
+      // Redirect based on password state
       if (result.tempPassword) {
         safeRedirect('password-reset.html');
       } else {
         safeRedirect('dashboard.html');
       }
+      
     } else {
+      // Handle backend errors
       showError(result.message || 'Authentication failed');
     }
+    
   } catch (error) {
+    // Handle network errors
+    console.error('Login error:', error);
     showError('Login failed - please try again');
   }
 }
