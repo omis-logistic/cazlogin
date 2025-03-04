@@ -95,18 +95,41 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}, method = 'POST') {
   try {
+    // Handle file uploads separately
+    const formData = new FormData();
+    let isFileUpload = false;
+
+    // Process regular payload
+    for (const [key, value] of Object.entries(payload)) {
+      if (key === 'filesBase64' && Array.isArray(value)) {
+        isFileUpload = true;
+        value.forEach((file, index) => {
+          formData.append(`file${index}`, new Blob(
+            [Utilities.base64Decode(file.base64)], 
+            { type: file.type }
+          ), file.name);
+        });
+      } else {
+        formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+      }
+    }
+
     const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ action, ...payload })
+      method: method,
+      body: isFileUpload ? formData : JSON.stringify({ action, ...payload }),
+      headers: isFileUpload ? {} : { 'Content-Type': 'application/json' }
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error);
+    }
+    
     return await response.json();
   } catch (error) {
     console.error('API Error:', error);
-    showError(`Network Error: ${error.message}`);
-    return { success: false, message: 'Network error' };
+    showError(error.message || 'Network error');
+    return { success: false, message: error.message };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
