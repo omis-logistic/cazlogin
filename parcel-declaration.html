@@ -245,56 +245,67 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function handleParcelSubmission() {
-  clearErrors();
   const loadingOverlay = document.getElementById('loadingOverlay');
   
   try {
-    // Validate required fields
-    const requiredFields = {
+    // Clear previous errors
+    clearErrors();
+    
+    // Validate session and phone number
+    const userData = checkSession();
+    const phoneNumber = document.getElementById('phoneNumber').value;
+    if (!userData || !phoneNumber) {
+      showError('Session expired or invalid');
+      safeRedirect('login.html');
+      return;
+    }
+
+    // Get form elements
+    const formElements = {
       trackingNumber: document.getElementById('trackingNumber'),
       nameOnParcel: document.getElementById('nameOnParcel'),
       itemDescription: document.getElementById('itemDescription'),
       quantity: document.getElementById('quantity'),
       price: document.getElementById('price'),
       collectionPoint: document.getElementById('collectionPoint'),
-      itemCategory: document.getElementById('itemCategory')
+      itemCategory: document.getElementById('itemCategory'),
+      invoiceFiles: document.getElementById('invoiceFiles')
     };
 
+    // Validate required fields
     let isValid = true;
-    Object.entries(requiredFields).forEach(([field, element]) => {
-      if (!element.value.trim()) {
-        showError('This field is required', `${field}Error`);
+    Object.entries(formElements).forEach(([key, element]) => {
+      if (key !== 'invoiceFiles' && !element.value.trim()) {
+        showError('This field is required', `${key}Error`);
         isValid = false;
       }
     });
 
     // Validate tracking number format
-    const trackingNumber = requiredFields.trackingNumber.value.trim();
+    const trackingNumber = formElements.trackingNumber.value.trim();
     if (!/^[A-Za-z0-9-]{5,}$/.test(trackingNumber)) {
-      showError('Invalid tracking number format', 'trackingNumberError');
+      showError('Invalid tracking number format (min 5 chars, letters/numbers/hyphens only)', 'trackingNumberError');
       isValid = false;
     }
 
     // Validate numeric fields
-    const quantity = parseInt(requiredFields.quantity.value);
-    const price = parseFloat(requiredFields.price.value);
-    if (isNaN(quantity) || quantity < 1) {
+    const quantity = parseInt(formElements.quantity.value);
+    const price = parseFloat(formElements.price.value);
+    if (isNaN(quantity) {
       showError('Invalid quantity', 'quantityError');
       isValid = false;
     }
-    if (isNaN(price) || price <= 0) {
+    if (isNaN(price)) {
       showError('Invalid price', 'priceError');
       isValid = false;
     }
 
     // Check mandatory invoices
-    const itemCategory = requiredFields.itemCategory.value;
     const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 
                                'Food Beverage/Drinks', 'Gadgets', 
                                'Oil Ointment', 'Supplement'];
-    const files = document.getElementById('invoiceFiles').files;
-    
-    if (mandatoryCategories.includes(itemCategory)) {
+    const files = formElements.invoiceFiles.files;
+    if (mandatoryCategories.includes(formElements.itemCategory.value)) {
       if (files.length === 0) {
         showError('At least 1 invoice is required for this category', 'invoiceFilesError');
         isValid = false;
@@ -303,25 +314,23 @@ async function handleParcelSubmission() {
 
     if (!isValid) return;
 
-    // Show loading
+    // Show loading overlay
     loadingOverlay.style.display = 'flex';
 
     // Prepare form data
     const formData = new FormData();
-    formData.append('action', 'submitParcelDeclaration');
-    
-    // Add text data
-    const textData = {
+    const submissionData = {
       trackingNumber: trackingNumber,
-      nameOnParcel: requiredFields.nameOnParcel.value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: requiredFields.itemDescription.value.trim(),
+      nameOnParcel: formElements.nameOnParcel.value.trim(),
+      phoneNumber: phoneNumber,
+      itemDescription: formElements.itemDescription.value.trim(),
       quantity: quantity,
       price: price.toFixed(2),
-      collectionPoint: requiredFields.collectionPoint.value,
-      itemCategory: itemCategory
+      collectionPoint: formElements.collectionPoint.value,
+      itemCategory: formElements.itemCategory.value
     };
-    formData.append('data', JSON.stringify(textData));
+
+    formData.append('data', JSON.stringify(submissionData));
 
     // Add files
     Array.from(files).forEach((file, index) => {
