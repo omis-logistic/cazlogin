@@ -68,15 +68,16 @@ function checkSession() {
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
-  if (!sessionData || (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000)) {
+  if (!sessionData) {
     handleLogout();
     return null;
   }
 
-  localStorage.setItem('lastActivity', Date.now());
   const userData = JSON.parse(sessionData);
   
-  if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+  // Add phone number verification
+  if (!userData?.phone) {
+    showError('Invalid session data - missing phone number');
     handleLogout();
     return null;
   }
@@ -347,6 +348,12 @@ function formatDate(dateString) {
     timeZone: 'Asia/Kuching'
   };
   return new Date(dateString).toLocaleDateString('en-MY', options);
+}
+
+/* ================= UTILITIES ================= */
+function getCurrentUserPhone() {
+  const userData = checkSession();
+  return userData?.phone || null;
 }
 
 /* ================= FILE HANDLING ================= */
