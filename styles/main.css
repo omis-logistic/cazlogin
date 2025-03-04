@@ -41,12 +41,6 @@ input, select, button {
   transition: all 0.3s ease;
 }
 
-#phoneNumber {
-  display: block !important;
-  opacity: 1 !important;
-  pointer-events: none; /* Prevent editing */
-}
-
 input[readonly] {
   background-color: #444;
   color: #888;
@@ -225,6 +219,13 @@ h1 {
     font-size: 16px !important;
     padding: 12px !important;
     min-height: 44px;
+  }
+
+  /* Added phone number mobile styles */
+  #phoneNumber {
+    display: block !important;
+    opacity: 1 !important;
+    pointer-events: none;
   }
 
   .welcome-content {
