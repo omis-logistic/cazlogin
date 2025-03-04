@@ -58,6 +58,13 @@ input, select, button {
   transition: all 0.3s ease;
 }
 
+input[readonly] {
+  background-color: #444;
+  color: #888;
+  border-color: #666;
+  cursor: not-allowed;
+}
+
 button {
   background-color: var(--gold);
   color: var(--dark-bg);
