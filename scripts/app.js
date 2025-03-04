@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxO8ZH9x3sNnEytB-z7bem-CbEBFkTCiEyME5YVYLuEQlutKFEKkzU3FA55eKc4EqeC/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzHKeN_VQD5lyKlre9lXy-UgQFcbNgCrCNv9cACl5SmNHG16ZSsARAK5dXswdsTMNpa/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -92,36 +92,36 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
+// In app.js
 async function callAPI(action, payload = {}) {
-    try {
-        const formData = new FormData();
-        const { data, files } = payload;
+  try {
+    const formData = new FormData();
+    
+    // Add main data payload
+    formData.append('data', JSON.stringify({
+      action: action,
+      ...payload.data
+    }));
 
-        // Append files
-        if (files && files.length > 0) {
-            files.forEach((file, index) => {
-                formData.append(`file${index}`, file, file.name);
-            });
-        }
-
-        // Add main data payload
-        formData.append('data', JSON.stringify({
-            action: action,
-            ...data
-        }));
-
-        const response = await fetch(CONFIG.GAS_URL, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
-    } catch (error) {
-        console.error('API Error:', error);
-        showError(error.message || 'Network error');
-        return { success: false, message: error.message };
+    // Append files with proper indexing
+    if (payload.files && payload.files.length > 0) {
+      payload.files.forEach((file, index) => {
+        formData.append(`file${index}`, file, file.name);
+      });
     }
+
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    showError(error.message || 'Network error');
+    return { success: false, message: error.message };
+  }
 }
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
