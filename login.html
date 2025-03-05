@@ -125,10 +125,9 @@
       
       <div class="auth-links">
         <button onclick="showRegistration()">CREATE ACCOUNT</button>
-        <button class="secondary-btn" 
-                onclick="showForgotPassword()">
-          FORGOT PASSWORD?
-        </button>
+<button class="secondary-btn" onclick="showForgotPassword()">
+  FORGOT PASSWORD?
+</button>
       </div>
     </div>
   </div>
@@ -138,6 +137,13 @@
 
   <script src="scripts/app.js"></script>
   <script>
+    function showRegistration() {
+  safeRedirect('register.html');
+}
+
+function showForgotPassword() {
+  safeRedirect('forgot-password.html');
+}
     // Integrated with app.js functions
     function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
