@@ -124,11 +124,10 @@
       <button onclick="handleLogin()">LOGIN</button>
       
       <div class="auth-links">
-        <button onclick="showRegistration()">CREATE ACCOUNT</button>
-        <button class="secondary-btn" 
-                onclick="showForgotPassword()">
-          FORGOT PASSWORD?
-        </button>
+  <button id="registerBtn">CREATE ACCOUNT</button>
+  <button class="secondary-btn" id="forgotPasswordBtn">
+    FORGOT PASSWORD?
+  </button>
       </div>
     </div>
   </div>
@@ -139,6 +138,9 @@
   <script src="scripts/app.js"></script>
   <script>
     // Integrated with app.js functions
+    function showForgotPassword() {
+    safeRedirect('forgot-password.html');
+  }
     function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
   const password = document.getElementById('password').value;
@@ -181,6 +183,16 @@
 
   document.body.appendChild(script);
 }
+
+    document.addEventListener('DOMContentLoaded', () => {
+    // Handle register button
+    document.getElementById('registerBtn').addEventListener('click', () => {
+      safeRedirect('register.html');
+    });
+
+    // Handle forgot password button
+    document.getElementById('forgotPasswordBtn').addEventListener('click', showForgotPassword);
+  });
   </script>
 </body>
 </html>
