@@ -246,16 +246,11 @@
   async function handleParcelSubmission() {
   const submitBtn = document.getElementById('submitParcelBtn');
   try {
-    // 1. Lock UI
-    submitBtn.innerHTML = '<div class="loader"></div> Submitting...';
     submitBtn.disabled = true;
+    submitBtn.innerHTML = '<div class="loader"></div> Submitting...';
 
-    // 2. Prepare FormData
-    const formData = new FormData();
-    const files = document.getElementById('invoiceFiles').files;
-
-    // 3. Add text fields
-    formData.append('data', JSON.stringify({
+    // Prepare data
+    const formData = {
       trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -264,37 +259,46 @@
       price: document.getElementById('price').value,
       collectionPoint: document.getElementById('collectionPoint').value,
       itemCategory: document.getElementById('itemCategory').value
-    }));
+    };
 
-    // 4. Add files
-    Array.from(files).forEach((file, index) => {
-      formData.append(`file${index}`, file);
-    });
-
-    // 5. Submit with proper headers
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData,
-      redirect: 'follow'
-    });
-
-    // 6. Handle response
-    const result = await response.text();
-    const data = JSON.parse(result);
-
-    if (data.success) {
-      alert(`Submitted! Tracking: ${data.trackingNumber}`);
-      safeRedirect('dashboard.html');
-    } else {
-      throw new Error(data.message);
+    // Process files
+    const fileInput = document.getElementById('invoiceFiles');
+    const files = Array.from(fileInput.files);
+    const fileParams = new URLSearchParams();
+    
+    for (let i = 0; i < files.length; i++) {
+      const base64 = await readFileAsBase64(files[i]);
+      fileParams.append(`file${i}`, base64);
+      fileParams.append(`fileName${i}`, files[i].name);
+      fileParams.append(`fileType${i}`, files[i].type);
     }
+
+    // Create JSONP request
+    const callbackName = `parcel_${Date.now()}`;
+    const script = document.createElement('script');
+    script.src = `${CONFIG.GAS_URL}?action=submitParcelDeclaration&data=${encodeURIComponent(JSON.stringify(formData))}&${fileParams.toString()}&callback=${callbackName}`;
+
+    await new Promise((resolve) => {
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response.success) {
+          alert('Submitted! Tracking: ' + response.trackingNumber);
+          safeRedirect('dashboard.html');
+        } else {
+          throw new Error(response.message);
+        }
+        resolve();
+      };
+      document.body.appendChild(script);
+    });
 
   } catch (error) {
     showError(error.message);
-    console.error('Submission error:', error);
   } finally {
-    submitBtn.innerHTML = 'Submit';
     submitBtn.disabled = false;
+    submitBtn.innerHTML = 'Submit';
   }
 }
 
