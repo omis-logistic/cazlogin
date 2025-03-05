@@ -246,83 +246,54 @@ document.addEventListener('DOMContentLoaded', () => {
   // ================= FORM HANDLING =================
 async function handleParcelSubmission() {
   try {
-    // Clear previous errors
     clearErrors();
-    showLoading(true);
+    const formData = getFormData();
+    validateFormData(formData);
+    
+    const files = document.getElementById('invoiceFiles').files;
+    validateFiles(formData.itemCategory, files);
 
-    // Validate tracking number format
-    const trackingNumber = document.getElementById('trackingNumber').value.trim().toUpperCase();
-    if (!/^[A-Z0-9-]{5,}$/.test(trackingNumber)) {
-      throw new Error('Tracking number must be at least 5 characters (letters, numbers, hyphens only)');
-    }
-
-    // Collect all form data
-    const formData = {
-      trackingNumber: trackingNumber,
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: document.getElementById('quantity').value,
-      price: document.getElementById('price').value,
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
-    };
-
-    // Validate numeric fields
-    if (isNaN(formData.quantity) throw new Error('Quantity must be a number');
-    if (isNaN(formData.price)) throw new Error('Price must be a number');
-    if (Number(formData.quantity) < 1) throw new Error('Quantity must be at least 1');
-    if (Number(formData.price) <= 0) throw new Error('Price must be positive');
-
-    // Get files and validate mandatory categories
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = Array.from(fileInput.files);
-    const mandatoryCategories = [
-      '* Books',
-      '* Cosmetics/Skincare/Bodycare',
-      '* Food Beverage/Drinks',
-      '* Gadgets',
-      '* Oil Ointment',
-      '* Supplement'
-    ];
-
-    if (mandatoryCategories.includes(formData.itemCategory)) {
-      if (files.length === 0) {
-        throw new Error('At least one invoice is required for this item category');
-      }
-      if (files.length > 3) {
-        throw new Error('Maximum 3 files allowed for invoices');
-      }
-    }
-
-    // Validate file types and sizes
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    files.forEach(file => {
-      if (!allowedTypes.includes(file.type)) {
-        throw new Error(`Invalid file type: ${file.name} - Only JPG, PNG, PDF allowed`);
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error(`File too large: ${file.name} - Max 5MB`);
-      }
-    });
-
-    // Submit using proper API call
     const response = await callAPI('submitParcelDeclaration', {
       data: formData,
       files: files
     });
 
-    if (response.success) {
-      alert(`Declaration submitted successfully!\nTracking Number: ${response.trackingNumber}`);
-      safeRedirect('dashboard.html');
-    } else {
-      throw new Error(response.message || 'Submission failed');
-    }
+    handleSubmissionResponse(response);
   } catch (error) {
     showError(error.message);
-    console.error('Submission Error:', error);
-  } finally {
-    showLoading(false);
+  }
+}
+
+// New helper functions
+function getFormData() {
+  return {
+    trackingNumber: document.getElementById('trackingNumber').value.trim(),
+    nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+    phoneNumber: document.getElementById('phoneNumber').value.trim(),
+    itemDescription: document.getElementById('itemDescription').value.trim(),
+    quantity: document.getElementById('quantity').value,
+    price: document.getElementById('price').value,
+    collectionPoint: document.getElementById('collectionPoint').value,
+    itemCategory: document.getElementById('itemCategory').value
+  };
+}
+
+function validateFormData(formData) {
+  if (!/^[A-Z0-9-]{5,}$/.test(formData.trackingNumber)) {
+    throw new Error('Invalid tracking number format');
+  }
+}
+
+function validateFiles(itemCategory, files) {
+  const requiresInvoice = ['Books', 'Cosmetics/Skincare/Bodycare', 
+                          'Food Beverage/Drinks', 'Gadgets', 
+                          'Oil Ointment', 'Supplement']
+                         .some(cat => itemCategory.includes(cat));
+  
+  if (requiresInvoice && files.length === 0) {
+    document.getElementById('invoiceFilesError').textContent = 
+      'At least one invoice is required for this category';
+    throw new Error('Invoice required');
   }
 }
 
