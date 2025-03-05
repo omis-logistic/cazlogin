@@ -244,73 +244,90 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-      try {
-        showLoading(true);
-        clearErrors();
+  try {
+    // 1. Show visual loading state
+    const submitBtn = document.querySelector('button[onclick="handleParcelSubmission()"]');
+    submitBtn.innerHTML = '<div class="loader-small"></div> Submitting...';
+    submitBtn.disabled = true;
 
-        // 1. Validate form data
-        const formData = {
-          trackingNumber: document.getElementById('trackingNumber').value.trim(),
-          nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-          phoneNumber: document.getElementById('phoneNumber').value.trim(),
-          itemDescription: document.getElementById('itemDescription').value.trim(),
-          quantity: document.getElementById('quantity').value,
-          price: document.getElementById('price').value,
-          collectionPoint: document.getElementById('collectionPoint').value,
-          itemCategory: document.getElementById('itemCategory').value
-        };
+    // 2. Collect form data
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: document.getElementById('quantity').value,
+      price: document.getElementById('price').value,
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
 
-        // 2. Validate tracking number
-        if (!/^[A-Za-z0-9-]{5,}$/.test(formData.trackingNumber)) {
-          throw new Error('Invalid tracking number format');
-        }
+    // 3. Process files
+    const fileInput = document.getElementById('invoiceFiles');
+    const files = Array.from(fileInput.files);
+    const filePromises = files.map(file => 
+      readFileAsBase64(file).then(base64 => ({
+        name: file.name,
+        type: file.type,
+        base64: base64
+      }))
+    );
 
-        // 3. Process files
-        const fileInput = document.getElementById('invoiceFiles');
-        const files = Array.from(fileInput.files);
-        const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                                   'Gadgets', 'Oil Ointment', 'Supplement'];
-        
-        if (mandatoryCategories.includes(formData.itemCategory) && files.length === 0) {
-          throw new Error('Invoice required for this item category');
-        }
+    // 4. Prepare payload
+    const payload = {
+      action: 'submitParcelDeclaration',
+      data: formData,
+      files: await Promise.all(filePromises)
+    };
 
-        // 4. Prepare JSONP request
-        const callbackName = `parcel_${Date.now()}`;
-        const params = new URLSearchParams({
-          action: 'submitParcelDeclaration',
-          callback: callbackName,
-          data: JSON.stringify(formData),
-          fileCount: files.length
-        });
+    // 5. Create unique callback
+    const callbackName = `parcel_${Date.now()}`;
+    const script = document.createElement('script');
+    
+    // 6. Build URL with error handling
+    const urlParams = new URLSearchParams({
+      callback: callbackName,
+      payload: JSON.stringify(payload)
+    }).toString().replace(/'/g, "%27");
 
-        // 5. Add files as base64 parameters
-        for (let i = 0; i < files.length; i++) {
-          const base64 = await readFileAsBase64(files[i]);
-          params.append(`file${i}`, base64);
-          params.append(`fileName${i}`, files[i].name);
-          params.append(`fileType${i}`, files[i].type);
-        }
+    script.src = `${CONFIG.GAS_URL}?${urlParams}`;
 
-        // 6. Create and execute request
-        return new Promise((resolve) => {
-          window[callbackName] = (response) => {
-            delete window[callbackName];
-            handleSubmissionResponse(response);
-            resolve();
-          };
+    // 7. Set timeout monitor
+    const timeoutId = setTimeout(() => {
+      showError('Server response timed out');
+      submitBtn.innerHTML = 'Submit';
+      submitBtn.disabled = false;
+    }, 15000);
 
-          const script = document.createElement('script');
-          script.src = `${CONFIG.GAS_URL}?${params}`;
-          document.body.appendChild(script);
-        });
-
-      } catch (error) {
-        showError(error.message);
-      } finally {
-        showLoading(false);
+    // 8. Handle response
+    window[callbackName] = (response) => {
+      clearTimeout(timeoutId);
+      delete window[callbackName];
+      document.body.removeChild(script);
+      
+      console.log('Raw response:', response);
+      
+      if (response.success) {
+        alert(`Submitted! Tracking: ${response.trackingNumber}`);
+        safeRedirect('dashboard.html');
+      } else {
+        showError(response.message || 'Submission failed');
       }
-    }
+      
+      submitBtn.innerHTML = 'Submit';
+      submitBtn.disabled = false;
+    };
+
+    // 9. Execute request
+    document.body.appendChild(script);
+    console.log('Request initiated:', script.src);
+
+  } catch (error) {
+    console.error('Submission error:', error);
+    showError(error.message);
+    document.querySelector('button[onclick="handleParcelSubmission()"]').disabled = false;
+  }
+}
 
   function handleSubmissionResponse(response) {
       if (response.success) {
