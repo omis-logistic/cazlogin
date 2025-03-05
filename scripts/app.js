@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwNoXwDvv0Euv0BavPm6v9NyaBUsK-xTidhZwHTZhuN-OwYm59o4PWM_h_sA5HArMJJ/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbw1wD664lnVmGF7SM1UfYRh5lFX2RtbwUUO1Li8IcagWWjO2R1seYJJw_QMK2TyKAA2/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -60,49 +60,20 @@ function createErrorElement() {
 
 // ================= SESSION MANAGEMENT =================
 function checkSession() {
-  // 1. Get session components
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
-  const currentTime = Date.now();
 
-  // 2. No session data - force logout
-  if (!sessionData) {
+  if (!sessionData || 
+      (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000)) {
     handleLogout();
     return null;
   }
 
-  // 3. Parse session data carefully
-  let userData;
-  try {
-    userData = JSON.parse(sessionData);
-    if (!userData?.phone || typeof userData.phone !== 'string') {
-      throw new Error('Invalid session format');
-    }
-  } catch (e) {
-    console.error('Session parse error:', e);
-    handleLogout();
-    return null;
-  }
-
-  // 4. Temp password handling
-  if (userData.tempPassword && !window.location.pathname.endsWith('password-reset.html')) {
-    safeRedirect('password-reset.html');
-    return null;
-  }
-
-  // 5. Session timeout (1 hour)
-  const sessionTimeout = CONFIG.SESSION_TIMEOUT * 1000; // 3600000 ms = 1 hour
-  if (lastActivity && (currentTime - parseInt(lastActivity)) > sessionTimeout) {
-    handleLogout();
-    return null;
-  }
-
-  // 6. Renew session timestamp
-  localStorage.setItem('lastActivity', currentTime.toString());
-
-  // 7. Final validation
-  if (!userData.phone.match(/^(673\d{7}|60\d{8,9})$/)) {
-    console.error('Invalid phone in session:', userData.phone);
+  localStorage.setItem('lastActivity', Date.now());
+  const userData = JSON.parse(sessionData);
+  
+  // Force password reset if using temporary password
+  if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
     handleLogout();
     return null;
   }
@@ -123,51 +94,37 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}) {
-  const callbackName = `jsonp_${Date.now()}`;
-  const script = document.createElement('script');
-  let timeoutId;
-
   try {
-    const params = new URLSearchParams({
-      action: action,
-      callback: callbackName,
-      ...payload
-    });
-
-    script.src = `${CONFIG.GAS_URL}?${params}`;
-    script.onerror = () => reject(new Error('Failed to load script'));
-
-    return await new Promise((resolve, reject) => {
-      // Add to DOM first
-      document.body.appendChild(script);
-
-      window[callbackName] = (response) => {
-        cleanup();
-        if (response?.success !== undefined) {
-          resolve(response);
-        } else {
-          reject(new Error('Invalid server response format'));
-        }
-      };
-
-      // 15-second timeout
-      timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error('Request timed out after 15 seconds'));
-      }, 15000);
-    });
-  } catch (error) {
-    cleanup();
-    console.error('API Error:', error);
-    throw error;
-  }
-
-  function cleanup() {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    if (script.parentNode) {
-      script.parentNode.removeChild(script);
+    const formData = new FormData();
+    
+    if (payload.filesBase64 && payload.filesBase64.length > 0) {
+      payload.filesBase64.forEach((file, index) => {
+        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
+        const blob = new Blob([byteArray], { 
+          type: file.type || 'application/octet-stream'
+        });
+        formData.append(`file${index}`, blob, file.name);
+      });
     }
+
+    // Add main data payload
+    formData.append('data', JSON.stringify({
+      action: action,
+      ...payload,
+      filesBase64: undefined // Remove files from JSON payload
+    }));
+
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    showError(error.message || 'Network error');
+    return { success: false, message: error.message };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
