@@ -220,21 +220,6 @@
       isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
   });
 
-  // Add invoice requirement check
-  document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-  const userData = checkSession();
-  if (!userData) return safeRedirect('login.html');
-  
-  // Display raw phone number from session
-  document.getElementById('phoneNumber').value = userData.phone;
-
-  // Tracking number validation
-  document.getElementById('trackingNumber').addEventListener('input', function() {
-    const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
-    document.getElementById('trackingNumberError').textContent = 
-      isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
-  });
 
   // Invoice requirement handler
   document.getElementById('itemCategory').addEventListener('change', function() {
