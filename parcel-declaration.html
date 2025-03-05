@@ -203,6 +203,9 @@
   const userData = checkSession();
   if (!userData) return safeRedirect('login.html');
   
+  // Directly display stored phone number without formatting
+  document.getElementById('phoneNumber').value = userData.phone;
+  
   // Set phone number with country code formatting
   const formattedPhone = userData.phone.startsWith('60') 
     ? `+${userData.phone}`
@@ -223,20 +226,22 @@
   const userData = checkSession();
   if (!userData) return safeRedirect('login.html');
   
+  // Display raw phone number from session
   document.getElementById('phoneNumber').value = userData.phone;
 
-  // Real-time tracking number validation
+  // Tracking number validation
   document.getElementById('trackingNumber').addEventListener('input', function() {
     const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
     document.getElementById('trackingNumberError').textContent = 
       isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
   });
 
-  // Handle invoice requirements
+  // Invoice requirement handler
   document.getElementById('itemCategory').addEventListener('change', function() {
     const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
                                'Gadgets', 'Oil Ointment', 'Supplement'];
-    document.getElementById('invoiceFiles').required = mandatoryCategories.includes(this.value);
+    const fileInput = document.getElementById('invoiceFiles');
+    fileInput.required = mandatoryCategories.includes(this.value);
   });
 });
 
