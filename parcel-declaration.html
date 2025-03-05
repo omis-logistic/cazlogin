@@ -201,9 +201,14 @@
   document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   const userData = checkSession();
-  if (!userData) return;
+  if (!userData) return safeRedirect('login.html');
   
-  document.getElementById('phoneNumber').value = userData.phone;
+  // Set phone number with country code formatting
+  const formattedPhone = userData.phone.startsWith('60') 
+    ? `+${userData.phone}`
+    : `+673 ${userData.phone.slice(3)}`;
+  
+  document.getElementById('phoneNumber').value = formattedPhone;
   
   // Add tracking number validation
   document.getElementById('trackingNumber').addEventListener('input', function() {
