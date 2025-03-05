@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbw1wD664lnVmGF7SM1UfYRh5lFX2RtbwUUO1Li8IcagWWjO2R1seYJJw_QMK2TyKAA2/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxMffPYIJpo4Pm2TDTp0zmVSf4oYYF6ncFx5I9pXkHdyvKbmUn2XHiTTz6cIOnKXjgc/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -97,13 +97,10 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    if (payload.filesBase64 && payload.filesBase64.length > 0) {
-      payload.filesBase64.forEach((file, index) => {
-        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { 
-          type: file.type || 'application/octet-stream'
-        });
-        formData.append(`file${index}`, blob, file.name);
+    // Handle file uploads
+    if (payload.files && payload.files.length > 0) {
+      Array.from(payload.files).forEach((file, index) => {
+        formData.append(`file${index}`, file);
       });
     }
 
@@ -111,7 +108,7 @@ async function callAPI(action, payload = {}) {
     formData.append('data', JSON.stringify({
       action: action,
       ...payload,
-      filesBase64: undefined // Remove files from JSON payload
+      files: undefined // Remove files from JSON payload
     }));
 
     const response = await fetch(CONFIG.GAS_URL, {
@@ -119,12 +116,25 @@ async function callAPI(action, payload = {}) {
       body: formData
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.message || 'API request failed');
+    }
+
+    return result;
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
-    return { success: false, message: error.message };
+    return { 
+      success: false,
+      message: error.message,
+      error: error instanceof Error ? error.stack : undefined
+    };
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
