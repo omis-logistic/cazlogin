@@ -203,52 +203,144 @@
   });
 
   // ================= FORM HANDLING =================
-  async function handleParcelSubmission() {
-    try {
-      showLoading(true);
-      clearErrors();
+async function handleParcelSubmission() {
+  try {
+    // Clear previous errors
+    clearErrors();
+    showLoading(true);
 
-      // Collect form data
-      const formData = {
-        trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
-        quantity: document.getElementById('quantity').value,
-        price: document.getElementById('price').value,
-        collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
-      };
-
-      // Process files
-      const fileInput = document.getElementById('invoiceFiles');
-      const filesBase64 = await processFiles(fileInput);
-
-      // Create JSONP request
-      const callbackName = `parcel_${Date.now()}`;
-      const script = document.createElement('script');
-      const params = new URLSearchParams({
-        action: 'submitParcelDeclaration',
-        callback: callbackName,
-        ...formData,
-        filesBase64: JSON.stringify(filesBase64)
-      });
-
-      script.src = `${CONFIG.GAS_URL}?${params}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleSubmissionResponse(response);
-      };
-
-      document.body.appendChild(script);
-
-    } catch (error) {
-      showError(error.message);
-      showLoading(false);
+    // Validate tracking number format
+    const trackingNumber = document.getElementById('trackingNumber').value.trim().toUpperCase();
+    if (!/^[A-Z0-9-]{5,}$/.test(trackingNumber)) {
+      throw new Error('Tracking number must be at least 5 characters (letters, numbers, hyphens only)');
     }
+
+    // Collect all form data
+    const formData = {
+      trackingNumber: trackingNumber,
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: document.getElementById('quantity').value,
+      price: document.getElementById('price').value,
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
+
+    // Validate numeric fields
+    if (isNaN(formData.quantity) throw new Error('Quantity must be a number');
+    if (isNaN(formData.price)) throw new Error('Price must be a number');
+    if (Number(formData.quantity) < 1) throw new Error('Quantity must be at least 1');
+    if (Number(formData.price) <= 0) throw new Error('Price must be positive');
+
+    // Get files and validate mandatory categories
+    const fileInput = document.getElementById('invoiceFiles');
+    const files = Array.from(fileInput.files);
+    const mandatoryCategories = [
+      '* Books',
+      '* Cosmetics/Skincare/Bodycare',
+      '* Food Beverage/Drinks',
+      '* Gadgets',
+      '* Oil Ointment',
+      '* Supplement'
+    ];
+
+    if (mandatoryCategories.includes(formData.itemCategory)) {
+      if (files.length === 0) {
+        throw new Error('At least one invoice is required for this item category');
+      }
+      if (files.length > 3) {
+        throw new Error('Maximum 3 files allowed for invoices');
+      }
+    }
+
+    // Validate file types and sizes
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    files.forEach(file => {
+      if (!allowedTypes.includes(file.type)) {
+        throw new Error(`Invalid file type: ${file.name} - Only JPG, PNG, PDF allowed`);
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error(`File too large: ${file.name} - Max 5MB`);
+      }
+    });
+
+    // Submit using proper API call
+    const response = await callAPI('submitParcelDeclaration', {
+      data: formData,
+      files: files
+    });
+
+    if (response.success) {
+      alert(`Declaration submitted successfully!\nTracking Number: ${response.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      throw new Error(response.message || 'Submission failed');
+    }
+  } catch (error) {
+    showError(error.message);
+    console.error('Submission Error:', error);
+  } finally {
+    showLoading(false);
   }
+}
+
+// Updated Back to Dashboard button in HTML
+<button class="secondary-btn" onclick="safeRedirect('dashboard.html')" 
+        style="margin-top: 10px; background: var(--dark-bg);">
+  ← Back to Dashboard
+</button>
+
+// Add this loading indicator style
+<style>
+  .loader-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 9999;
+    display: none;
+  }
+  
+  .loader-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--gold);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+</style>
+
+// Add loading indicator HTML before closing body tag
+<div class="loader-overlay" id="loaderOverlay">
+  <div class="loader-spinner"></div>
+</div>
+
+// Loading control functions
+function showLoading(show) {
+  document.getElementById('loaderOverlay').style.display = show ? 'block' : 'none';
+  document.querySelectorAll('button').forEach(btn => {
+    btn.disabled = show;
+  });
+}
+
+function clearErrors() {
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.textContent = '';
+  });
+}
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
