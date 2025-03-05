@@ -124,10 +124,11 @@
       <button onclick="handleLogin()">LOGIN</button>
       
       <div class="auth-links">
-  <button id="registerBtn">CREATE ACCOUNT</button>
-  <button class="secondary-btn" id="forgotPasswordBtn">
-    FORGOT PASSWORD?
-  </button>
+        <button onclick="showRegistration()">CREATE ACCOUNT</button>
+        <button class="secondary-btn" 
+                onclick="showForgotPassword()">
+          FORGOT PASSWORD?
+        </button>
       </div>
     </div>
   </div>
@@ -138,61 +139,41 @@
   <script src="scripts/app.js"></script>
   <script>
     // Integrated with app.js functions
-    function showForgotPassword() {
-    safeRedirect('forgot-password.html');
-  }
     function handleLogin() {
-  const phone = document.getElementById('phone').value.trim();
-  const password = document.getElementById('password').value;
+      const phone = document.getElementById('phone').value;
+      const password = document.getElementById('password').value;
 
-  const callbackName = `login_${Date.now()}`;
-  const script = document.createElement('script');
-  script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+      if (!phone || !password) {
+        showError('Please fill in all fields');
+        return;
+      }
 
-  // Lock UI during request
-  const loginBtn = document.querySelector('button[onclick="handleLogin()"]');
-  loginBtn.disabled = true;
-  loginBtn.innerHTML = '<div class="loader-small"></div> Authenticating...';
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
-  window[callbackName] = (response) => {
-    // Cleanup
-    delete window[callbackName];
-    document.body.removeChild(script);
-    loginBtn.disabled = false;
-    loginBtn.innerHTML = 'LOGIN';
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response.success) {
+          sessionStorage.setItem('userData', JSON.stringify(response));
+          safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+        } else {
+          showError(response.message || 'Login failed');
+        }
+      };
 
-    if (response.success) {
-      // Force session storage update
-      sessionStorage.setItem('userData', JSON.stringify({
-        phone: response.phone,
-        email: response.email,
-        tempPassword: response.tempPassword
-      }));
-      
-      // Immediate activity update
-      localStorage.setItem('lastActivity', Date.now().toString());
-      
-      // Delay redirect for session to persist
-      setTimeout(() => {
-        window.location.href = response.tempPassword ? 'password-reset.html' : 'dashboard.html';
-      }, 100);
-    } else {
-      showError(response.message || 'Authentication failed');
+      document.body.appendChild(script);
     }
-  };
 
-  document.body.appendChild(script);
-}
-
-    document.addEventListener('DOMContentLoaded', () => {
-    // Handle register button
-    document.getElementById('registerBtn').addEventListener('click', () => {
+    function showRegistration() {
       safeRedirect('register.html');
-    });
+    }
 
-    // Handle forgot password button
-    document.getElementById('forgotPasswordBtn').addEventListener('click', showForgotPassword);
-  });
+    function showForgotPassword() {
+      safeRedirect('forgot-password.html');
+    }
   </script>
 </body>
 </html>
