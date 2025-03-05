@@ -244,61 +244,65 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-  const submitBtn = document.getElementById('submitParcelBtn');
+  const btn = document.getElementById('submitBtn');
   try {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<div class="loader"></div> Submitting...';
+    // Lock UI
+    btn.innerHTML = '<div class="loader"></div>';
+    btn.disabled = true;
 
-    // Prepare data
-    const formData = {
-      trackingNumber: document.getElementById('trackingNumber').value.trim(),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: document.getElementById('quantity').value,
-      price: document.getElementById('price').value,
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
+    // Generate unique request ID
+    const requestId = `parcel_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+    // Build base URL
+    const url = new URL(CONFIG.GAS_URL);
+    url.searchParams.append('action', 'submitParcel');
+    url.searchParams.append('requestId', requestId);
+
+    // Add form data
+    const formElements = ['trackingNumber', 'nameOnParcel', 'phoneNumber',
+      'itemDescription', 'quantity', 'price', 'collectionPoint', 'itemCategory'];
+    
+    formElements.forEach(id => {
+      url.searchParams.append(id, document.getElementById(id).value.trim());
+    });
+
+    // Add files
+    const files = document.getElementById('invoiceFiles').files;
+    Array.from(files).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        url.searchParams.append(`file${index}`, reader.result.split(',')[1]);
+        url.searchParams.append(`fileName${index}`, file.name);
+        url.searchParams.append(`fileType${index}`, file.type);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Create script element
+    const script = document.createElement('script');
+    script.src = url.toString();
+
+    // Handle response
+    window[requestId] = (response) => {
+      delete window[requestId];
+      document.body.removeChild(script);
+      
+      if (response.success) {
+        alert(`Submitted! Tracking: ${response.trackingNumber}`);
+        safeRedirect('dashboard.html');
+      } else {
+        throw new Error(response.message);
+      }
     };
 
-    // Process files
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = Array.from(fileInput.files);
-    const fileParams = new URLSearchParams();
-    
-    for (let i = 0; i < files.length; i++) {
-      const base64 = await readFileAsBase64(files[i]);
-      fileParams.append(`file${i}`, base64);
-      fileParams.append(`fileName${i}`, files[i].name);
-      fileParams.append(`fileType${i}`, files[i].type);
-    }
-
-    // Create JSONP request
-    const callbackName = `parcel_${Date.now()}`;
-    const script = document.createElement('script');
-    script.src = `${CONFIG.GAS_URL}?action=submitParcelDeclaration&data=${encodeURIComponent(JSON.stringify(formData))}&${fileParams.toString()}&callback=${callbackName}`;
-
-    await new Promise((resolve) => {
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          alert('Submitted! Tracking: ' + response.trackingNumber);
-          safeRedirect('dashboard.html');
-        } else {
-          throw new Error(response.message);
-        }
-        resolve();
-      };
-      document.body.appendChild(script);
-    });
+    // Execute request
+    document.body.appendChild(script);
 
   } catch (error) {
     showError(error.message);
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Submit';
+    btn.innerHTML = 'Submit';
+    btn.disabled = false;
   }
 }
 
