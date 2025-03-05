@@ -60,25 +60,58 @@ function createErrorElement() {
 
 // ================= SESSION MANAGEMENT =================
 function checkSession() {
+  // 1. Get session data
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
-  if (!sessionData || 
-      (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000)) {
+  // 2. Basic session check
+  if (!sessionData) {
     handleLogout();
     return null;
   }
 
-  localStorage.setItem('lastActivity', Date.now());
-  const userData = JSON.parse(sessionData);
+  // 3. Parse user data
+  let userData;
+  try {
+    userData = JSON.parse(sessionData);
+  } catch (e) {
+    console.error('Session parse error:', e);
+    handleLogout();
+    return null;
+  }
+
+  // 4. Validate phone number existence
+  if (!userData?.phone) {
+    console.warn('Session missing phone number');
+    handleLogout();
+    return null;
+  }
+
+  // 5. Session timeout check
+  const currentTime = Date.now();
+  const timeElapsed = currentTime - parseInt(lastActivity || '0', 10);
   
-  // Force password reset if using temporary password
+  if (timeElapsed > CONFIG.SESSION_TIMEOUT * 1000) {
+    console.log(`Session expired after ${CONFIG.SESSION_TIMEOUT} seconds`);
+    handleLogout();
+    return null;
+  }
+
+  // 6. Force password reset check
   if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
     handleLogout();
     return null;
   }
 
-  return userData;
+  // 7. Update last activity timestamp
+  localStorage.setItem('lastActivity', currentTime.toString());
+
+  // 8. Return validated session data
+  return {
+    phone: String(userData.phone).replace(/[^0-9]/g, ''), // Sanitized phone
+    email: userData.email?.trim().toLowerCase() || '',
+    tempPassword: Boolean(userData.tempPassword)
+  };
 }
 
 function handleLogout() {
