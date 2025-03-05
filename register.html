@@ -117,63 +117,29 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    function handleRegistration() {
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-      const statusElement = document.getElementById('registrationStatus');
-      statusElement.className = '';
-      statusElement.textContent = '';
+    async function handleRegistration() {
+  if (!validateRegistrationForm()) return;
 
-      if (!validateRegistrationForm()) return;
+  const formData = {
+    phone: document.getElementById('regPhone').value.trim(),
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value.trim()
+  };
 
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
-      const email = document.getElementById('regEmail').value;
-
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          statusElement.className = 'status-message success';
-          statusElement.textContent = 'Registration successful! Redirecting...';
-          setTimeout(() => safeRedirect('login.html'), 1500);
-        } else {
-          statusElement.className = 'status-message error';
-          statusElement.textContent = response.message || 'Registration failed';
-        }
-      };
-
-      document.body.appendChild(script);
+  try {
+    const result = await callAPI('createAccount', formData);
+    
+    if (result.success) {
+      alert('Registration successful! Please login.');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Registration failed');
     }
-
-    document.getElementById('regPhone').addEventListener('input', function() {
-      document.getElementById('phoneError').textContent = 
-        !validatePhone(this.value) ? 'Invalid phone format' : '';
-    });
-
-    document.getElementById('regPassword').addEventListener('input', function() {
-      document.getElementById('passError').textContent = 
-        !validatePassword(this.value) ? '6+ chars, 1 uppercase, 1 number' : '';
-    });
-
-    document.getElementById('regConfirmPass').addEventListener('input', function() {
-      document.getElementById('confirmPassError').textContent = 
-        this.value !== document.getElementById('regPassword').value ? 'Passwords mismatch' : '';
-    });
-
-    document.getElementById('regEmail').addEventListener('input', function() {
-      document.getElementById('emailError').textContent = 
-        !validateEmail(this.value) ? 'Invalid email format' : '';
-    });
-
-    document.getElementById('regConfirmEmail').addEventListener('input', function() {
-      document.getElementById('confirmEmailError').textContent = 
-        this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
-    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    showError('Registration failed - please try again');
+  }
+}
   </script>
 </body>
 </html>
