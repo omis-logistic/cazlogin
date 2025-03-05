@@ -200,41 +200,23 @@
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
-  
-  // 1. Session Validation
   const userData = checkSession();
-  if (!userData) {
-    showError('Session expired. Redirecting to login...');
-    setTimeout(() => safeRedirect('login.html'), 1500);
-    return;
-  }
+  if (!userData) return safeRedirect('login.html');
+  
+  document.getElementById('phoneNumber').value = userData.phone;
 
-  // 2. Phone Number Handling
-  const phoneField = document.getElementById('phoneNumber');
-  try {
-    // Direct raw number assignment
-    phoneField.value = userData.phone || '';
-    
-    // Validation check
-    if (!phoneField.value.trim()) {
-      throw new Error('Empty phone number in session');
-    }
-  } catch (error) {
-    console.error('Phone number error:', error);
-    phoneField.placeholder = 'Session error - Relogin required';
-    phoneField.style.borderColor = 'var(--error-red)';
-    showError('Invalid session data. Redirecting...');
-    setTimeout(() => handleLogout(), 2000);
-    return;
-  }
-
-  // 3. Tracking Number Validation
   document.getElementById('trackingNumber').addEventListener('input', function() {
     const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
     document.getElementById('trackingNumberError').textContent = 
-      isValid ? '' : 'Minimum 5 characters (letters, numbers, hyphens only)';
+      isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
   });
 
+  document.getElementById('itemCategory').addEventListener('change', function() {
+    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
+                               'Gadgets', 'Oil Ointment', 'Supplement'];
+    document.getElementById('invoiceFiles').required = mandatoryCategories.includes(this.value);
+  });
+});
   // 4. Invoice Requirement Handler
   document.getElementById('itemCategory').addEventListener('change', function() {
     const mandatoryCategories = [
@@ -267,13 +249,18 @@
 
 
   // ================= FORM HANDLING =================
-  async function handleParcelSubmission() {
-  try {
-    showLoading(true);
-    clearErrors();
+  async function handleParcelSubmission(event) {
+  event.preventDefault();
+  showLoading(true);
+  clearErrors();
 
-    // Validate form data
-    const formData = {
+  try {
+    const formData = new FormData();
+    const files = document.getElementById('invoiceFiles').files;
+
+    // Add text fields
+    formData.append('data', JSON.stringify({
+      action: 'submitParcelDeclaration',
       trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -282,54 +269,39 @@
       price: document.getElementById('price').value,
       collectionPoint: document.getElementById('collectionPoint').value,
       itemCategory: document.getElementById('itemCategory').value
-    };
+    }));
 
-    // Validate tracking number format
-    if (!/^[A-Za-z0-9-]{5,}$/.test(formData.trackingNumber)) {
-      throw new Error('Invalid tracking number format');
-    }
-
-    // Process files
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = Array.from(fileInput.files);
-
-    // Check mandatory invoices
-    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                               'Gadgets', 'Oil Ointment', 'Supplement'];
-    if (mandatoryCategories.includes(formData.itemCategory) && files.length === 0) {
-      throw new Error('Invoice upload required for this item category');
-    }
-
-    // Create JSONP request
-    const callbackName = `parcel_${Date.now()}`;
-    const script = document.createElement('script');
-    const params = new URLSearchParams({
-      action: 'submitParcelDeclaration',
-      callback: callbackName,
-      data: JSON.stringify(formData),
-      fileCount: files.length
+    // Add files
+    Array.from(files).forEach((file, index) => {
+      formData.append(`file${index}`, file);
     });
 
-    // Append files as base64 parameters
-    for (let i = 0; i < files.length; i++) {
-      const base64 = await readFileAsBase64(files[i]);
-      params.append(`file${i}`, base64);
-      params.append(`fileName${i}`, files[i].name);
-      params.append(`fileType${i}`, files[i].type);
+    // Hybrid submission
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    }).then(res => res.text());
+
+    // Handle JSONP fallback
+    if (!response.startsWith('{"')) {
+      const callbackName = `jsonp_${Date.now()}`;
+      return new Promise((resolve, reject) => {
+        window[callbackName] = (data) => {
+          delete window[callbackName];
+          handleSubmissionResponse(data);
+          resolve(data);
+        };
+        
+        const script = document.createElement('script');
+        script.src = `${CONFIG.GAS_URL}?action=submitParcelDeclaration&callback=${callbackName}&${new URLSearchParams(formData).toString()}`;
+        document.body.appendChild(script);
+      });
     }
 
-    script.src = `${CONFIG.GAS_URL}?${params}`;
-
-    window[callbackName] = (response) => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      handleSubmissionResponse(response);
-    };
-
-    document.body.appendChild(script);
-
+    handleSubmissionResponse(JSON.parse(response));
   } catch (error) {
-    showError(error.message);
+    showError(error.message || 'Submission failed');
   } finally {
     showLoading(false);
   }
