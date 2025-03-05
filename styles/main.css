@@ -186,6 +186,13 @@ body.mobile-view .welcome-content {
   box-shadow: 0 0 5px rgba(255, 68, 68, 0.3) !important;
 }
 
+.error-message {
+  color: #ff4444;
+  font-size: 0.9rem;
+  margin-top: 4px;
+  min-height: 20px;
+}
+
 .mobile-only {
   display: none !important;
 }
