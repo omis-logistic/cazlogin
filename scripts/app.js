@@ -123,9 +123,11 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}) {
+  const callbackName = `jsonp_${Date.now()}`;
+  const script = document.createElement('script');
+  let timeoutId;
+
   try {
-    const callbackName = `jsonp_${Date.now()}`;
-    const script = document.createElement('script');
     const params = new URLSearchParams({
       action: action,
       callback: callbackName,
@@ -133,29 +135,39 @@ async function callAPI(action, payload = {}) {
     });
 
     script.src = `${CONFIG.GAS_URL}?${params}`;
+    script.onerror = () => reject(new Error('Failed to load script'));
 
-    return new Promise((resolve, reject) => {
+    return await new Promise((resolve, reject) => {
+      // Add to DOM first
+      document.body.appendChild(script);
+
       window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        if (response && response.success !== undefined) {
+        cleanup();
+        if (response?.success !== undefined) {
           resolve(response);
         } else {
-          reject(new Error('Invalid server response'));
+          reject(new Error('Invalid server response format'));
         }
       };
-      document.body.appendChild(script);
-      
-      // Add timeout handling
-      setTimeout(() => {
-        reject(new Error('Request timeout'));
-        document.body.removeChild(script);
-      }, 10000);
+
+      // 15-second timeout
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('Request timed out after 15 seconds'));
+      }, 15000);
     });
   } catch (error) {
+    cleanup();
     console.error('API Error:', error);
-    showError(error.message || 'Network error');
-    return { success: false, message: error.message };
+    throw error;
+  }
+
+  function cleanup() {
+    clearTimeout(timeoutId);
+    delete window[callbackName];
+    if (script.parentNode) {
+      script.parentNode.removeChild(script);
+    }
   }
 }
 // ================= AUTHENTICATION HANDLERS =================
