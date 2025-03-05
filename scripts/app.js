@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzg4oFIzJ5gJhOwqwRU5_InZKCy7mcd1U8A8owywLxWCWTC4PCtYmLR4RMvbd5a3X5t/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbx7Jm4zxXuozohKt3t4qJZMF-RwZOeEyT_6JMp3JbEtRrSEHESK9T8y4Drs-aA5Q88s/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -279,7 +279,7 @@ function validatePhone(phone) {
 }
 
 function validatePassword(password) {
-  const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+  const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
   return regex.test(password);
 }
 
