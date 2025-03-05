@@ -145,36 +145,42 @@
 
   const callbackName = `login_${Date.now()}`;
   const script = document.createElement('script');
-  
-  // Use traditional parameter format
   script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
+  // Lock UI during request
+  const loginBtn = document.querySelector('button[onclick="handleLogin()"]');
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = '<div class="loader-small"></div> Authenticating...';
+
   window[callbackName] = (response) => {
+    // Cleanup
     delete window[callbackName];
     document.body.removeChild(script);
-    
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = 'LOGIN';
+
     if (response.success) {
+      // Force session storage update
       sessionStorage.setItem('userData', JSON.stringify({
         phone: response.phone,
         email: response.email,
         tempPassword: response.tempPassword
       }));
-      safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+      
+      // Immediate activity update
+      localStorage.setItem('lastActivity', Date.now().toString());
+      
+      // Delay redirect for session to persist
+      setTimeout(() => {
+        window.location.href = response.tempPassword ? 'password-reset.html' : 'dashboard.html';
+      }, 100);
     } else {
-      showError(response.message || 'Login failed');
+      showError(response.message || 'Authentication failed');
     }
   };
 
   document.body.appendChild(script);
 }
-
-    function showRegistration() {
-      safeRedirect('register.html');
-    }
-
-    function showForgotPassword() {
-      safeRedirect('forgot-password.html');
-    }
   </script>
 </body>
 </html>
