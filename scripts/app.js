@@ -138,9 +138,19 @@ async function callAPI(action, payload = {}) {
       window[callbackName] = (response) => {
         delete window[callbackName];
         document.body.removeChild(script);
-        resolve(response);
+        if (response && response.success !== undefined) {
+          resolve(response);
+        } else {
+          reject(new Error('Invalid server response'));
+        }
       };
       document.body.appendChild(script);
+      
+      // Add timeout handling
+      setTimeout(() => {
+        reject(new Error('Request timeout'));
+        document.body.removeChild(script);
+      }, 10000);
     });
   } catch (error) {
     console.error('API Error:', error);
