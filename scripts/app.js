@@ -319,7 +319,7 @@ function validateRegistrationForm() {
 // ================= NAVIGATION & UTILITIES =================
 function safeRedirect(path) {
   // Add these paths to allowed list
-  const allowed = ['login.html', 'dashboard.html', 'password-reset.html','parcel-declaration.html','register.html'];
+  const allowed = ['login.html', 'dashboard.html', 'password-reset.html'];
   if (!allowed.includes(path)) return;
   
   // Force reload to clear state
