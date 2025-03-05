@@ -279,7 +279,7 @@ function validatePhone(phone) {
 }
 
 function validatePassword(password) {
-  const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+])[A-Za-z\d!@#$%^&*()_+]{8,}$/;
+  const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
   return regex.test(password);
 }
 
