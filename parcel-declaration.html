@@ -87,8 +87,12 @@
 
     <div class="input-group">
       <label for="phoneNumber">Phone Number</label>
-      <input type="tel" id="phoneNumber" placeholder="Phone Number" readonly>
-    </div>
+  <input type="tel" 
+         id="phoneNumber" 
+         placeholder="Phone Number" 
+         readonly
+         style="background: #444; color: #999; cursor: not-allowed">
+</div>
 
     <div class="input-group">
       <label for="itemDescription">Item Description</label>
@@ -184,23 +188,91 @@
 
     <button onclick="handleParcelSubmission(); return false;">Submit</button>
     <button 
-      style="margin-top: 10px; background: #444" 
-      onclick="showDashboard(); return false;"
-    >
-      Back to Dashboard
-    </button>
+    style="margin-top: 10px; background: #444" 
+    onclick="safeRedirect('dashboard.html')"
+  >
+    Back to Dashboard
+  </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
-    detectViewMode();
-    const userData = checkSession();
-    if (!userData) return;
+  // Initialize view mode detection
+  detectViewMode();
+
+  // Session check and redirect
+  const userData = checkSession();
+  if (!userData) {
+    safeRedirect('login.html');
+    return;
+  }
+
+  // Initialize user phone number display
+  const phoneInput = document.getElementById('phoneNumber');
+  phoneInput.value = userData.phone || '';
+  phoneInput.style.backgroundColor = '#444';
+  phoneInput.style.color = '#999';
+  phoneInput.style.cursor = 'not-allowed';
+
+  // Tracking number validation setup
+  const trackingInput = document.getElementById('trackingNumber');
+  const trackingError = document.getElementById('trackingNumberError');
+  
+  // Real-time tracking number validation and sanitization
+  trackingInput.addEventListener('input', function() {
+    // Clean and format input
+    let value = this.value.trim().toUpperCase();
     
-    document.getElementById('phoneNumber').value = userData.phone;
+    // Remove invalid characters (only allow A-Z, 0-9, and hyphens)
+    value = value.replace(/[^A-Z0-9-]/g, '');
+    
+    // Update input value with cleaned version
+    this.value = value;
+    
+    // Validate format
+    const isValid = /^[A-Z0-9-]{5,}$/.test(value);
+    
+    // Show/hide error message
+    if (!isValid && value.length > 0) {
+      trackingError.textContent = 'Minimum 5 characters. Only letters, numbers, and hyphens allowed';
+      this.classList.add('invalid-input');
+    } else {
+      trackingError.textContent = '';
+      this.classList.remove('invalid-input');
+    }
+
+    // Special case handling for empty field
+    if (value.length === 0) {
+      trackingError.textContent = '';
+      this.classList.remove('invalid-input');
+    }
   });
+
+  // Initialize other form elements
+  const fileInput = document.getElementById('invoiceFiles');
+  fileInput.addEventListener('change', handleFileUpload);
+
+  // Auto-focus first empty input
+  const firstEmptyInput = document.querySelector('input:not([readonly]):invalid');
+  if (firstEmptyInput) {
+    firstEmptyInput.focus();
+  }
+
+  // Error cleanup on window close
+  window.addEventListener('beforeunload', () => {
+    const errorElement = document.getElementById('error-message');
+    if (errorElement) errorElement.style.display = 'none';
+  });
+
+  // Session timeout watcher
+  setInterval(() => {
+    if (!checkSession()) {
+      safeRedirect('login.html');
+    }
+  }, 30000); // Check every 30 seconds
+});
 
   // ================= FORM HANDLING =================
 async function handleParcelSubmission() {
