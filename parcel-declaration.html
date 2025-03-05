@@ -186,11 +186,7 @@
       <div class="error-message" id="invoiceFilesError"></div>
     </div>
 
-    <button id="submitParcelBtn" onclick="handleParcelSubmission(); return false;">Submit</button>
-    <button 
-  style="margin-top: 10px; background: #444" 
-  onclick="safeRedirect('dashboard.html'); return false;"
->
+    <button id="submitParcelBtn" onclick="handleParcelSubmission()">Submit</button>
   Back to Dashboard
 </button>
   </div>
@@ -244,65 +240,55 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-  const btn = document.getElementById('submitBtn');
+  const btn = document.getElementById('submitParcelBtn');
   try {
-    // Lock UI
-    btn.innerHTML = '<div class="loader"></div>';
+    // 1. Lock UI
     btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loader"></div> Submitting...';
 
-    // Generate unique request ID
-    const requestId = `parcel_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-
-    // Build base URL
-    const url = new URL(CONFIG.GAS_URL);
-    url.searchParams.append('action', 'submitParcel');
-    url.searchParams.append('requestId', requestId);
-
-    // Add form data
-    const formElements = ['trackingNumber', 'nameOnParcel', 'phoneNumber',
-      'itemDescription', 'quantity', 'price', 'collectionPoint', 'itemCategory'];
-    
-    formElements.forEach(id => {
-      url.searchParams.append(id, document.getElementById(id).value.trim());
-    });
-
-    // Add files
-    const files = document.getElementById('invoiceFiles').files;
-    Array.from(files).forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        url.searchParams.append(`file${index}`, reader.result.split(',')[1]);
-        url.searchParams.append(`fileName${index}`, file.name);
-        url.searchParams.append(`fileType${index}`, file.type);
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Create script element
-    const script = document.createElement('script');
-    script.src = url.toString();
-
-    // Handle response
-    window[requestId] = (response) => {
-      delete window[requestId];
-      document.body.removeChild(script);
-      
-      if (response.success) {
-        alert(`Submitted! Tracking: ${response.trackingNumber}`);
-        safeRedirect('dashboard.html');
-      } else {
-        throw new Error(response.message);
-      }
+    // 2. Prepare data
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
+      // ... collect other fields ...
     };
 
-    // Execute request
-    document.body.appendChild(script);
+    // 3. Process files
+    const files = document.getElementById('invoiceFiles').files;
+    const fileParams = new URLSearchParams();
+    for (let i = 0; i < files.length; i++) {
+      const base64 = await readFileAsBase64(files[i]);
+      fileParams.append(`file${i}`, base64);
+      fileParams.append(`fileName${i}`, files[i].name);
+      fileParams.append(`fileType${i}`, files[i].type);
+    }
+
+    // 4. Create request
+    const callbackName = `parcel_${Date.now()}`;
+    const script = document.createElement('script');
+    script.src = `${CONFIG.GAS_URL}?action=submitParcel&${new URLSearchParams(formData).toString()}&${fileParams.toString()}&callback=${callbackName}`;
+
+    // 5. Handle response
+    await new Promise((resolve) => {
+      window[callbackName] = (response) => {
+        if (!response) throw new Error('Server did not respond');
+        
+        if (response.success) {
+          alert('Submitted! Tracking: ' + response.trackingNumber);
+          safeRedirect('dashboard.html');
+        } else {
+          throw new Error(response.message);
+        }
+        resolve();
+      };
+      document.body.appendChild(script);
+    });
 
   } catch (error) {
     showError(error.message);
   } finally {
-    btn.innerHTML = 'Submit';
     btn.disabled = false;
+    btn.innerHTML = 'Submit';
   }
 }
 
