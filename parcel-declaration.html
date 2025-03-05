@@ -246,11 +246,16 @@
   async function handleParcelSubmission() {
   const submitBtn = document.getElementById('submitParcelBtn');
   try {
-    submitBtn.innerHTML = '<div class="loader-small"></div> Submitting...';
+    // 1. Lock UI
+    submitBtn.innerHTML = '<div class="loader"></div> Submitting...';
     submitBtn.disabled = true;
 
-    // Validate form data
-    const formData = {
+    // 2. Prepare FormData
+    const formData = new FormData();
+    const files = document.getElementById('invoiceFiles').files;
+
+    // 3. Add text fields
+    formData.append('data', JSON.stringify({
       trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -259,29 +264,30 @@
       price: document.getElementById('price').value,
       collectionPoint: document.getElementById('collectionPoint').value,
       itemCategory: document.getElementById('itemCategory').value
-    };
+    }));
 
-    // File handling
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = Array.from(fileInput.files);
-    const filesBase64 = await Promise.all(
-      files.map(file => readFileAsBase64(file))
-    );
-
-    // Submit with error handling
-    const response = await callAPI('submitParcelDeclaration', {
-      data: formData,
-      files: filesBase64.map((base64, index) => ({
-        name: files[index].name,
-        type: files[index].type,
-        base64: base64
-      }))
+    // 4. Add files
+    Array.from(files).forEach((file, index) => {
+      formData.append(`file${index}`, file);
     });
 
-    if (!response.success) throw new Error(response.message);
-    
-    alert('Submission successful! Tracking: ' + response.trackingNumber);
-    safeRedirect('dashboard.html');
+    // 5. Submit with proper headers
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData,
+      redirect: 'follow'
+    });
+
+    // 6. Handle response
+    const result = await response.text();
+    const data = JSON.parse(result);
+
+    if (data.success) {
+      alert(`Submitted! Tracking: ${data.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      throw new Error(data.message);
+    }
 
   } catch (error) {
     showError(error.message);
