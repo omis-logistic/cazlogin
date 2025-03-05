@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyF2DlAkt2EosKzpjZ3P312uauckf1VtZTieCUqloE9wDlL-GvtfuebHJ-f_AWDTCcT/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwi1X__7L2gbPOL8S-mbsSAmQXou-hXpfcWuIpNjhZSe2eGUssdU0m2M8QXUWuWRBY/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
@@ -60,17 +60,18 @@ function createErrorElement() {
 
 // ================= SESSION MANAGEMENT =================
 function checkSession() {
+  // 1. Get session components
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
   const currentTime = Date.now();
 
-  // Immediate validation checks
+  // 2. No session data - force logout
   if (!sessionData) {
     handleLogout();
     return null;
   }
 
-  // Parse session data
+  // 3. Parse session data carefully
   let userData;
   try {
     userData = JSON.parse(sessionData);
@@ -83,27 +84,28 @@ function checkSession() {
     return null;
   }
 
-  // Validate phone format
-  if (!userData.phone.match(/^(673\d{7}|60\d{8,9})$/)) {
-    console.error('Invalid phone in session:', userData.phone);
-    handleLogout();
-    return null;
-  }
-
-  // Check session timeout
-  if (lastActivity && (currentTime - parseInt(lastActivity)) > CONFIG.SESSION_TIMEOUT * 1000) {
-    handleLogout();
-    return null;
-  }
-
-  // Temp password handling
+  // 4. Temp password handling
   if (userData.tempPassword && !window.location.pathname.endsWith('password-reset.html')) {
     safeRedirect('password-reset.html');
     return null;
   }
 
-  // Renew activity timestamp
+  // 5. Session timeout (1 hour)
+  const sessionTimeout = CONFIG.SESSION_TIMEOUT * 1000; // 3600000 ms = 1 hour
+  if (lastActivity && (currentTime - parseInt(lastActivity)) > sessionTimeout) {
+    handleLogout();
+    return null;
+  }
+
+  // 6. Renew session timestamp
   localStorage.setItem('lastActivity', currentTime.toString());
+
+  // 7. Final validation
+  if (!userData.phone.match(/^(673\d{7}|60\d{8,9})$/)) {
+    console.error('Invalid phone in session:', userData.phone);
+    handleLogout();
+    return null;
+  }
 
   return userData;
 }
@@ -121,201 +123,192 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload = {}) {
-  const callbackName = `jsonp_${Date.now()}`;
-  const script = document.createElement('script');
-  const params = new URLSearchParams({
-    action: action,
-    callback: callbackName,
-    ...payload
-  });
-
   try {
-    script.src = `${CONFIG.GAS_URL}?${params}`;
-    
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('Request timed out'));
-      }, 15000);
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    const params = new URLSearchParams({
+      action: action,
+      callback: callbackName,
+      ...payload
+    });
 
+    script.src = `${CONFIG.GAS_URL}?${params}`;
+
+    return new Promise((resolve, reject) => {
       window[callbackName] = (response) => {
-        clearTimeout(timeout);
         delete window[callbackName];
         document.body.removeChild(script);
-        
-        if (!response) {
-          reject(new Error('Empty response from server'));
-          return;
-        }
-        
-        if (response.success) {
-          resolve(response);
-        } else {
-          reject(new Error(response.message || 'API request failed'));
-        }
+        resolve(response);
       };
-
       document.body.appendChild(script);
     });
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
-    throw error;
+    return { success: false, message: error.message };
   }
 }
-
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
-  const phoneInput = document.getElementById('phone');
-  const passwordInput = document.getElementById('password');
-  const phone = phoneInput.value.trim();
-  const password = passwordInput.value;
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!validatePhone(phone)) {
+    showError('Invalid phone number format');
+    return;
+  }
+
+  if (!password) {
+    showError('Please enter your password');
+    return;
+  }
 
   try {
-    // Clear previous errors
-    phoneInput.classList.remove('error');
-    passwordInput.classList.remove('error');
-    document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-
-    // Validation
-    if (!validatePhone(phone)) throw new Error('Invalid phone number format');
-    if (!password) throw new Error('Please enter your password');
-
-    // API call
-    const response = await callAPI('processLogin', { phone, password });
-
-    // Handle response
-    sessionStorage.setItem('userData', JSON.stringify(response));
-    localStorage.setItem('lastActivity', Date.now().toString());
-
-    if (response.tempPassword) {
-      safeRedirect('password-reset.html');
+    const result = await callAPI('processLogin', { phone, password }, 'GET');
+    
+    if (result.success) {
+      sessionStorage.setItem('userData', JSON.stringify(result));
+      localStorage.setItem('lastActivity', Date.now());
+      
+      if (result.tempPassword) {
+        safeRedirect('password-reset.html');
+      } else {
+        safeRedirect('dashboard.html');
+      }
     } else {
-      safeRedirect('dashboard.html');
+      showError(result.message || 'Authentication failed');
     }
-
   } catch (error) {
-    showError(error.message);
-    passwordInput.classList.add('error');
+    showError('Login failed - please try again');
   }
 }
 
 async function handleRegistration() {
-  const form = document.forms['registrationForm'];
+  if (!validateRegistrationForm()) return;
+
+  const formData = {
+    phone: document.getElementById('regPhone').value.trim(),
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value.trim()
+  };
+
   try {
-    if (!validateRegistrationForm()) return;
-
-    const response = await callAPI('createAccount', {
-      phone: form.regPhone.value.trim(),
-      password: form.regPassword.value,
-      email: form.regEmail.value.trim()
-    });
-
-    alert('Registration successful! Please login.');
-    safeRedirect('login.html');
-
+    const result = await callAPI('createAccount', formData);
+    
+    if (result.success) {
+      alert('Registration successful! Please login.');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Registration failed');
+    }
   } catch (error) {
-    showError(error.message);
+    showError('Registration failed - please try again');
   }
 }
 
 // ================= PASSWORD MANAGEMENT =================
 async function handlePasswordRecovery() {
-  const form = document.forms['recoveryForm'];
+  const phone = document.getElementById('recoveryPhone').value.trim();
+  const email = document.getElementById('recoveryEmail').value.trim();
+
+  if (!validatePhone(phone) || !validateEmail(email)) {
+    showError('Please check your inputs');
+    return;
+  }
+
   try {
-    const response = await callAPI('initiatePasswordReset', {
-      phone: form.recoveryPhone.value.trim(),
-      email: form.recoveryEmail.value.trim()
-    });
-
-    alert('Temporary password sent to registered email!');
-    safeRedirect('login.html');
-
+    const result = await callAPI('initiatePasswordReset', { phone, email });
+    
+    if (result.success) {
+      alert('Temporary password sent to your email!');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Password recovery failed');
+    }
   } catch (error) {
-    showError(error.message);
+    showError('Password recovery failed - please try again');
   }
 }
 
 async function handlePasswordReset() {
-  const form = document.forms['resetForm'];
-  const submitBtn = document.getElementById('resetBtn');
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+
+  if (!validatePassword(newPass)) {
+    showError('Password must contain 6+ characters with at least 1 uppercase letter and 1 number');
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    showError('Passwords do not match');
+    return;
+  }
+
   try {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<div class="loader"></div> Processing...';
-
-    const userData = checkSession();
-    if (!userData) throw new Error('Session expired');
-
-    // Validate inputs
-    if (form.newPassword.value !== form.confirmNewPassword.value) {
-      throw new Error('Passwords do not match');
-    }
-    if (!validatePassword(form.newPassword.value)) {
-      throw new Error('Password requires 6+ chars with 1 uppercase and 1 number');
-    }
-
-    // API call
-    const response = await callAPI('forcePasswordReset', {
+    const result = await callAPI('forcePasswordReset', {
       phone: userData.phone,
-      newPassword: form.newPassword.value
+      newPassword: newPass
     });
 
-    alert('Password updated successfully! Please login.');
-    handleLogout();
-
+    if (result.success) {
+      alert('Password updated successfully! Please login with your new password.');
+      handleLogout();
+    } else {
+      showError(result.message || 'Password reset failed');
+    }
   } catch (error) {
-    showError(error.message);
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Reset Password';
+    showError('Password reset failed - please try again');
   }
 }
 
 // ================= FORM VALIDATION =================
 function validatePhone(phone) {
-  return /^(673\d{7}|60\d{8,9})$/.test(phone);
+  const regex = /^(673\d{7,}|60\d{9,})$/;
+  return regex.test(phone);
 }
 
 function validatePassword(password) {
-  return /^(?=.*[A-Z])(?=.*\d).{6,}$/.test(password);
+  const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+  return regex.test(password);
 }
 
 function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
 }
 
 function validateRegistrationForm() {
-  const form = document.forms['registrationForm'];
-  let isValid = true;
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPass').value;
+  const email = document.getElementById('regEmail').value;
+  const confirmEmail = document.getElementById('regConfirmEmail').value;
 
-  // Clear errors
+  let isValid = true;
   document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
 
-  // Phone validation
-  if (!validatePhone(form.regPhone.value)) {
+  if (!validatePhone(phone)) {
     document.getElementById('phoneError').textContent = 'Invalid phone format';
     isValid = false;
   }
 
-  // Password validation
-  if (!validatePassword(form.regPassword.value)) {
+  if (!validatePassword(password)) {
     document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
     isValid = false;
   }
 
-  // Password match
-  if (form.regPassword.value !== form.regConfirmPass.value) {
+  if (password !== confirmPassword) {
     document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
     isValid = false;
   }
 
-  // Email validation
-  if (!validateEmail(form.regEmail.value)) {
+  if (!validateEmail(email)) {
     document.getElementById('emailError').textContent = 'Invalid email format';
     isValid = false;
   }
 
-  // Email match
-  if (form.regEmail.value !== form.regConfirmEmail.value) {
+  if (email !== confirmEmail) {
     document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
     isValid = false;
   }
@@ -325,31 +318,70 @@ function validateRegistrationForm() {
 
 // ================= NAVIGATION & UTILITIES =================
 function safeRedirect(path) {
-  const allowedPaths = [
-    'login.html', 'register.html', 'dashboard.html',
-    'forgot-password.html', 'password-reset.html',
-    'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
-  ];
-
-  if (allowedPaths.includes(path)) {
+  try {
+    const allowedPaths = [
+      'login.html',
+      'register.html',
+      'dashboard.html',
+      'forgot-password.html',
+      'password-reset.html',
+      'my-info.html',
+      'parcel-declaration.html',
+      'track-parcel.html'
+    ];
+    
+    if (!allowedPaths.includes(path)) {
+      throw new Error('Unauthorized path');
+    }
+    
     window.location.href = path;
-  } else {
-    console.error('Attempted redirect to unauthorized path:', path);
+  } catch (error) {
+    console.error('Redirect error:', error);
+    showError('Navigation failed. Please try again.');
   }
 }
 
+function formatTrackingNumber(trackingNumber) {
+  return trackingNumber.replace(/\s/g, '').toUpperCase();
+}
+
+function validateTrackingNumber(trackingNumber) {
+  return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ms-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2
+  }).format(amount);
+}
+
+function formatDate(dateString) {
+  const options = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Singapore'
+  };
+  return new Date(dateString).toLocaleDateString('en-MY', options);
+}
+
 // ================= FILE HANDLING =================
-async function handleFileUpload(fileInput) {
-  const files = Array.from(fileInput.files);
+async function handleFileUpload(files) {
   const uploads = [];
   
   for (const file of files) {
     if (file.size > CONFIG.MAX_FILE_SIZE) {
-      throw new Error(`File ${file.name} exceeds 5MB limit`);
+      showError(`File ${file.name} exceeds 5MB limit`);
+      return null;
     }
     
     if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
-      throw new Error(`Invalid file type for ${file.name}`);
+      showError(`Invalid file type for ${file.name}`);
+      return null;
     }
 
     uploads.push({
@@ -375,29 +407,29 @@ function readFileAsBase64(file) {
 document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
 
-  // Session check for protected pages
+  // Session management
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
-    window.location.pathname.endsWith(page)
+    window.location.pathname.includes(page)
   );
 
   if (!isPublicPage) {
     const userData = checkSession();
     if (!userData) return;
-
-    // Handle temp password redirect
-    if (userData.tempPassword && !window.location.pathname.endsWith('password-reset.html')) {
+    
+    // Handle temporary password state
+    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
       handleLogout();
     }
   }
-
-  // Auto-focus first input
-  const firstInput = document.querySelector('form input:not([type="hidden"])');
-  if (firstInput) firstInput.focus();
 
   // Error cleanup
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
+
+  // Auto-focus first input
+  const firstInput = document.querySelector('input:not([type="hidden"])');
+  if (firstInput) firstInput.focus();
 });
