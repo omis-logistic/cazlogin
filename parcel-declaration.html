@@ -200,32 +200,68 @@
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
+  
+  // 1. Session Validation
   const userData = checkSession();
-  if (!userData) return safeRedirect('login.html');
-  
-  // Directly display stored phone number without formatting
-  document.getElementById('phoneNumber').value = userData.phone;
-  
-  // Set phone number with country code formatting
+  if (!userData) {
+    showError('Session expired. Redirecting to login...');
+    setTimeout(() => safeRedirect('login.html'), 1500);
+    return;
+  }
+
+  // 2. Phone Number Handling
   const phoneField = document.getElementById('phoneNumber');
-  phoneField.value = userData.phone;
-  
-  document.getElementById('phoneNumber').value = formattedPhone;
-  
-  // Add tracking number validation
+  try {
+    // Direct raw number assignment
+    phoneField.value = userData.phone || '';
+    
+    // Validation check
+    if (!phoneField.value.trim()) {
+      throw new Error('Empty phone number in session');
+    }
+  } catch (error) {
+    console.error('Phone number error:', error);
+    phoneField.placeholder = 'Session error - Relogin required';
+    phoneField.style.borderColor = 'var(--error-red)';
+    showError('Invalid session data. Redirecting...');
+    setTimeout(() => handleLogout(), 2000);
+    return;
+  }
+
+  // 3. Tracking Number Validation
   document.getElementById('trackingNumber').addEventListener('input', function() {
     const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
     document.getElementById('trackingNumberError').textContent = 
-      isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
+      isValid ? '' : 'Minimum 5 characters (letters, numbers, hyphens only)';
   });
 
-
-  // Invoice requirement handler
+  // 4. Invoice Requirement Handler
   document.getElementById('itemCategory').addEventListener('change', function() {
-    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                               'Gadgets', 'Oil Ointment', 'Supplement'];
+    const mandatoryCategories = [
+      'Books', 
+      'Cosmetics/Skincare/Bodycare',
+      'Food Beverage/Drinks',
+      'Gadgets',
+      'Oil Ointment',
+      'Supplement'
+    ];
+    
     const fileInput = document.getElementById('invoiceFiles');
     fileInput.required = mandatoryCategories.includes(this.value);
+    fileInput.dispatchEvent(new Event('change'));
+  });
+
+  // 5. File Input Visual Feedback
+  document.getElementById('invoiceFiles').addEventListener('change', function(e) {
+    const fileCount = e.target.files.length;
+    const statusElement = document.getElementById('invoiceFilesError');
+    
+    if (fileCount > 3) {
+      statusElement.textContent = 'Maximum 3 files allowed';
+      e.target.value = '';
+    } else {
+      statusElement.textContent = `${fileCount} file(s) selected`;
+    }
   });
 });
 
