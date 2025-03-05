@@ -60,58 +60,46 @@ function createErrorElement() {
 
 // ================= SESSION MANAGEMENT =================
 function checkSession() {
-  // 1. Get session data
+  // 1. Get session components
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
+  const currentTime = Date.now();
 
-  // 2. Basic session check
+  // 2. Immediate validation
   if (!sessionData) {
     handleLogout();
     return null;
   }
 
-  // 3. Parse user data
+  // 3. Parse carefully
   let userData;
   try {
     userData = JSON.parse(sessionData);
+    if (!userData?.phone || typeof userData.phone !== 'string') {
+      throw new Error('Invalid session format');
+    }
   } catch (e) {
     console.error('Session parse error:', e);
     handleLogout();
     return null;
   }
 
-  // 4. Validate phone number existence
-  if (!userData?.phone) {
-    console.warn('Session missing phone number');
+  // 4. Session timeout check (1 hour)
+  if (lastActivity && (currentTime - parseInt(lastActivity)) > CONFIG.SESSION_TIMEOUT * 1000) {
     handleLogout();
     return null;
   }
 
-  // 5. Session timeout check
-  const currentTime = Date.now();
-  const timeElapsed = currentTime - parseInt(lastActivity || '0', 10);
-  
-  if (timeElapsed > CONFIG.SESSION_TIMEOUT * 1000) {
-    console.log(`Session expired after ${CONFIG.SESSION_TIMEOUT} seconds`);
+  // 5. Temp password check
+  if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
     handleLogout();
     return null;
   }
 
-  // 6. Force password reset check
-  if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-    handleLogout();
-    return null;
-  }
-
-  // 7. Update last activity timestamp
+  // 6. Update activity timestamp
   localStorage.setItem('lastActivity', currentTime.toString());
 
-  // 8. Return validated session data
-  return {
-    phone: String(userData.phone).replace(/[^0-9]/g, ''), // Sanitized phone
-    email: userData.email?.trim().toLowerCase() || '',
-    tempPassword: Boolean(userData.tempPassword)
-  };
+  return userData;
 }
 
 function handleLogout() {
