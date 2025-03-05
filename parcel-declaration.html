@@ -87,11 +87,7 @@
 
     <div class="input-group">
       <label for="phoneNumber">Phone Number</label>
-      <input type="tel" 
-       id="phoneNumber" 
-       placeholder="Phone Number" 
-       readonly
-       style="background: #2a2a2a; color: #888; cursor: not-allowed">
+      <input type="tel" id="phoneNumber" placeholder="Phone Number" readonly>
     </div>
 
     <div class="input-group">
@@ -186,135 +182,73 @@
       <div class="error-message" id="invoiceFilesError"></div>
     </div>
 
-    <button id="submitParcelBtn" onclick="handleParcelSubmission()">Submit</button>
-  Back to Dashboard
-</button>
+    <button onclick="handleParcelSubmission(); return false;">Submit</button>
+    <button 
+      style="margin-top: 10px; background: #444" 
+      onclick="showDashboard(); return false;"
+    >
+      Back to Dashboard
+    </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-  const userData = checkSession();
-  if (!userData) return safeRedirect('login.html');
-  
-  document.getElementById('phoneNumber').value = userData.phone;
-
-  document.getElementById('trackingNumber').addEventListener('input', function() {
-    const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
-    document.getElementById('trackingNumberError').textContent = 
-      isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
+    detectViewMode();
+    const userData = checkSession();
+    if (!userData) return;
+    
+    document.getElementById('phoneNumber').value = userData.phone;
   });
-
-  document.getElementById('itemCategory').addEventListener('change', function() {
-    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                               'Gadgets', 'Oil Ointment', 'Supplement'];
-    document.getElementById('invoiceFiles').required = mandatoryCategories.includes(this.value);
-  });
-});
-  // 4. Invoice Requirement Handler
-  document.addEventListener('DOMContentLoaded', () => {
-      detectViewMode();
-      const userData = checkSession();
-      if (!userData) return safeRedirect('login.html');
-      
-      // Set phone number (verified working method)
-      const phoneField = document.getElementById('phoneNumber');
-      phoneField.value = userData.phone.replace(/[^0-9]/g, ''); // Force numeric format
-
-      // Tracking number validation
-      document.getElementById('trackingNumber').addEventListener('input', function() {
-        const isValid = /^[A-Za-z0-9-]{5,}$/.test(this.value);
-        document.getElementById('trackingNumberError').textContent = 
-          isValid ? '' : 'Minimum 5 characters, only letters, numbers, and hyphens allowed';
-      });
-
-      // Invoice requirement handler
-      document.getElementById('itemCategory').addEventListener('change', function() {
-        const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                                   'Gadgets', 'Oil Ointment', 'Supplement'];
-        document.getElementById('invoiceFiles').required = mandatoryCategories.includes(this.value);
-      });
-    });
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-  const btn = document.getElementById('submitParcelBtn');
-  try {
-    // 1. Lock UI
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<div class="loader"></div> Submitting...';
+    try {
+      showLoading(true);
+      clearErrors();
 
-    // 2. Prepare data
-    const formData = {
-      trackingNumber: document.getElementById('trackingNumber').value.trim(),
-      trackingNumber: document.getElementById('trackingNumber').value.trim(),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: document.getElementById('quantity').value,
-      price: document.getElementById('price').value,
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
-    };
-
-    // 3. Process files
-    const files = document.getElementById('invoiceFiles').files;
-    const fileParams = new URLSearchParams();
-    for (let i = 0; i < files.length; i++) {
-      const base64 = await readFileAsBase64(files[i]);
-      fileParams.append(`file${i}`, base64);
-      fileParams.append(`fileName${i}`, files[i].name);
-      fileParams.append(`fileType${i}`, files[i].type);
-    }
-
-    // 4. Create request
-    const callbackName = `parcel_${Date.now()}`;
-    const script = document.createElement('script');
-    script.src = `${CONFIG.GAS_URL}?action=submitParcel&${new URLSearchParams(formData).toString()}&${fileParams.toString()}&callback=${callbackName}`;
-
-    // 5. Handle response
-    await new Promise((resolve) => {
-      window[callbackName] = (response) => {
-        if (!response) throw new Error('Server did not respond');
-        
-        if (response.success) {
-          alert('Submitted! Tracking: ' + response.trackingNumber);
-          safeRedirect('dashboard.html');
-        } else {
-          throw new Error(response.message);
-        }
-        resolve();
+      // Collect form data
+      const formData = {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value,
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
       };
-      document.body.appendChild(script);
-    });
 
-  } catch (error) {
-    showError(error.message);
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = 'Submit';
-  }
-}
+      // Process files
+      const fileInput = document.getElementById('invoiceFiles');
+      const filesBase64 = await processFiles(fileInput);
 
-  function handleSubmissionResponse(response) {
-      if (response.success) {
-        alert('Declaration submitted! Tracking: ' + response.trackingNumber);
-        safeRedirect('dashboard.html');
-      } else {
-        showError(response.message || 'Submission failed');
-      }
-    }
-
-    function readFileAsBase64(file) {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-        reader.readAsDataURL(file);
+      // Create JSONP request
+      const callbackName = `parcel_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        action: 'submitParcelDeclaration',
+        callback: callbackName,
+        ...formData,
+        filesBase64: JSON.stringify(filesBase64)
       });
+
+      script.src = `${CONFIG.GAS_URL}?${params}`;
+
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      showError(error.message);
+      showLoading(false);
     }
+  }
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
