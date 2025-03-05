@@ -65,13 +65,13 @@ function checkSession() {
   const lastActivity = localStorage.getItem('lastActivity');
   const currentTime = Date.now();
 
-  // 2. Immediate validation
+  // 2. No session data - force logout
   if (!sessionData) {
     handleLogout();
     return null;
   }
 
-  // 3. Parse carefully
+  // 3. Parse session data carefully
   let userData;
   try {
     userData = JSON.parse(sessionData);
@@ -84,20 +84,28 @@ function checkSession() {
     return null;
   }
 
-  // 4. Session timeout check (1 hour)
-  if (lastActivity && (currentTime - parseInt(lastActivity)) > CONFIG.SESSION_TIMEOUT * 1000) {
+  // 4. Temp password handling
+  if (userData.tempPassword && !window.location.pathname.endsWith('password-reset.html')) {
+    safeRedirect('password-reset.html');
+    return null;
+  }
+
+  // 5. Session timeout (1 hour)
+  const sessionTimeout = CONFIG.SESSION_TIMEOUT * 1000; // 3600000 ms = 1 hour
+  if (lastActivity && (currentTime - parseInt(lastActivity)) > sessionTimeout) {
     handleLogout();
     return null;
   }
 
-  // 5. Temp password check
-  if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-    handleLogout();
-    return null;
-  }
-
-  // 6. Update activity timestamp
+  // 6. Renew session timestamp
   localStorage.setItem('lastActivity', currentTime.toString());
+
+  // 7. Final validation
+  if (!userData.phone.match(/^(673\d{7}|60\d{8,9})$/)) {
+    console.error('Invalid phone in session:', userData.phone);
+    handleLogout();
+    return null;
+  }
 
   return userData;
 }
