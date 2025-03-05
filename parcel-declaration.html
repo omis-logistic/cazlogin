@@ -208,8 +208,8 @@
   
   // Set phone number with country code formatting
   const formattedPhone = userData.phone.startsWith('60') 
-    ? `+${userData.phone}`
-    : `+673 ${userData.phone.slice(3)}`;
+    ? `${userData.phone}`
+    : `673 ${userData.phone.slice(3)}`;
   
   document.getElementById('phoneNumber').value = formattedPhone;
   
