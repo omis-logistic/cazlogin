@@ -318,27 +318,13 @@ function validateRegistrationForm() {
 
 // ================= NAVIGATION & UTILITIES =================
 function safeRedirect(path) {
-  try {
-    const allowedPaths = [
-      'login.html',
-      'register.html',
-      'dashboard.html',
-      'forgot-password.html',
-      'password-reset.html',
-      'my-info.html',
-      'parcel-declaration.html',
-      'track-parcel.html'
-    ];
-    
-    if (!allowedPaths.includes(path)) {
-      throw new Error('Unauthorized path');
-    }
-    
-    window.location.href = path;
-  } catch (error) {
-    console.error('Redirect error:', error);
-    showError('Navigation failed. Please try again.');
-  }
+  // Add these paths to allowed list
+  const allowed = ['login.html', 'dashboard.html', 'password-reset.html','parcel-declaration.html','register.html'];
+  if (!allowed.includes(path)) return;
+  
+  // Force reload to clear state
+  window.location.href = path;
+  window.location.reload(true);
 }
 
 function formatTrackingNumber(trackingNumber) {
