@@ -139,33 +139,78 @@
   <script src="scripts/app.js"></script>
   <script>
     // Integrated with app.js functions
-    function handleLogin() {
-      const phone = document.getElementById('phone').value;
-      const password = document.getElementById('password').value;
+    async function handleLogin() {
+  const phoneInput = document.getElementById('phone');
+  const passwordInput = document.getElementById('password');
+  
+  const phone = phoneInput.value.trim();
+  const password = passwordInput.value;
 
-      if (!phone || !password) {
-        showError('Please fill in all fields');
-        return;
-      }
+  // Clear previous errors
+  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+  phoneInput.classList.remove('error');
+  passwordInput.classList.remove('error');
 
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          sessionStorage.setItem('userData', JSON.stringify(response));
-          safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
-        } else {
-          showError(response.message || 'Login failed');
-        }
-      };
-
-      document.body.appendChild(script);
+  try {
+    // Validate inputs
+    if (!validatePhone(phone)) {
+      phoneInput.classList.add('error');
+      showError('Invalid phone number format', 'error-message');
+      return;
     }
+
+    if (!password) {
+      passwordInput.classList.add('error');
+      showError('Please enter your password', 'error-message');
+      return;
+    }
+
+    // Create JSONP request
+    const callbackName = `login_${Date.now()}`;
+    const script = document.createElement('script');
+    script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+
+    // Set loading state
+    const loginBtn = document.querySelector('button[onclick="handleLogin()"]');
+    const originalBtnText = loginBtn.innerHTML;
+    loginBtn.innerHTML = '<div class="loader-small"></div> Authenticating...';
+    loginBtn.disabled = true;
+
+    window[callbackName] = (response) => {
+      // Cleanup
+      delete window[callbackName];
+      document.body.removeChild(script);
+      loginBtn.innerHTML = originalBtnText;
+      loginBtn.disabled = false;
+
+      // Handle response
+      if (response.success) {
+        sessionStorage.setItem('userData', JSON.stringify({
+          phone: response.phone,
+          email: response.email,
+          tempPassword: response.tempPassword
+        }));
+        localStorage.setItem('lastActivity', Date.now());
+
+        if (response.tempPassword) {
+          safeRedirect('password-reset.html');
+        } else {
+          safeRedirect('dashboard.html');
+        }
+      } else {
+        passwordInput.classList.add('error');
+        showError(response.message || 'Authentication failed', 'error-message');
+      }
+    };
+
+    document.body.appendChild(script);
+
+  } catch (error) {
+    console.error('Login error:', error);
+    showError('Login failed - please try again', 'error-message');
+    document.querySelector('button[onclick="handleLogin()"]').disabled = false;
+  }
+}
 
     function showRegistration() {
       safeRedirect('register.html');
