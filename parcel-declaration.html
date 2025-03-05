@@ -198,58 +198,30 @@
   <script src="scripts/app.js"></script>
   <script>
   // ================= INITIALIZATION =================
-  document.addEventListener('DOMContentLoaded', () => {
-  // Initialize view mode detection
+document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
-
-  // Session check and redirect
   const userData = checkSession();
-  if (!userData) {
-    safeRedirect('login.html');
-    return;
-  }
-
-  // Initialize user phone number display
-  const phoneInput = document.getElementById('phoneNumber');
-  phoneInput.value = userData.phone || '';
-  phoneInput.style.backgroundColor = '#444';
-  phoneInput.style.color = '#999';
-  phoneInput.style.cursor = 'not-allowed';
-
-  // Tracking number validation setup
+  if (!userData) return safeRedirect('login.html');
+  
+  // Set phone number from session
+  document.getElementById('phoneNumber').value = userData.phone || '';
+  
+  // Initialize real-time tracking validation
   const trackingInput = document.getElementById('trackingNumber');
   const trackingError = document.getElementById('trackingNumberError');
-  
-  // Real-time tracking number validation and sanitization
+
   trackingInput.addEventListener('input', function() {
-    // Clean and format input
-    let value = this.value.trim().toUpperCase();
-    
-    // Remove invalid characters (only allow A-Z, 0-9, and hyphens)
-    value = value.replace(/[^A-Z0-9-]/g, '');
-    
-    // Update input value with cleaned version
+    // Clean input: uppercase, remove invalid characters
+    let value = this.value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
     this.value = value;
     
-    // Validate format
-    const isValid = /^[A-Z0-9-]{5,}$/.test(value);
-    
-    // Show/hide error message
-    if (!isValid && value.length > 0) {
-      trackingError.textContent = 'Minimum 5 characters. Only letters, numbers, and hyphens allowed';
-      this.classList.add('invalid-input');
-    } else {
-      trackingError.textContent = '';
-      this.classList.remove('invalid-input');
-    }
-
-    // Special case handling for empty field
-    if (value.length === 0) {
-      trackingError.textContent = '';
-      this.classList.remove('invalid-input');
-    }
+    // Validate and show feedback
+    const isValid = value.length >= 5;
+    trackingError.textContent = isValid ? '' : 
+      'Minimum 5 characters (A-Z, 0-9, - only)';
+    this.classList.toggle('invalid-input', !isValid);
   });
-
+});
   // Initialize other form elements
   const fileInput = document.getElementById('invoiceFiles');
   fileInput.addEventListener('change', handleFileUpload);
