@@ -240,10 +240,16 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-  const submitBtn = document.getElementById('submitParcelBtn');
+  const btn = document.getElementById('submitParcelBtn');
   try {
-    // 1. Collect all form data
-    const data = {
+    // 1. Lock UI
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<div class="loader"></div> Submitting...';
+
+    // 2. Prepare data
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
       trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -254,59 +260,43 @@
       itemCategory: document.getElementById('itemCategory').value
     };
 
-    // 2. Process files
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = Array.from(fileInput.files);
-    const params = new URLSearchParams(data);
-    
-    // 3. Add files to parameters
+    // 3. Process files
+    const files = document.getElementById('invoiceFiles').files;
+    const fileParams = new URLSearchParams();
     for (let i = 0; i < files.length; i++) {
-      const base64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(files[i]);
-      });
-      params.append(`file${i}`, base64);
-      params.append(`fileName${i}`, files[i].name);
-      params.append(`fileType${i}`, files[i].type);
+      const base64 = await readFileAsBase64(files[i]);
+      fileParams.append(`file${i}`, base64);
+      fileParams.append(`fileName${i}`, files[i].name);
+      fileParams.append(`fileType${i}`, files[i].type);
     }
 
-    // 4. Create JSONP request
+    // 4. Create request
+    const callbackName = `parcel_${Date.now()}`;
     const script = document.createElement('script');
-    script.src = `${CONFIG.GAS_URL}?action=submitParcel&${params.toString()}&callback=handleParcel`;
+    script.src = `${CONFIG.GAS_URL}?action=submitParcel&${new URLSearchParams(formData).toString()}&${fileParams.toString()}&callback=${callbackName}`;
 
     // 5. Handle response
-    window.handleParcel = (response) => {
-      document.body.removeChild(script);
-      delete window.handleParcel;
-      
-      if (response.success) {
-        alert('Declaration submitted successfully!');
-        window.location.reload();
-      } else {
-        showError(response.message || 'Submission failed');
-      }
-    };
-
-    // 6. Show loading state
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<div class="loader"></div> Submitting...';
-    
-    document.body.appendChild(script);
+    await new Promise((resolve) => {
+      window[callbackName] = (response) => {
+        if (!response) throw new Error('Server did not respond');
+        
+        if (response.success) {
+          alert('Submitted! Tracking: ' + response.trackingNumber);
+          safeRedirect('dashboard.html');
+        } else {
+          throw new Error(response.message);
+        }
+        resolve();
+      };
+      document.body.appendChild(script);
+    });
 
   } catch (error) {
     showError(error.message);
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = 'Submit';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Submit';
   }
-}
-
-// Basic error display function
-function showError(message) {
-  const errorDiv = document.getElementById('errorMessage');
-  errorDiv.textContent = message;
-  errorDiv.style.display = 'block';
-  setTimeout(() => errorDiv.style.display = 'none', 5000);
 }
 
   function handleSubmissionResponse(response) {
