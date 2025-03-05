@@ -181,6 +181,11 @@ body.mobile-view .welcome-content {
   font-weight: bold;
 }
 
+.invalid-input {
+  border-color: var(--error-red) !important;
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.3) !important;
+}
+
 .mobile-only {
   display: none !important;
 }
