@@ -246,11 +246,10 @@
   async function handleParcelSubmission() {
   const submitBtn = document.getElementById('submitParcelBtn');
   try {
-    // 1. Show loading state
     submitBtn.innerHTML = '<div class="loader-small"></div> Submitting...';
     submitBtn.disabled = true;
 
-    // 2. Validate form data
+    // Validate form data
     const formData = {
       trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
@@ -262,67 +261,32 @@
       itemCategory: document.getElementById('itemCategory').value
     };
 
-    // 3. Validate tracking number format
-    if (!/^[A-Za-z0-9-]{5,}$/.test(formData.trackingNumber)) {
-      throw new Error('Invalid tracking number format - use only letters, numbers, and hyphens (min 5 characters)');
-    }
-
-    // 4. Process files
+    // File handling
     const fileInput = document.getElementById('invoiceFiles');
     const files = Array.from(fileInput.files);
-    const mandatoryCategories = ['Books', 'Cosmetics/Skincare/Bodycare', 'Food Beverage/Drinks',
-                               'Gadgets', 'Oil Ointment', 'Supplement'];
-
-    // 5. Validate mandatory invoices
-    if (mandatoryCategories.includes(formData.itemCategory)) {
-      if (files.length === 0) {
-        throw new Error('At least 1 invoice required for this item category');
-      }
-      if (files.length > 3) {
-        throw new Error('Maximum 3 files allowed for invoices');
-      }
-    }
-
-    // 6. Prepare files for upload
-    const filePromises = files.map(file => 
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve({
-          name: file.name,
-          type: file.type,
-          data: e.target.result.split(',')[1] // Base64 payload
-        });
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      })
+    const filesBase64 = await Promise.all(
+      files.map(file => readFileAsBase64(file))
     );
 
-    // 7. Submit data
+    // Submit with error handling
     const response = await callAPI('submitParcelDeclaration', {
       data: formData,
-      files: await Promise.all(filePromises)
+      files: filesBase64.map((base64, index) => ({
+        name: files[index].name,
+        type: files[index].type,
+        base64: base64
+      }))
     });
 
-    // 8. Handle response
-    if (response.success) {
-      alert(`Declaration submitted successfully!\nTracking Number: ${response.trackingNumber}`);
-      safeRedirect('dashboard.html');
-    } else {
-      throw new Error(response.message || 'Submission failed on server side');
-    }
+    if (!response.success) throw new Error(response.message);
+    
+    alert('Submission successful! Tracking: ' + response.trackingNumber);
+    safeRedirect('dashboard.html');
 
   } catch (error) {
+    showError(error.message);
     console.error('Submission error:', error);
-    showError(error.message, 'submissionError');
-    // Highlight problematic fields
-    if (error.message.includes('tracking number')) {
-      document.getElementById('trackingNumber').focus();
-    }
-    if (error.message.includes('invoice')) {
-      document.getElementById('invoiceFiles').focus();
-    }
   } finally {
-    // 9. Reset UI state
     submitBtn.innerHTML = 'Submit';
     submitBtn.disabled = false;
   }
