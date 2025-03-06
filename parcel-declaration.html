@@ -84,12 +84,12 @@
     <div class="input-group">
   <label for="trackingNumber">Tracking Number</label>
   <input type="text" 
-         id="trackingNumber" 
-         placeholder="Enter tracking number" 
-         required
-         pattern="[A-Za-z0-9-]{5,}"
-         title="5+ characters (letters, numbers, hyphens)"
-         oninput="this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '')">
+       id="trackingNumber" 
+       placeholder="Enter tracking number" 
+       required
+       pattern="[A-Za-z0-9-]{5,}"
+       title="5+ alphanumeric characters and hyphens"
+       oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')">
   <div class="error-message" id="trackingNumberError"></div>
 </div>
 
@@ -329,12 +329,30 @@ function validateTrackingNumber(input) {
     }
 
     // 2. INITIALIZE VALIDATION
-    initValidationListeners();
-    
-  } catch (error) {
-    console.error('Initialization error:', error);
-    showError('Failed to initialize form');
+    const validationMap = {
+  '#trackingNumber': validateTrackingNumber,
+  '#nameOnParcel': validateName,
+  '#itemDescription': validateDescription,
+  '#quantity': validateQuantity,
+  '#price': validatePrice,
+  '#collectionPoint': validateCollectionPoint,
+  '#itemCategory': validateCategory
+};
+
+Object.entries(validationMap).forEach(([selector, validator]) => {
+  const element = document.querySelector(selector);
+  if(element) {
+    const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+    element.addEventListener(eventType, () => {
+      validator(element);
+      checkAllFields();
+    });
   }
+});
+
+document.getElementById('invoiceFiles').addEventListener('change', () => {
+  validateInvoiceFiles();
+  checkAllFields();
 });
 
   // Submission Handling
