@@ -75,7 +75,11 @@
 
     <div class="input-group">
       <label for="trackingNumber">Tracking Number</label>
-      <input type="text" id="trackingNumber" placeholder="Enter tracking number" required>
+      <input type="text" id="trackingNumber" 
+       placeholder="Enter tracking number" 
+       required
+       pattern="^[A-Za-z0-9-]{5,}$"
+       title="Minimum 5 characters. Only letters, numbers, and hyphens are allowed">
       <div class="error-message" id="trackingNumberError"></div>
     </div>
 
@@ -183,12 +187,11 @@
     </div>
 
     <button onclick="handleParcelSubmission(); return false;">Submit</button>
-    <button 
-      style="margin-top: 10px; background: #444" 
-      onclick="showDashboard(); return false;"
-    >
-      Back to Dashboard
-    </button>
+    <button class="secondary-btn" 
+        onclick="safeRedirect('dashboard.html'); return false;"
+        style="margin-top: 10px;">
+  Back to Dashboard
+</button>
   </div>
 
   <script src="scripts/app.js"></script>
