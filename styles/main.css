@@ -58,6 +58,26 @@ input, select, button {
   transition: all 0.3s ease;
 }
 
+.input-group input:valid, 
+.input-group select:valid,
+.input-group input:focus:valid, 
+.input-group select:focus:valid {
+  border-color: #00C851 !important;
+}
+
+.input-group input:invalid, 
+.input-group select:invalid,
+.input-group input:focus:invalid, 
+.input-group select:focus:invalid {
+  border-color: #ff4444 !important;
+}
+
+.error-message {
+  min-height: 20px;
+  font-size: 0.8em;
+  transition: opacity 0.3s ease;
+}
+
 button {
   background-color: var(--gold);
   color: var(--dark-bg);
