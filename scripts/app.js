@@ -189,16 +189,39 @@ async function handleParcelSubmission() {
 }
 
 // ================= PARCEL VALIDATION =================
-function validateTrackingNumber(trackingNumber) {
-  return /^[A-Za-z0-9-]{5,}$/.test(trackingNumber);
+function validateTrackingNumber(inputElement) {
+  const value = inputElement?.value?.trim() || '';
+  const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
+  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
+  return isValid;
 }
 
-function validateQuantity(value) {
-  return Number.isInteger(value) && value > 0;
+function validateName(inputElement) {
+  const value = inputElement?.value?.trim() || '';
+  const isValid = value.length >= 2;
+  showError(isValid ? '' : 'Minimum 2 characters required', 'nameOnParcelError');
+  return isValid;
 }
 
-function validatePrice(value) {
-  return !isNaN(value) && value > 0;
+function validateDescription(inputElement) {
+  const value = inputElement?.value?.trim() || '';
+  const isValid = value.length >= 5;
+  showError(isValid ? '' : 'Minimum 5 characters required', 'itemDescriptionError');
+  return isValid;
+}
+
+function validateQuantity(inputElement) {
+  const value = parseInt(inputElement?.value || 0);
+  const isValid = !isNaN(value) && value > 0 && value < 1000;
+  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
+  return isValid;
+}
+
+function validatePrice(inputElement) {
+  const value = parseFloat(inputElement?.value || 0);
+  const isValid = !isNaN(value) && value > 0 && value < 100000;
+  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
+  return isValid;
 }
 
 async function handleFileUpload(files) {
@@ -589,9 +612,13 @@ function validatePrice(input) {
   return isValid;
 }
 
-function validateCollectionPoint(select) {
-  const isValid = select.value !== '';
-  showError(isValid ? '' : 'Please select collection point', 'collectionPointError');
+function validateCategory(selectElement) {
+  const value = selectElement?.value || '';
+  const isValid = value !== '';
+  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
+  
+  // Only check invoices if category is valid
+  if(isValid) checkInvoiceRequirements(); 
   return isValid;
 }
 
@@ -602,22 +629,40 @@ function validateCategory(select) {
 }
 
 function validateInvoiceFiles() {
-  const files = document.getElementById('invoiceFiles').files;
-  const category = document.getElementById('itemCategory').value;
-  const requiresInvoice = ['* Books', '* Cosmetics/Skincare/Bodycare'].includes(category);
+  const mandatoryCategories = [
+    '* Books', '* Cosmetics/Skincare/Bodycare',
+    '* Food Beverage/Drinks', '* Gadgets',
+    '* Oil Ointment', '* Supplement'
+  ];
   
+  const category = document.getElementById('itemCategory')?.value || '';
+  const files = document.getElementById('invoiceFiles')?.files || [];
   let isValid = true;
-  if (requiresInvoice) {
-    isValid = files.length > 0;
-    showError(isValid ? '' : 'At least 1 invoice required', 'invoiceFilesError');
-  }
-  
-  if (files.length > 3) {
+  let errorMessage = '';
+
+  if(files.length > 3) {
+    errorMessage = 'Maximum 3 files allowed';
     isValid = false;
-    showError('Maximum 3 files allowed', 'invoiceFilesError');
   }
-  
+  else if(mandatoryCategories.includes(category)) {
+    isValid = files.length > 0;
+    errorMessage = isValid ? '' : 'At least 1 invoice required';
+  }
+
+  showError(errorMessage, 'invoiceFilesError');
   return isValid;
+}
+
+// ================= VALIDATION UTILITIES =================
+function checkInvoiceRequirements() {
+  return validateInvoiceFiles();
+}
+
+function updateSubmitButtonState() {
+  const submitBtn = document.getElementById('submitBtn');
+  if(!submitBtn) return;
+  
+  submitBtn.disabled = !checkAllFields();
 }
 
 // ================= NAVIGATION & UTILITIES =================
