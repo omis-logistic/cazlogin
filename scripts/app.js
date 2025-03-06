@@ -308,10 +308,6 @@ function updateSubmitButtonState() {
   document.getElementById('submitBtn').disabled = !isValid;
 }
 
-function sanitizeInput(value, pattern, replaceWith = '') {
-  return value.replace(new RegExp(`[^${pattern}]`, 'g'), replaceWith);
-}
-
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
