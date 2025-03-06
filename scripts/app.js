@@ -164,7 +164,7 @@ async function handleParcelSubmission() {
 // ================= VALIDATION CORE =================
 function validateTrackingNumber(inputElement) {
   const value = inputElement?.value?.trim() || '';
-  const isValid = /^[A-Z0-9-]{5,}$/.test(value);
+  const isValid = /^[A-Za-z0-9-]{5,}$/i.test(value); // Case-insensitive check
   showError(isValid ? '' : '5+ alphanumeric characters and hyphens required', 'trackingNumberError');
   return isValid;
 }
