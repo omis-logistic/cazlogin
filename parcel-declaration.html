@@ -90,9 +90,13 @@
     </div>
 
     <div class="input-group">
-      <label for="phoneNumber">Phone Number</label>
-      <input type="tel" id="phoneNumber" placeholder="Phone Number" readonly>
-    </div>
+  <label for="phoneNumber">Phone Number</label>
+  <input type="tel" 
+         id="phoneNumber" 
+         placeholder="Loading..." 
+         readonly
+         style="background-color: #333; color: #888; cursor: not-allowed">
+</div>
 
     <div class="input-group">
       <label for="itemDescription">Item Description</label>
@@ -264,8 +268,12 @@ function checkInvoiceRequirements() {
 
 // Add event listeners
 document.addEventListener('DOMContentLoaded', () => {
-  // Existing initialization code
+  detectViewMode();
+  const userData = checkSession();
+  if (!userData) return;
   
+  document.getElementById('phoneNumber').value = userData.phone;
+
   // Add real-time validation listeners
   const fields = {
     '#trackingNumber': validateTrackingNumber,
@@ -293,6 +301,9 @@ document.addEventListener('DOMContentLoaded', () => {
     validateInvoiceFiles();
     checkAllFields();
   });
+
+  // Initialize validation state on load
+  checkAllFields();
 });
 
 function checkAllFields() {
@@ -329,6 +340,11 @@ async function handleParcelSubmission() {
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
   try {
+    if (!checkAllFields()) {
+      showError('Please fix validation errors before submitting');
+      return;
+    }
+
     showLoading(true);
     clearErrors();
 
@@ -344,39 +360,30 @@ async function handleParcelSubmission() {
       itemCategory: document.getElementById('itemCategory').value
     };
 
-    // ==== ADD VALIDATIONS HERE ====
-    const mandatoryCategories = [
-      'Books',
-      'Cosmetics/Skincare/Bodycare',
-      'Food Beverage/Drinks',
-      'Gadgets',
-      'Oil Ointment',
-      'Supplement'
-    ];
-
-    // Tracking Number validation
-    if (!/^[A-Za-z0-9-]{5,}$/i.test(formData.trackingNumber)) {
-      showError('Invalid tracking number format (minimum 5 alphanumeric characters, hyphens allowed)');
-      showLoading(false);
-      return;
-    }
-
-    // Invoice requirement check
-    const requiresInvoice = mandatoryCategories.includes(formData.itemCategory);
+    // Process files
     const fileInput = document.getElementById('invoiceFiles');
-    if (requiresInvoice && fileInput.files.length === 0) {
-      showError('Invoice required for this item category');
-      showLoading(false);
-      return;
-    }
-
-    // Process files (keep existing code below validations)
     const filesBase64 = await processFiles(fileInput);
 
-    // Rest of your existing code
+    // Create JSONP request
     const callbackName = `parcel_${Date.now()}`;
     const script = document.createElement('script');
-    // ... keep remaining existing code ...
+    const params = new URLSearchParams({
+      action: 'submitParcelDeclaration',
+      callback: callbackName,
+      ...formData,
+      filesBase64: JSON.stringify(filesBase64)
+    });
+
+    script.src = `${CONFIG.GAS_URL}?${params}`;
+
+    window[callbackName] = (response) => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      handleSubmissionResponse(response);
+    };
+
+    document.body.appendChild(script);
+
   } catch (error) {
     showError(error.message);
     showLoading(false);
@@ -385,36 +392,58 @@ async function handleParcelSubmission() {
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
-    if (!fileInput.files.length) return [];
-    
-    return Promise.all(
-      Array.from(fileInput.files).map(async file => ({
-        name: file.name,
-        type: file.type || 'application/octet-stream', // Default type
-        base64: await readFileAsBase64(file)
-      }))
-    );
-  }
+  if (!fileInput.files.length) return [];
+  
+  return Promise.all(
+    Array.from(fileInput.files).map(async file => ({
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      base64: await readFileAsBase64(file)
+    }))
+  );
+}
 
-  function readFileAsBase64(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-      reader.readAsDataURL(file);
-    });
-  }
+function readFileAsBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+}
 
   // ================= RESPONSE HANDLING =================
   function handleSubmissionResponse(response) {
-    showLoading(false);
-    
-    if (response.success) {
-      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
-      safeRedirect('dashboard.html');
-    } else {
-      showError(response.message || 'Submission failed');
-    }
+  showLoading(false);
+  
+  if (response.success) {
+    alert('Declaration submitted! Tracking: ' + response.trackingNumber);
+    safeRedirect('dashboard.html');
+  } else {
+    showError(response.message || 'Submission failed');
   }
+}
+
+function showLoading(show) {
+  const loader = document.getElementById('loader') || createLoader();
+  loader.style.display = show ? 'block' : 'none';
+}
+
+function createLoader() {
+  const loader = document.createElement('div');
+  loader.id = 'loader';
+  loader.innerHTML = `
+    <div class="loader-spinner"></div>
+    <p>Submitting declaration...</p>
+  `;
+  document.body.appendChild(loader);
+  return loader;
+}
+
+function clearErrors() {
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.textContent = '';
+  });
+}
 
   // ================= UTILITIES =================
   function showLoading(show) {
