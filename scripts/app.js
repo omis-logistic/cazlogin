@@ -469,6 +469,54 @@ function validateRegistrationForm() {
   return isValid;
 }
 
+// ================= FORM VALIDATION INIT ================= 
+function initValidationListeners() {
+  // Parcel declaration form validation
+  const parcelForm = document.getElementById('parcel-declaration-form');
+  if (parcelForm) {
+    const inputs = parcelForm.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+      input.addEventListener('input', () => {
+        // Specific validation for each input
+        switch(input.id) {
+          case 'trackingNumber':
+            validateTrackingNumber(input);
+            break;
+          case 'nameOnParcel':
+            validateName(input);
+            break;
+          case 'itemDescription':
+            validateDescription(input);
+            break;
+          case 'quantity':
+            validateQuantity(input);
+            break;
+          case 'price':
+            validatePrice(input);
+            break;
+          case 'collectionPoint':
+            validateCollectionPoint(input);
+            break;
+          case 'itemCategory':
+            validateCategory(input);
+            break;
+        }
+        checkAllFields();
+      });
+    });
+
+    // Initialize file validation
+    const fileInput = document.getElementById('invoiceFiles');
+    if(fileInput) {
+      fileInput.addEventListener('change', () => {
+        validateInvoiceFiles();
+        checkAllFields();
+      });
+    }
+  }
+}
+
 // ================= PARCEL VALIDATION =================
 function checkAllFields() {
   const validations = [
