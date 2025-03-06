@@ -138,10 +138,13 @@ async function handleParcelSubmission() {
     if (!files) return;
 
     const mandatoryCategories = [
-      '* Books', '* Cosmetics/Skincare/Bodycare',
-      '* Food Beverage/Drinks', '* Gadgets',
-      '* Oil Ointment', '* Supplement'
-    ];
+  '* Books', 
+  '* Cosmetics/Skincare/Bodycare',
+  '* Food Beverage/Drinks',
+  '* Gadgets',
+  '* Oil Ointment',
+  '* Supplement'
+];
     
     const category = document.getElementById('itemCategory').value;
     if (mandatoryCategories.includes(category) && files.length === 0) {
