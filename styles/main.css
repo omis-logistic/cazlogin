@@ -182,8 +182,8 @@ body.mobile-view .welcome-content {
 }
 
 .invalid-input {
-  border-color: var(--error-red) !important;
-  box-shadow: 0 0 5px rgba(255, 68, 68, 0.3) !important;
+  animation: pulse-warning 1s infinite;
+  border: 2px solid var(--error-red) !important;
 }
 
 #phoneNumber {
@@ -191,10 +191,19 @@ body.mobile-view .welcome-content {
   color: #ccc !important;
   border: 1px solid #666 !important;
   cursor: not-allowed !important;
+  pointer-events: none; /* Prevent any interactions */
 }
+
 
 #phoneNumber:hover {
   border-color: #666 !important;
+}
+
+/* Enhanced validation animations */
+@keyframes pulse-warning {
+  0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.3); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
 }
 
 #trackingNumber.invalid-input {
