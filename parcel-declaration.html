@@ -82,16 +82,16 @@
     <h1>Submit Parcel Declaration</h1>
 
     <div class="input-group">
-      <label for="trackingNumber">Tracking Number</label>
-      <input type="text" 
-       id="trackingNumber" 
-       placeholder="Enter tracking number" 
-       required
-       pattern="[A-Za-z0-9-]{5,}"
-      oninput="this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '')">
-       title="Minimum 5 characters. Only letters, numbers, and hyphens are allowed">
-      <div class="error-message" id="trackingNumberError"></div>
-    </div>
+  <label for="trackingNumber">Tracking Number</label>
+  <input type="text" 
+         id="trackingNumber" 
+         placeholder="Enter tracking number" 
+         required
+         pattern="[A-Za-z0-9-]{5,}"
+         title="5+ characters (letters, numbers, hyphens)"
+         oninput="this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '')">
+  <div class="error-message" id="trackingNumberError"></div>
+</div>
 
     <div class="input-group">
       <label for="nameOnParcel">Name on Parcel</label>
