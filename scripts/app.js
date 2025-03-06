@@ -100,36 +100,32 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-async function callAPI(action, payload = {}) {
+async function callAPI(action, payload) {
   try {
     const formData = new FormData();
     
-    // Handle parcel declaration files
-    if (action === 'submitParcelDeclaration' && payload.files) {
+    // Handle files
+    if (payload.files) {
       payload.files.forEach((file, index) => {
-        const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        formData.append(`file${index}`, new Blob([byteArray], {
-          type: file.type
-        }), file.name);
+        const blob = new Blob(
+          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+          { type: file.type } // Ensure type is always set
+        );
+        formData.append(`file${index}`, blob, file.name);
       });
     }
 
-    // Structure data payload
-    formData.append('data', JSON.stringify({
-      action: action,
-      ...(action === 'submitParcelDeclaration' ? { data: payload.data } : payload)
-    }));
+    // Add JSON data
+    formData.append('data', JSON.stringify(payload.data));
 
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
       body: formData
     });
 
-    const result = await response.json();
-    return result.result ? result.result : result;
+    return await response.json();
   } catch (error) {
-    console.error('API Error:', error);
-    showError(error.message || 'Network error');
+    console.error('API Call Failed:', error);
     return { success: false, message: error.message };
   }
 }
@@ -470,6 +466,109 @@ function validateRegistrationForm() {
     isValid = false;
   }
 
+  return isValid;
+}
+
+// ================= PARCEL VALIDATION =================
+function checkAllFields() {
+  const validations = [
+    // Tracking Information
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    
+    // Recipient Information
+    validateName(document.getElementById('nameOnParcel')),
+    validateParcelPhone(document.getElementById('phoneNumber')),
+    
+    // Item Details
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    
+    // Collection Details
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    
+    // File Uploads
+    validateInvoiceFiles()
+  ];
+
+  console.log('Validation Results:', {
+    trackingNumber: validations[0],
+    name: validations[1],
+    phone: validations[2],
+    description: validations[3],
+    quantity: validations[4],
+    price: validations[5],
+    collectionPoint: validations[6],
+    category: validations[7],
+    invoices: validations[8]
+  });
+
+  return validations.every(v => v === true);
+}
+
+// Supporting Validation Functions
+function validateParcelPhone(input) {
+  const value = input.value.trim();
+  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
+  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
+  return isValid;
+}
+
+function validateName(input) {
+  const isValid = input.value.trim().length >= 2;
+  showError(isValid ? '' : 'Minimum 2 characters required', 'nameOnParcelError');
+  return isValid;
+}
+
+function validateDescription(input) {
+  const isValid = input.value.trim().length >= 5;
+  showError(isValid ? '' : 'Minimum 5 characters required', 'itemDescriptionError');
+  return isValid;
+}
+
+function validateQuantity(input) {
+  const value = parseInt(input.value);
+  const isValid = !isNaN(value) && value > 0 && value < 1000;
+  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
+  return isValid;
+}
+
+function validatePrice(input) {
+  const value = parseFloat(input.value);
+  const isValid = !isNaN(value) && value > 0 && value < 100000;
+  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
+  return isValid;
+}
+
+function validateCollectionPoint(select) {
+  const isValid = select.value !== '';
+  showError(isValid ? '' : 'Please select collection point', 'collectionPointError');
+  return isValid;
+}
+
+function validateCategory(select) {
+  const isValid = select.value !== '';
+  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
+  return isValid;
+}
+
+function validateInvoiceFiles() {
+  const files = document.getElementById('invoiceFiles').files;
+  const category = document.getElementById('itemCategory').value;
+  const requiresInvoice = ['* Books', '* Cosmetics/Skincare/Bodycare'].includes(category);
+  
+  let isValid = true;
+  if (requiresInvoice) {
+    isValid = files.length > 0;
+    showError(isValid ? '' : 'At least 1 invoice required', 'invoiceFilesError');
+  }
+  
+  if (files.length > 3) {
+    isValid = false;
+    showError('Maximum 3 files allowed', 'invoiceFilesError');
+  }
+  
   return isValid;
 }
 
