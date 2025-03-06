@@ -82,16 +82,16 @@
     <h1>Submit Parcel Declaration</h1>
 
     <div class="input-group">
-  <label for="trackingNumber">Tracking Number</label>
-  <input type="text" 
-       id="trackingNumber" 
-       placeholder="Enter tracking number" 
-       required
-       pattern="[A-Za-z0-9-]{5,}"
-       title="5+ alphanumeric characters and hyphens"
-       oninput="this.value = this.value.replace(/[^A-Za-z0-9-]/g, '')">
-  <div class="error-message" id="trackingNumberError"></div>
-</div>
+      <label for="trackingNumber">Tracking Number</label>
+      <input type="text" 
+             id="trackingNumber" 
+             placeholder="Enter tracking number" 
+             required
+             pattern="[A-Za-z0-9-]{5,}"
+             title="5+ alphanumeric characters and hyphens"
+             oninput="this.value = this.value.replace(/[^A-Za-z0-9-]/g, '').toUpperCase()">
+      <div class="error-message" id="trackingNumberError"></div>
+    </div>
 
     <div class="input-group">
       <label for="nameOnParcel">Name on Parcel</label>
@@ -136,62 +136,62 @@
     </div>
 
     <div class="input-group">
-  <label for="itemCategory">Item Category</label>
-  <select id="itemCategory" required>
-    <option value="">Select Item Category</option>
-    <option value="Accessories/Jewellery">Accessories/Jewellery</option>
-    <option value="Baby Appliances">Baby Appliances</option>
-    <option value="Bag">Bag</option>
-    <option value="* Books">* Books</option>
-    <option value="Car Parts/Accessories">Car Parts/Accessories</option>
-    <option value="Carpets/Mat">Carpets/Mat</option>
-    <option value="Clothing">Clothing</option>
-    <option value="Computer Accessories">Computer Accessories</option>
-    <option value="Cordless">Cordless</option>
-    <option value="* Cosmetics/Skincare/Bodycare">* Cosmetics/Skincare/Bodycare</option>
-    <option value="Decorations">Decorations</option>
-    <option value="Disposable Pad/Mask">Disposable Pad/Mask</option>
-    <option value="Electrical Appliances">Electrical Appliances</option>
-    <option value="Fabric">Fabric</option>
-    <option value="Fashion Accessories">Fashion Accessories</option>
-    <option value="Fishing kits/Accessories">Fishing kits/Accessories</option>
-    <option value="* Food Beverage/Drinks">* Food Beverage/Drinks</option>
-    <option value="Footware Shoes/Slippers">Footware Shoes/Slippers</option>
-    <option value="* Gadgets">* Gadgets</option>
-    <option value="Game/Console/Board">Game/Console/Board</option>
-    <option value="Hand Tools">Hand Tools</option>
-    <option value="Handphone Casing">Handphone Casing</option>
-    <option value="Headgear">Headgear</option>
-    <option value="Home Fitting/Furniture">Home Fitting/Furniture</option>
-    <option value="Kitchenware">Kitchenware</option>
-    <option value="LED/Lamp">LED/Lamp</option>
-    <option value="Matters/Bedding">Matters/Bedding</option>
-    <option value="Mix Item">Mix Item</option>
-    <option value="Motor Part/Accessories">Motor Part/Accessories</option>
-    <option value="* Oil Ointment">* Oil Ointment</option>
-    <option value="Others">Others</option>
-    <option value="Perfume">Perfume</option>
-    <option value="Phone Accessories">Phone Accessories</option>
-    <option value="Plastic Article">Plastic Article</option>
-    <option value="RC Parts/Accessories">RC Parts/Accessories</option>
-    <option value="Rubber">Rubber</option>
-    <option value="Seluar">Seluar</option>
-    <option value="Socks">Socks</option>
-    <option value="Sport Equipment">Sport Equipment</option>
-    <option value="Stationery">Stationery</option>
-    <option value="Stickers">Stickers</option>
-    <option value="Storage">Storage</option>
-    <option value="* Supplement">* Supplement</option>
-    <option value="Telkong">Telkong</option>
-    <option value="Toys">Toys</option>
-    <option value="Tudong">Tudong</option>
-    <option value="Tumbler">Tumbler</option>
-    <option value="Underwear">Underwear</option>
-    <option value="Watch & Accessories">Watch & Accessories</option>
-    <option value="Wire, Adapter & Plug">Wire, Adapter & Plug</option>
-  </select>
-  <div class="error-message" id="itemCategoryError"></div>
-</div>
+      <label for="itemCategory">Item Category</label>
+      <select id="itemCategory" required>
+        <option value="">Select Item Category</option>
+        <option value="Accessories/Jewellery">Accessories/Jewellery</option>
+        <option value="Baby Appliances">Baby Appliances</option>
+        <option value="Bag">Bag</option>
+        <option value="* Books">* Books</option>
+        <option value="Car Parts/Accessories">Car Parts/Accessories</option>
+        <option value="Carpets/Mat">Carpets/Mat</option>
+        <option value="Clothing">Clothing</option>
+        <option value="Computer Accessories">Computer Accessories</option>
+        <option value="Cordless">Cordless</option>
+        <option value="* Cosmetics/Skincare/Bodycare">* Cosmetics/Skincare/Bodycare</option>
+        <option value="Decorations">Decorations</option>
+        <option value="Disposable Pad/Mask">Disposable Pad/Mask</option>
+        <option value="Electrical Appliances">Electrical Appliances</option>
+        <option value="Fabric">Fabric</option>
+        <option value="Fashion Accessories">Fashion Accessories</option>
+        <option value="Fishing kits/Accessories">Fishing kits/Accessories</option>
+        <option value="* Food Beverage/Drinks">* Food Beverage/Drinks</option>
+        <option value="Footware Shoes/Slippers">Footware Shoes/Slippers</option>
+        <option value="* Gadgets">* Gadgets</option>
+        <option value="Game/Console/Board">Game/Console/Board</option>
+        <option value="Hand Tools">Hand Tools</option>
+        <option value="Handphone Casing">Handphone Casing</option>
+        <option value="Headgear">Headgear</option>
+        <option value="Home Fitting/Furniture">Home Fitting/Furniture</option>
+        <option value="Kitchenware">Kitchenware</option>
+        <option value="LED/Lamp">LED/Lamp</option>
+        <option value="Matters/Bedding">Matters/Bedding</option>
+        <option value="Mix Item">Mix Item</option>
+        <option value="Motor Part/Accessories">Motor Part/Accessories</option>
+        <option value="* Oil Ointment">* Oil Ointment</option>
+        <option value="Others">Others</option>
+        <option value="Perfume">Perfume</option>
+        <option value="Phone Accessories">Phone Accessories</option>
+        <option value="Plastic Article">Plastic Article</option>
+        <option value="RC Parts/Accessories">RC Parts/Accessories</option>
+        <option value="Rubber">Rubber</option>
+        <option value="Seluar">Seluar</option>
+        <option value="Socks">Socks</option>
+        <option value="Sport Equipment">Sport Equipment</option>
+        <option value="Stationery">Stationery</option>
+        <option value="Stickers">Stickers</option>
+        <option value="Storage">Storage</option>
+        <option value="* Supplement">* Supplement</option>
+        <option value="Telkong">Telkong</option>
+        <option value="Toys">Toys</option>
+        <option value="Tudong">Tudong</option>
+        <option value="Tumbler">Tumbler</option>
+        <option value="Underwear">Underwear</option>
+        <option value="Watch & Accessories">Watch & Accessories</option>
+        <option value="Wire, Adapter & Plug">Wire, Adapter & Plug</option>
+      </select>
+      <div class="error-message" id="itemCategoryError"></div>
+    </div>
 
     <div class="input-group">
       <label for="invoiceFiles">Upload Invoices (Max 3 files, at least 1 required for * categories)</label>
@@ -209,236 +209,69 @@
 
   <script src="scripts/app.js"></script>
   <script>
-  // Validation Functions
-function validateTrackingNumber(input) {
-  const value = input.value.trim();
-  const isValid = /^[A-Z0-9-]{5,}$/i.test(value); // Case-insensitive check
-  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
-  return isValid;
-}
+  document.addEventListener('DOMContentLoaded', async () => {
+    try {
+      detectViewMode();
+      
+      const userData = checkSession();
+      if (!userData) {
+        safeRedirect('login.html');
+        return;
+      }
 
-  function validateName(input) {
-    const isValid = input.value.trim().length > 0;
-    showError(isValid ? '' : 'Name is required', 'nameOnParcelError');
-    return isValid;
-  }
+      const phoneField = document.getElementById('phoneNumber');
+      if (userData?.phone) {
+        phoneField.value = userData.phone.trim();
+        phoneField.style.color = '#ffffff';
+      }
 
-  function validateDescription(input) {
-    const isValid = input.value.trim().length > 0;
-    showError(isValid ? '' : 'Description is required', 'itemDescriptionError');
-    return isValid;
-  }
-
-  function validateQuantity(input) {
-    const value = parseInt(input.value);
-    const isValid = !isNaN(value) && value > 0;
-    showError(isValid ? '' : 'Must be at least 1', 'quantityError');
-    return isValid;
-  }
-
-  function validatePrice(input) {
-    const value = parseFloat(input.value);
-    const isValid = !isNaN(value) && value > 0;
-    showError(isValid ? '' : 'Must be positive number', 'priceError');
-    return isValid;
-  }
-
-  function validateCollectionPoint(select) {
-    const isValid = select.value !== '';
-    showError(isValid ? '' : 'Required field', 'collectionPointError');
-    return isValid;
-  }
-
-  function validateCategory(select) {
-    const isValid = select.value !== '';
-    showError(isValid ? '' : 'Required field', 'itemCategoryError');
-    if(isValid) checkInvoiceRequirements();
-    return !!isValid;
-  }
-
-  function validateInvoiceFiles() {
-    const mandatoryCategories = [
-      '* Books', 
-      '* Cosmetics/Skincare/Bodycare',
-      '* Food Beverage/Drinks',
-      '* Gadgets',
-      '* Oil Ointment',
-      '* Supplement'
-    ];
-    
-    const category = document.getElementById('itemCategory').value;
-    const files = document.getElementById('invoiceFiles').files;
-    let isValid = true;
-    let errorMessage = '';
-
-    if(files.length > 3) {
-      errorMessage = 'Maximum 3 files allowed';
-      isValid = false;
+      initValidationListeners();
+      updateSubmitButtonState();
+      
+    } catch (error) {
+      console.error('Initialization error:', error);
+      showError('Failed to initialize form');
     }
-    else if(mandatoryCategories.includes(category)) {
-      isValid = files.length > 0;
-      errorMessage = isValid ? '' : 'At least 1 invoice required';
-    }
+  });
 
-    showError(errorMessage, 'invoiceFilesError');
-    return isValid;
-  }
+  async function handleParcelSubmission() {
+    try {
+      if (!checkAllFields()) {
+        showError('Please fix validation errors');
+        return;
+      }
 
-  // Core Logic
-  function checkInvoiceRequirements() {
-    return validateInvoiceFiles();
-  }
+      showLoading(true);
+      
+      const submissionData = {
+        data: {
+          trackingNumber: document.getElementById('trackingNumber').value.trim(),
+          phoneNumber: document.getElementById('phoneNumber').value.trim(),
+          nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+          itemDescription: document.getElementById('itemDescription').value.trim(),
+          quantity: parseInt(document.getElementById('quantity').value),
+          price: parseFloat(document.getElementById('price').value),
+          collectionPoint: document.getElementById('collectionPoint').value,
+          itemCategory: document.getElementById('itemCategory').value
+        },
+        files: await handleFileUpload(document.getElementById('invoiceFiles').files)
+      };
 
-  function checkAllFields() {
-    const isValid = [
-      validateTrackingNumber(document.getElementById('trackingNumber')),
-      validateName(document.getElementById('nameOnParcel')),
-      validateDescription(document.getElementById('itemDescription')),
-      validateQuantity(document.getElementById('quantity')),
-      validatePrice(document.getElementById('price')),
-      validateCollectionPoint(document.getElementById('collectionPoint')),
-      validateCategory(document.getElementById('itemCategory')),
-      validateInvoiceFiles()
-    ].every(result => result);
-
-    document.getElementById('submitBtn').disabled = !isValid;
-    return isValid;
-  }
-
-  // Event Handlers
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    detectViewMode();
-    
-    // Verify session exists
-    const userData = checkSession();
-    if (!userData) {
-      safeRedirect('login.html');
-      return;
-    }
-
-    // Set initial field values
-    const phoneField = document.getElementById('phoneNumber');
-    if (userData?.phone) {
-      phoneField.value = userData.phone.trim();
-      phoneField.style.color = '#ffffff';
-    }
-
-    // Initialize empty values for validation
-    document.getElementById('trackingNumber').value = '';
-    document.getElementById('nameOnParcel').value = '';
-    document.getElementById('itemDescription').value = '';
-    document.getElementById('quantity').value = '';
-    document.getElementById('price').value = '';
-
-    // Initialize validation after DOM is ready
-    initValidationListeners();
-    checkAllFields(); // Initial validation check
-    
-  } catch (error) {
-    console.error('Initialization error:', error);
-    showError('Failed to initialize form');
-  }
-});
-
-  // Submission Handling
-async function handleParcelSubmission() {
-  try {
-    console.log('Submission started'); // Debug log
-    
-    // Validate form
-    if (!checkAllFields()) {
-      showError('Please fix validation errors');
-      return;
-    }
-
-    showLoading(true);
-    
-    // Prepare data
-    const formData = {
-      trackingNumber: document.getElementById('trackingNumber').value.trim()
-        .replace(/[^A-Z0-9-]/g, '').toUpperCase(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: quantity,
-      price: price,
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
-    };
-
-    console.log('Form Data:', formData); // Debug log
-
-    // Process files
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = await processFiles(fileInput);
-    console.log('Processed Files:', files); // Debug log
-
-    // Submit data
-    const response = await callAPI('submitParcelDeclaration', {
-      data: formData,
-      files: files
-    });
-
-    if (response?.success) {
-      alert(`Submitted! Tracking: ${response.trackingNumber}`);
-      safeRedirect('dashboard.html');
-    } else {
-      throw new Error(response?.message || 'Submission failed');
-    }
-  } catch (error) {
-    console.error('Submission Error:', error);
-    showError(error.message);
-  } finally {
-    showLoading(false);
-  }
-}
-
-async function processFiles(fileInput) {
-  try {
-    return await Promise.all(
-      Array.from(fileInput.files).map(async file => ({
-        name: file.name,
-        type: file.type || getMimeTypeFromExtension(file.name),
-        base64: await readFileAsBase64(file)
-      }))
-    );
-  } catch (error) {
-    console.error('File processing error:', error);
-    throw new Error('Failed to process files');
-  }
-}
-
-function getMimeTypeFromExtension(filename) {
-  const extMap = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'pdf': 'application/pdf'
-  };
-  const ext = filename.split('.').pop().toLowerCase();
-  return extMap[ext] || 'application/octet-stream';
-}
-
-  function readFileAsBase64(file) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function handleSubmissionResponse(response) {
-    showLoading(false);
-    if (response.success) {
-      alert(`Declaration submitted! Tracking: ${response.trackingNumber}`);
-      safeRedirect('dashboard.html');
-    } else {
-      showError(response.message || 'Submission failed');
+      const result = await callAPI('submitParcelDeclaration', submissionData);
+      
+      if (result.success) {
+        alert(`Submitted! Tracking: ${result.trackingNumber}`);
+        safeRedirect('dashboard.html');
+      } else {
+        showError(result.message || 'Submission failed');
+      }
+    } catch (error) {
+      showError(error.message);
+    } finally {
+      showLoading(false);
     }
   }
 
-  // UI Utilities
   function showLoading(show) {
     const loader = document.getElementById('loader') || createLoader();
     loader.style.display = show ? 'block' : 'none';
@@ -458,8 +291,7 @@ function getMimeTypeFromExtension(filename) {
     loader.innerHTML = `
       <div class="loader-spinner" style="
         border: 4px solid #f3f3f3;
-        border-top: 4px solid ${getComputedStyle(document.documentElement)
-          .getPropertyValue('--gold')};
+        border-top: 4px solid var(--gold);
         border-radius: 50%;
         width: 40px;
         height: 40px;
@@ -469,20 +301,6 @@ function getMimeTypeFromExtension(filename) {
     `;
     document.body.appendChild(loader);
     return loader;
-  }
-
-  function clearErrors() {
-    document.querySelectorAll('.error-message').forEach(el => {
-      el.textContent = '';
-    });
-  }
-
-  function showError(message, targetId = 'error-message') {
-    const errorElement = document.getElementById(targetId);
-    if (errorElement) {
-      errorElement.textContent = message;
-      errorElement.style.display = message ? 'block' : 'none';
-    }
   }
   </script>
 </body>
