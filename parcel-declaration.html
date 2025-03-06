@@ -87,12 +87,8 @@
 
     <div class="input-group">
       <label for="phoneNumber">Phone Number</label>
-  <input type="tel" 
-         id="phoneNumber" 
-         placeholder="Phone Number" 
-         readonly
-         style="background: #444; color: #999; cursor: not-allowed">
-</div>
+      <input type="tel" id="phoneNumber" placeholder="Phone Number" readonly>
+    </div>
 
     <div class="input-group">
       <label for="itemDescription">Item Description</label>
@@ -187,239 +183,72 @@
     </div>
 
     <button onclick="handleParcelSubmission(); return false;">Submit</button>
-    <button class="secondary-btn" onclick="handleDashboardReturn()" 
-        style="margin-top: 10px;">
-  ← Back to Dashboard
-</button>
+    <button 
+      style="margin-top: 10px; background: #444" 
+      onclick="showDashboard(); return false;"
+    >
+      Back to Dashboard
+    </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
   // ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  // 1. Viewport detection
-  detectViewMode();
-
-  // 2. Session verification
-  const userData = checkSession();
-  if (!userData) {
-    safeRedirect('login.html');
-    return;
-  }
-
-  // 3. Phone number handling
-  const phoneInput = document.getElementById('phoneNumber');
-  try {
-    // Set phone number from session
-    phoneInput.value = userData.phone || '';
-    phoneInput.setAttribute('title', 'Registered phone number (read-only)');
-
-    // Verify phone number exists
-    if (!phoneInput.value.trim()) {
-      showError('Could not retrieve phone number from session');
-      console.error('Session data:', userData);
-      handleLogout();
-      return;
-    }
-  } catch (error) {
-    console.error('Phone number setup error:', error);
-    showError('System configuration error');
-    return;
-  }
-
-  // 4. Tracking number validation setup
-  const trackingInput = document.getElementById('trackingNumber');
-  const trackingError = document.getElementById('trackingNumberError');
-
-  trackingInput.addEventListener('input', function() {
-  // Clean input: uppercase, remove invalid characters
-  let value = this.value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
-  this.value = value;
-  
-  // Validate and show feedback
-  const isValid = value.length >= 5;
-  
-  trackingError.textContent = isValid ? '' : 
-    'Minimum 5 characters (A-Z, 0-9, - only)';
-  trackingError.style.display = isValid ? 'none' : 'block';
-  
-  this.classList.toggle('invalid-input', !isValid);
-  
-  // Add visual feedback
-  this.style.borderWidth = isValid ? '1px' : '2px';
-  this.style.backgroundColor = isValid ? 'inherit' : '#ff444411';
-});
-
-  // 5. Form submission handler
-  document.querySelector('button[onclick="handleParcelSubmission()"]')
-    .addEventListener('click', handleParcelSubmission);
-
-  // 6. Session timeout watcher
-  const sessionWatcher = setInterval(() => {
-    if (!checkSession()) {
-      clearInterval(sessionWatcher);
-      safeRedirect('login.html');
-    }
-  }, 30000);
-
-  // 7. First input focus
-  setTimeout(() => {
-    const firstInput = document.querySelector('input:not([readonly]):not([disabled])');
-    if (firstInput) firstInput.focus();
-  }, 100);
-});
-
-// 8. Enhanced validation function
-function validateFormData(formData) {
-  // Tracking number validation
-  if (!/^[A-Z0-9-]{5,}$/.test(formData.trackingNumber)) {
-    throw new Error('Invalid tracking number format');
-  }
-
-  // Phone number verification
-  if (!formData.phoneNumber || !validatePhone(formData.phoneNumber)) {
-    throw new Error('Invalid phone number in session - please re-login');
-  }
-
-  // Required fields check
-  const requiredFields = {
-    nameOnParcel: 'Name on Parcel',
-    itemDescription: 'Item Description',
-    quantity: 'Quantity',
-    price: 'Price',
-    collectionPoint: 'Collection Point',
-    itemCategory: 'Item Category'
-  };
-
-  for (const [field, name] of Object.entries(requiredFields)) {
-    if (!formData[field]?.toString().trim()) {
-      throw new Error(`${name} is required`);
-    }
-  }
-}
-
-// 9. Back to Dashboard Button Handler
-function handleDashboardReturn() {
-  try {
-    // Force session refresh
-    localStorage.setItem('lastActivity', Date.now());
-    window.location.href = 'dashboard.html';
-  } catch (error) {
-    console.error('Navigation error:', error);
-    window.location.reload();
-  }
-}
-  // ================= FORM HANDLING =================
-async function handleParcelSubmission() {
-  try {
-    clearErrors();
-    const formData = getFormData();
-    validateFormData(formData);
+  document.addEventListener('DOMContentLoaded', () => {
+    detectViewMode();
+    const userData = checkSession();
+    if (!userData) return;
     
-    const files = document.getElementById('invoiceFiles').files;
-    validateFiles(formData.itemCategory, files);
-
-    const response = await callAPI('submitParcelDeclaration', {
-      data: formData,
-      files: files
-    });
-
-    handleSubmissionResponse(response);
-  } catch (error) {
-    showError(error.message);
-  }
-}
-
-// New helper functions
-function getFormData() {
-  return {
-    trackingNumber: document.getElementById('trackingNumber').value.trim(),
-    nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-    phoneNumber: document.getElementById('phoneNumber').value.trim(),
-    itemDescription: document.getElementById('itemDescription').value.trim(),
-    quantity: document.getElementById('quantity').value,
-    price: document.getElementById('price').value,
-    collectionPoint: document.getElementById('collectionPoint').value,
-    itemCategory: document.getElementById('itemCategory').value
-  };
-}
-
-function validateFormData(formData) {
-  if (!/^[A-Z0-9-]{5,}$/.test(formData.trackingNumber)) {
-    throw new Error('Invalid tracking number format');
-  }
-}
-
-function validateFiles(itemCategory, files) {
-  const requiresInvoice = ['Books', 'Cosmetics/Skincare/Bodycare', 
-                          'Food Beverage/Drinks', 'Gadgets', 
-                          'Oil Ointment', 'Supplement']
-                         .some(cat => itemCategory.includes(cat));
-  
-  if (requiresInvoice && files.length === 0) {
-    document.getElementById('invoiceFilesError').textContent = 
-      'At least one invoice is required for this category';
-    throw new Error('Invoice required');
-  }
-}
-
-// Updated Back to Dashboard button in HTML
-<button class="secondary-btn" 
-        onclick="window.location.href='dashboard.html'" 
-        style="margin-top: 10px;">
-  ← Back to Dashboard
-</button>
-
-// Add this loading indicator style
-<style>
-  .loader-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 9999;
-    display: none;
-  }
-  
-  .loader-spinner {
-    border: 4px solid #f3f3f3;
-    border-top: 4px solid var(--gold);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  @keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
-  }
-</style>
-
-// Add loading indicator HTML before closing body tag
-<div class="loader-overlay" id="loaderOverlay">
-  <div class="loader-spinner"></div>
-</div>
-
-// Loading control functions
-function showLoading(show) {
-  document.getElementById('loaderOverlay').style.display = show ? 'block' : 'none';
-  document.querySelectorAll('button').forEach(btn => {
-    btn.disabled = show;
+    document.getElementById('phoneNumber').value = userData.phone;
   });
-}
 
-function clearErrors() {
-  document.querySelectorAll('.error-message').forEach(el => {
-    el.textContent = '';
-  });
-}
+  // ================= FORM HANDLING =================
+  async function handleParcelSubmission() {
+    try {
+      showLoading(true);
+      clearErrors();
+
+      // Collect form data
+      const formData = {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: document.getElementById('quantity').value,
+        price: document.getElementById('price').value,
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      };
+
+      // Process files
+      const fileInput = document.getElementById('invoiceFiles');
+      const filesBase64 = await processFiles(fileInput);
+
+      // Create JSONP request
+      const callbackName = `parcel_${Date.now()}`;
+      const script = document.createElement('script');
+      const params = new URLSearchParams({
+        action: 'submitParcelDeclaration',
+        callback: callbackName,
+        ...formData,
+        filesBase64: JSON.stringify(filesBase64)
+      });
+
+      script.src = `${CONFIG.GAS_URL}?${params}`;
+
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        handleSubmissionResponse(response);
+      };
+
+      document.body.appendChild(script);
+
+    } catch (error) {
+      showError(error.message);
+      showLoading(false);
+    }
+  }
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
