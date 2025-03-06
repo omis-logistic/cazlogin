@@ -83,11 +83,12 @@
 
     <div class="input-group">
       <label for="trackingNumber">Tracking Number</label>
-      <input type="text" id="trackingNumber" 
-             placeholder="Enter tracking number" 
-             required
-             pattern="^[A-Za-z0-9-]{5,}$"
-             title="Minimum 5 characters. Only letters, numbers, and hyphens are allowed">
+      <input type="text" 
+       id="trackingNumber" 
+       placeholder="Enter tracking number" 
+       required
+       pattern="[A-Za-z0-9-]{5,}"
+       title="Minimum 5 characters. Only letters, numbers, and hyphens are allowed">
       <div class="error-message" id="trackingNumberError"></div>
     </div>
 
@@ -208,12 +209,12 @@
   <script src="scripts/app.js"></script>
   <script>
   // Validation Functions
-  function validateTrackingNumber(input) {
-    const value = input.value.trim();
-    const isValid = /^[A-Za-z0-9-]{5,}$/.test(value);
-    showError(isValid ? '' : 'Minimum 5 alphanumeric characters, hyphens allowed', 'trackingNumberError');
-    return isValid;
-  }
+  const validateTrackingNumber = (input) => {
+  const value = input.value.trim();
+  const isValid = /^[A-Za-zd-]{5,}$/.test(value); // Fixed regex
+  showError(isValid ? '' : 'Minimum 5 alphanumeric characters, hyphens allowed', 'trackingNumberError');
+  return isValid;
+}
 
   function validateName(input) {
     const isValid = input.value.trim().length > 0;
@@ -305,16 +306,16 @@
 
   // Event Handlers
   document.addEventListener('DOMContentLoaded', () => {
-    detectViewMode();
-    const userData = checkSession();
-    if (!userData) return safeRedirect('login.html');
+  detectViewMode();
+  const userData = checkSession();
+  if (!userData) return safeRedirect('login.html');
 
-    const phoneField = document.getElementById('phoneNumber');
-    if (userData.phone) {
-      phoneField.value = userData.phone;
-      phoneField.style.backgroundColor = '#2a2a2a';
-      phoneField.style.color = '#ffffff';
-      phoneField.style.cursor = 'default';
+  const phoneField = document.getElementById('phoneNumber');
+  phoneField.value = userData.phone || '';
+  phoneField.placeholder = 'Phone Number';
+  phoneField.style.backgroundColor = '#2a2a2a';
+  phoneField.style.color = '#ffffff';
+  phoneField.style.cursor = 'default';
     }
 
     // Setup validation listeners
@@ -349,70 +350,81 @@
 
   // Submission Handling
   async function handleParcelSubmission() {
+  try {
     if (!checkAllFields()) {
       showError('Please fix validation errors before submitting');
       return;
     }
 
-    try {
-      showLoading(true);
-      clearErrors();
+    showLoading(true);
+    clearErrors();
 
-      // Sanitize and validate data
-      const quantity = parseInt(document.getElementById('quantity').value);
-      const price = parseFloat(document.getElementById('price').value);
-      
-      if (isNaN(quantity) throw new Error('Invalid quantity value');
-      if (isNaN(price)) throw new Error('Invalid price value');
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9-]/g, ''),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: parseInt(document.getElementById('quantity').value),
+      price: parseFloat(document.getElementById('price').value),
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
 
-      const formData = {
-        trackingNumber: document.getElementById('trackingNumber').value.trim()
-          .toUpperCase()
-          .replace(/[^A-Z0-9-]/g, ''),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
-        quantity: quantity,
-        price: price,
-        collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
-      };
-
-      // Process files
-      const fileInput = document.getElementById('invoiceFiles');
-      const files = await processFiles(fileInput);
-
-      // Submit via Fetch API
-      const response = await fetch(CONFIG.GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'submitParcelDeclaration',
-          data: formData,
-          files: files
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const result = await response.json();
-      handleSubmissionResponse(result);
-    } catch (error) {
-      showError(error.message);
-      showLoading(false);
+    if (isNaN(formData.quantity)) {
+      throw new Error('Invalid quantity value');
     }
+    if (isNaN(formData.price)) {
+      throw new Error('Invalid price value');
+    }
+
+    const fileInput = document.getElementById('invoiceFiles');
+    const filesBase64 = await processFiles(fileInput);
+
+    const response = await callAPI('submitParcelDeclaration', {
+      data: formData,
+      files: filesBase64
+    });
+
+    if (response.success) {
+      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(response.message || 'Submission failed');
+    }
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    showLoading(false);
   }
+}
 
   async function processFiles(fileInput) {
-    if (!fileInput.files.length) return [];
-    return Promise.all(
-      Array.from(fileInput.files).slice(0, 3).map(async file => ({
+  if (!fileInput.files.length) return [];
+  
+  return Promise.all(
+    Array.from(fileInput.files).map(async file => {
+      const type = file.type || getMimeTypeFromExtension(file.name);
+      return {
         name: file.name,
-        type: file.type || 'application/octet-stream',
+        type: type || 'application/octet-stream',
         base64: await readFileAsBase64(file)
-      }))
-    );
-  }
+      };
+    })
+  );
+}
+
+function getMimeTypeFromExtension(filename) {
+  const extension = filename.split('.').pop().toLowerCase();
+  const types = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'pdf': 'application/pdf'
+  };
+  return types[extension] || 'application/octet-stream';
+}
 
   function readFileAsBase64(file) {
     return new Promise((resolve) => {
