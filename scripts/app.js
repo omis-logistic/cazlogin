@@ -60,12 +60,18 @@ function createErrorElement() {
 }
 
 // ================= SESSION MANAGEMENT =================
-function checkSession() {
+const checkSession = () => {
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
-  if (!sessionData || 
-      (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000)) {
+  if (!sessionData) {
+    console.warn('No session data found');
+    handleLogout();
+    return null;
+  }
+
+  if (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000) {
+    console.warn('Session expired');
     handleLogout();
     return null;
   }
@@ -74,12 +80,13 @@ function checkSession() {
   const userData = JSON.parse(sessionData);
   
   if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+    console.warn('Temp password requires reset');
     handleLogout();
     return null;
   }
 
   return userData;
-}
+};
 
 function handleLogout() {
   try {
