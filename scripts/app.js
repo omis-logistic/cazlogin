@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbww25aKRXOVmYeuo5BUXxheF5Chg99HP-zuV2E2sPkU0ZHRy3dE-DQsm0FRqsaDWCEV/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -133,23 +133,22 @@ async function callAPI(action, payload) {
 // ================= PARCEL DECLARATION HANDLERS =================
 async function handleParcelSubmission() {
   try {
-    // Validate form before submission
-    if (!checkAllFields()) {
-      showError('Please fix validation errors before submitting');
-      return;
-    }
-
-    // Get files and validate
     const filesInput = document.getElementById('invoiceFiles');
     const files = await handleFileUpload(filesInput.files);
+    if (!files) return;
+
+    const mandatoryCategories = [
+      '* Books', '* Cosmetics/Skincare/Bodycare',
+      '* Food Beverage/Drinks', '* Gadgets',
+      '* Oil Ointment', '* Supplement'
+    ];
     
-    // Null check for failed file processing
-    if (files === null) {
-      showError('Invalid file upload');
+    const category = document.getElementById('itemCategory').value;
+    if (mandatoryCategories.includes(category) && files.length === 0) {
+      showError('At least 1 invoice required for this category');
       return;
     }
 
-    // Prepare submission data
     const submissionData = {
       data: {
         trackingNumber: formatTrackingNumber(
@@ -161,29 +160,23 @@ async function handleParcelSubmission() {
         quantity: parseInt(document.getElementById('quantity').value),
         price: parseFloat(document.getElementById('price').value),
         collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
+        itemCategory: category
       },
       files: files
     };
 
-    // Validate numeric values
-    if (isNaN(submissionData.data.quantity) {
+    if (isNaN(submissionData.data.quantity) || submissionData.data.quantity < 1) {
       showError('Invalid quantity value');
       return;
     }
 
-    if (isNaN(submissionData.data.price)) {
+    if (isNaN(submissionData.data.price) || submissionData.data.price <= 0) {
       showError('Invalid price value');
       return;
     }
 
-    // Show loading state
-    showLoading(true);
-
-    // Submit to API
     const result = await callAPI('submitParcelDeclaration', submissionData);
     
-    // Handle response
     if (result.success) {
       alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
       safeRedirect('dashboard.html');
@@ -191,11 +184,7 @@ async function handleParcelSubmission() {
       showError(result.message || 'Submission failed');
     }
   } catch (error) {
-    console.error('Submission Error:', error);
-    showError(error.message || 'An unexpected error occurred');
-  } finally {
-    // Hide loading state
-    showLoading(false);
+    showError(error.message);
   }
 }
 
@@ -260,10 +249,6 @@ function formatCurrency(amount) {
     currency: 'MYR',
     minimumFractionDigits: 2
   }).format(amount || 0);
-}
-
-function sanitizeInput(value, pattern, replaceWith = '') {
-  return value.replace(new RegExp(`[^${pattern}]`, 'g'), replaceWith);
 }
 
 // ================= INITIALIZATION =================
@@ -543,18 +528,16 @@ function validateDescription(input) {
 }
 
 function validateQuantity(input) {
-  input.value = sanitizeInput(input.value, '0-9');
   const value = parseInt(input.value);
   const isValid = !isNaN(value) && value > 0 && value < 1000;
-  showError(isValid ? '' : 'Valid quantity (1-999)', 'quantityError');
+  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
   return isValid;
 }
 
 function validatePrice(input) {
-  input.value = sanitizeInput(input.value, '0-9.');
   const value = parseFloat(input.value);
   const isValid = !isNaN(value) && value > 0 && value < 100000;
-  showError(isValid ? '' : 'Valid price required', 'priceError');
+  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
   return isValid;
 }
 
