@@ -196,53 +196,118 @@
   <script>
   // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
+  // 1. Viewport detection
   detectViewMode();
+
+  // 2. Session verification
   const userData = checkSession();
-  if (!userData) return safeRedirect('login.html');
-  
-  // Set phone number from session
-  document.getElementById('phoneNumber').value = userData.phone || '';
-  
-  // Initialize real-time tracking validation
+  if (!userData) {
+    safeRedirect('login.html');
+    return;
+  }
+
+  // 3. Phone number handling
+  const phoneInput = document.getElementById('phoneNumber');
+  try {
+    // Set phone number from session
+    phoneInput.value = userData.phone || '';
+    phoneInput.setAttribute('title', 'Registered phone number (read-only)');
+
+    // Verify phone number exists
+    if (!phoneInput.value.trim()) {
+      showError('Could not retrieve phone number from session');
+      console.error('Session data:', userData);
+      handleLogout();
+      return;
+    }
+  } catch (error) {
+    console.error('Phone number setup error:', error);
+    showError('System configuration error');
+    return;
+  }
+
+  // 4. Tracking number validation setup
   const trackingInput = document.getElementById('trackingNumber');
   const trackingError = document.getElementById('trackingNumberError');
 
   trackingInput.addEventListener('input', function() {
-    // Clean input: uppercase, remove invalid characters
-    let value = this.value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
-    this.value = value;
-    
-    // Validate and show feedback
-    const isValid = value.length >= 5;
-    trackingError.textContent = isValid ? '' : 
-      'Minimum 5 characters (A-Z, 0-9, - only)';
-    this.classList.toggle('invalid-input', !isValid);
-  });
+  // Clean input: uppercase, remove invalid characters
+  let value = this.value.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+  this.value = value;
+  
+  // Validate and show feedback
+  const isValid = value.length >= 5;
+  
+  trackingError.textContent = isValid ? '' : 
+    'Minimum 5 characters (A-Z, 0-9, - only)';
+  trackingError.style.display = isValid ? 'none' : 'block';
+  
+  this.classList.toggle('invalid-input', !isValid);
+  
+  // Add visual feedback
+  this.style.borderWidth = isValid ? '1px' : '2px';
+  this.style.backgroundColor = isValid ? 'inherit' : '#ff444411';
 });
-  // Initialize other form elements
-  const fileInput = document.getElementById('invoiceFiles');
-  fileInput.addEventListener('change', handleFileUpload);
 
-  // Auto-focus first empty input
-  const firstEmptyInput = document.querySelector('input:not([readonly]):invalid');
-  if (firstEmptyInput) {
-    firstEmptyInput.focus();
-  }
+  // 5. Form submission handler
+  document.querySelector('button[onclick="handleParcelSubmission()"]')
+    .addEventListener('click', handleParcelSubmission);
 
-  // Error cleanup on window close
-  window.addEventListener('beforeunload', () => {
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) errorElement.style.display = 'none';
-  });
-
-  // Session timeout watcher
-  setInterval(() => {
+  // 6. Session timeout watcher
+  const sessionWatcher = setInterval(() => {
     if (!checkSession()) {
+      clearInterval(sessionWatcher);
       safeRedirect('login.html');
     }
-  }, 30000); // Check every 30 seconds
+  }, 30000);
+
+  // 7. First input focus
+  setTimeout(() => {
+    const firstInput = document.querySelector('input:not([readonly]):not([disabled])');
+    if (firstInput) firstInput.focus();
+  }, 100);
 });
 
+// 8. Enhanced validation function
+function validateFormData(formData) {
+  // Tracking number validation
+  if (!/^[A-Z0-9-]{5,}$/.test(formData.trackingNumber)) {
+    throw new Error('Invalid tracking number format');
+  }
+
+  // Phone number verification
+  if (!formData.phoneNumber || !validatePhone(formData.phoneNumber)) {
+    throw new Error('Invalid phone number in session - please re-login');
+  }
+
+  // Required fields check
+  const requiredFields = {
+    nameOnParcel: 'Name on Parcel',
+    itemDescription: 'Item Description',
+    quantity: 'Quantity',
+    price: 'Price',
+    collectionPoint: 'Collection Point',
+    itemCategory: 'Item Category'
+  };
+
+  for (const [field, name] of Object.entries(requiredFields)) {
+    if (!formData[field]?.toString().trim()) {
+      throw new Error(`${name} is required`);
+    }
+  }
+}
+
+// 9. Back to Dashboard Button Handler
+function handleDashboardReturn() {
+  try {
+    // Force session refresh
+    localStorage.setItem('lastActivity', Date.now());
+    window.location.href = 'dashboard.html';
+  } catch (error) {
+    console.error('Navigation error:', error);
+    window.location.reload();
+  }
+}
   // ================= FORM HANDLING =================
 async function handleParcelSubmission() {
   try {
@@ -298,8 +363,9 @@ function validateFiles(itemCategory, files) {
 }
 
 // Updated Back to Dashboard button in HTML
-<button class="secondary-btn" onclick="safeRedirect('dashboard.html')" 
-        style="margin-top: 10px; background: var(--dark-bg);">
+<button class="secondary-btn" 
+        onclick="window.location.href='dashboard.html'" 
+        style="margin-top: 10px;">
   ← Back to Dashboard
 </button>
 
