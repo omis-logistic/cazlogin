@@ -12,7 +12,8 @@ const CONFIG = {
 function detectViewMode() {
   const isMobile = (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
   
   document.body.classList.add(isMobile ? 'mobile-view' : 'desktop-view');
   
@@ -124,7 +125,7 @@ async function callAPI(action, payload) {
   }
 }
 
-// ================= PARCEL DECLARATION HANDLERS =================
+// ================= PARCEL HANDLERS =================
 async function handleParcelSubmission() {
   try {
     const filesInput = document.getElementById('invoiceFiles');
@@ -160,7 +161,7 @@ async function handleParcelSubmission() {
   }
 }
 
-// ================= PARCEL VALIDATION =================
+// ================= VALIDATION CORE =================
 function validateTrackingNumber(inputElement) {
   const value = inputElement?.value?.trim() || '';
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
@@ -236,6 +237,40 @@ function validateInvoiceFiles() {
   return isValid;
 }
 
+function validateParcelPhone(input) {
+  const value = input.value.trim();
+  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
+  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
+  return isValid;
+}
+
+// ================= VALIDATION UTILITIES =================
+function checkAllFields() {
+  const validations = [
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateName(document.getElementById('nameOnParcel')),
+    validateParcelPhone(document.getElementById('phoneNumber')),
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    validateInvoiceFiles()
+  ];
+
+  return validations.every(v => v === true);
+}
+
+function checkInvoiceRequirements() {
+  return validateInvoiceFiles();
+}
+
+function updateSubmitButtonState() {
+  const submitBtn = document.getElementById('submitBtn');
+  if(!submitBtn) return;
+  submitBtn.disabled = !checkAllFields();
+}
+
 // ================= FILE HANDLING =================
 async function handleFileUpload(files) {
   if (files.length > CONFIG.MAX_FILES) {
@@ -261,7 +296,6 @@ async function handleFileUpload(files) {
       base64: await readFileAsBase64(file)
     });
   }
-  
   return uploads;
 }
 
@@ -274,33 +308,7 @@ function readFileAsBase64(file) {
   });
 }
 
-// ================= VALIDATION UTILITIES =================
-function checkInvoiceRequirements() {
-  return validateInvoiceFiles();
-}
-
-function checkAllFields() {
-  const validations = [
-    validateTrackingNumber(document.getElementById('trackingNumber')),
-    validateName(document.getElementById('nameOnParcel')),
-    validateDescription(document.getElementById('itemDescription')),
-    validateQuantity(document.getElementById('quantity')),
-    validatePrice(document.getElementById('price')),
-    validateCollectionPoint(document.getElementById('collectionPoint')),
-    validateCategory(document.getElementById('itemCategory')),
-    validateInvoiceFiles()
-  ];
-
-  return validations.every(result => result);
-}
-
-function updateSubmitButtonState() {
-  const submitBtn = document.getElementById('submitBtn');
-  if(!submitBtn) return;
-  submitBtn.disabled = !checkAllFields();
-}
-
-// ================= FORM VALIDATION INIT ================= 
+// ================= FORM VALIDATION INIT =================
 function initValidationListeners() {
   const parcelForm = document.getElementById('parcel-declaration-form');
   if (parcelForm) {
@@ -314,6 +322,9 @@ function initValidationListeners() {
             break;
           case 'nameOnParcel':
             validateName(input);
+            break;
+          case 'phoneNumber':
+            validateParcelPhone(input);
             break;
           case 'itemDescription':
             validateDescription(input);
@@ -329,9 +340,6 @@ function initValidationListeners() {
             break;
           case 'itemCategory':
             validateCategory(input);
-            break;
-          case 'phoneNumber':
-            validateParcelPhone(input);
             break;
         }
         updateSubmitButtonState();
@@ -355,6 +363,11 @@ async function handleLogin() {
 
   if (!validatePhone(phone)) {
     showError('Invalid phone number format');
+    return;
+  }
+
+  if (!password) {
+    showError('Please enter your password');
     return;
   }
 
@@ -435,6 +448,11 @@ async function handlePasswordReset() {
     return;
   }
 
+  if (newPass !== confirmPass) {
+    showError('Passwords do not match');
+    return;
+  }
+
   try {
     const result = await callAPI('forcePasswordReset', {
       phone: userData.phone,
@@ -456,13 +474,6 @@ async function handlePasswordReset() {
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
   return regex.test(phone);
-}
-
-function validateParcelPhone(input) {
-  const value = input.value.trim();
-  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
-  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
-  return isValid;
 }
 
 function validatePassword(password) {
