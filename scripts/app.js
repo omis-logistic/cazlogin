@@ -1,10 +1,11 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwveYU0iEeu5NPIcVwbWRheCVa5xN98bnQ3rdpyu8NW1kmHbZmqmRoksYFqeDkXtq7B/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzFzCiCJqVHyuSJXH6wElIHV13QIJKpBJISjppna8rX7Bx4NNJEAlPt6kz4Wh8Z5WJ6/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf']
+  ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
+  MAX_FILES: 3
 };
 
 // ================= VIEWPORT MANAGEMENT =================
@@ -72,7 +73,6 @@ function checkSession() {
   localStorage.setItem('lastActivity', Date.now());
   const userData = JSON.parse(sessionData);
   
-  // Force password reset if using temporary password
   if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
     handleLogout();
     return null;
@@ -97,21 +97,20 @@ async function callAPI(action, payload = {}) {
   try {
     const formData = new FormData();
     
-    if (payload.filesBase64 && payload.filesBase64.length > 0) {
-      payload.filesBase64.forEach((file, index) => {
+    // Handle parcel declaration files
+    if (action === 'submitParcelDeclaration' && payload.files) {
+      payload.files.forEach((file, index) => {
         const byteArray = Uint8Array.from(atob(file.base64), c => c.charCodeAt(0));
-        const blob = new Blob([byteArray], { 
-          type: file.type || 'application/octet-stream'
-        });
-        formData.append(`file${index}`, blob, file.name);
+        formData.append(`file${index}`, new Blob([byteArray], {
+          type: file.type
+        }), file.name);
       });
     }
 
-    // Add main data payload
+    // Structure data payload
     formData.append('data', JSON.stringify({
       action: action,
-      ...payload,
-      filesBase64: undefined // Remove files from JSON payload
+      ...(action === 'submitParcelDeclaration' ? { data: payload.data } : payload)
     }));
 
     const response = await fetch(CONFIG.GAS_URL, {
@@ -119,14 +118,186 @@ async function callAPI(action, payload = {}) {
       body: formData
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    return await response.json();
+    const result = await response.json();
+    return result.result ? result.result : result;
   } catch (error) {
     console.error('API Error:', error);
     showError(error.message || 'Network error');
     return { success: false, message: error.message };
   }
 }
+
+// ================= PARCEL DECLARATION HANDLERS =================
+async function handleParcelSubmission() {
+  try {
+    const filesInput = document.getElementById('invoiceFiles');
+    const files = await handleFileUpload(filesInput.files);
+    if (!files) return;
+
+    const mandatoryCategories = [
+      '* Books', '* Cosmetics/Skincare/Bodycare',
+      '* Food Beverage/Drinks', '* Gadgets',
+      '* Oil Ointment', '* Supplement'
+    ];
+    
+    const category = document.getElementById('itemCategory').value;
+    if (mandatoryCategories.includes(category) && files.length === 0) {
+      showError('At least 1 invoice required for this category');
+      return;
+    }
+
+    const submissionData = {
+      data: {
+        trackingNumber: formatTrackingNumber(
+          document.getElementById('trackingNumber').value
+        ),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: category
+      },
+      files: files
+    };
+
+    if (isNaN(submissionData.data.quantity) || submissionData.data.quantity < 1) {
+      showError('Invalid quantity value');
+      return;
+    }
+
+    if (isNaN(submissionData.data.price) || submissionData.data.price <= 0) {
+      showError('Invalid price value');
+      return;
+    }
+
+    const result = await callAPI('submitParcelDeclaration', submissionData);
+    
+    if (result.success) {
+      alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(result.message || 'Submission failed');
+    }
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+// ================= PARCEL VALIDATION =================
+function validateTrackingNumber(trackingNumber) {
+  return /^[A-Za-z0-9-]{5,}$/.test(trackingNumber);
+}
+
+function validateQuantity(value) {
+  return Number.isInteger(value) && value > 0;
+}
+
+function validatePrice(value) {
+  return !isNaN(value) && value > 0;
+}
+
+async function handleFileUpload(files) {
+  if (files.length > CONFIG.MAX_FILES) {
+    showError(`Maximum ${CONFIG.MAX_FILES} files allowed`);
+    return null;
+  }
+
+  const uploads = [];
+  for (const file of files) {
+    if (file.size > CONFIG.MAX_FILE_SIZE) {
+      showError(`File ${file.name} exceeds 5MB limit`);
+      return null;
+    }
+    
+    if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+      showError(`Invalid file type for ${file.name}`);
+      return null;
+    }
+
+    uploads.push({
+      name: file.name,
+      type: file.type,
+      base64: await readFileAsBase64(file)
+    });
+  }
+  
+  return uploads;
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+}
+
+// ================= PARCEL UTILITIES =================
+function formatTrackingNumber(trackingNumber) {
+  return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ms-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2
+  }).format(amount || 0);
+}
+
+// ================= INITIALIZATION =================
+document.addEventListener('DOMContentLoaded', () => {
+  detectViewMode();
+
+  // Initialize parcel validation
+  const parcelForm = document.getElementById('parcel-declaration-form');
+  if (parcelForm) {
+    parcelForm.querySelectorAll('input, select').forEach(element => {
+      element.addEventListener('input', () => updateSubmitButtonState());
+      element.addEventListener('change', () => updateSubmitButtonState());
+    });
+  }
+
+  // Session management (existing code)
+  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+  const isPublicPage = publicPages.some(page => 
+    window.location.pathname.includes(page)
+  );
+
+  if (!isPublicPage) {
+    const userData = checkSession();
+    if (!userData) return;
+    
+    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+      handleLogout();
+    }
+  }
+
+  window.addEventListener('beforeunload', () => {
+    const errorElement = document.getElementById('error-message');
+    if (errorElement) errorElement.style.display = 'none';
+  });
+
+  const firstInput = document.querySelector('input:not([type="hidden"])');
+  if (firstInput) firstInput.focus();
+});
+
+function updateSubmitButtonState() {
+  if (!document.getElementById('submitBtn')) return;
+  
+  const isValid = [
+    validateTrackingNumber(document.getElementById('trackingNumber').value),
+    validateQuantity(parseInt(document.getElementById('quantity').value)),
+    validatePrice(parseFloat(document.getElementById('price').value)),
+    document.getElementById('itemCategory').value !== ''
+  ].every(valid => valid);
+
+  document.getElementById('submitBtn').disabled = !isValid;
+}
+
 // ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
   const phone = document.getElementById('phone').value.trim();
@@ -320,21 +491,6 @@ function safeRedirect(path) {
   }
 }
 
-function formatTrackingNumber(trackingNumber) {
-  return trackingNumber.replace(/\s/g, '').toUpperCase();
-}
-
-function validateTrackingNumber(trackingNumber) {
-  return /^[A-Z0-9]{10,}$/i.test(trackingNumber);
-}
-
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('ms-MY', {
-    style: 'currency',
-    currency: 'MYR',
-    minimumFractionDigits: 2
-  }).format(amount);
-}
 
 function formatDate(dateString) {
   const options = { 
@@ -347,68 +503,3 @@ function formatDate(dateString) {
   };
   return new Date(dateString).toLocaleDateString('en-MY', options);
 }
-
-// ================= FILE HANDLING =================
-async function handleFileUpload(files) {
-  const uploads = [];
-  
-  for (const file of files) {
-    if (file.size > CONFIG.MAX_FILE_SIZE) {
-      showError(`File ${file.name} exceeds 5MB limit`);
-      return null;
-    }
-    
-    if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
-      showError(`Invalid file type for ${file.name}`);
-      return null;
-    }
-
-    uploads.push({
-      name: file.name,
-      type: file.type,
-      base64: await readFileAsBase64(file)
-    });
-  }
-  
-  return uploads;
-}
-
-function readFileAsBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = error => reject(error);
-    reader.readAsDataURL(file);
-  });
-}
-
-// ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-
-  // Session management
-  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
-
-  if (!isPublicPage) {
-    const userData = checkSession();
-    if (!userData) return;
-    
-    // Handle temporary password state
-    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-      handleLogout();
-    }
-  }
-
-  // Error cleanup
-  window.addEventListener('beforeunload', () => {
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) errorElement.style.display = 'none';
-  });
-
-  // Auto-focus first input
-  const firstInput = document.querySelector('input:not([type="hidden"])');
-  if (firstInput) firstInput.focus();
-});
