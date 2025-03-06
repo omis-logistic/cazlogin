@@ -87,7 +87,7 @@
        id="trackingNumber" 
        placeholder="Enter tracking number" 
        required
-       pattern="[A-Za-z0-9-]{5,}"
+       pattern="[A-Za-z0-9\-]{5,}"
        title="5+ alphanumeric characters and hyphens"
        oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9-]/g, '')">
   <div class="error-message" id="trackingNumberError"></div>
@@ -306,131 +306,154 @@ function validateTrackingNumber(input) {
   }
 
   // Event Handlers
-  document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
-    detectViewMode();
-    
-    // Verify session exists
+    // 1. Verify session and get user data
     const userData = checkSession();
-    console.log('Session Data:', userData); // Debug log
-    
-    if (!userData) {
-      safeRedirect('login.html');
-      return;
-    }
+    if (!userData) return safeRedirect('login.html');
 
-    // Set phone number
+    // 2. Initialize phone number field
     const phoneField = document.getElementById('phoneNumber');
     if (userData?.phone) {
       phoneField.value = userData.phone;
-      phoneField.placeholder = ''; // Remove "Loading..."
-      phoneField.style.color = '#ffffff'; // Ensure visible text
-      console.log('Phone set:', userData.phone); // Debug log
+      phoneField.removeAttribute('readonly');
+      phoneField.style.color = '#ffffff';
+      phoneField.style.cursor = 'text';
     }
 
-    // 2. INITIALIZE VALIDATION
+    // 3. Initialize validation handlers
     const validationMap = {
-  '#trackingNumber': validateTrackingNumber,
-  '#nameOnParcel': validateName,
-  '#itemDescription': validateDescription,
-  '#quantity': validateQuantity,
-  '#price': validatePrice,
-  '#collectionPoint': validateCollectionPoint,
-  '#itemCategory': validateCategory
-};
+      '#trackingNumber': validateTrackingNumber,
+      '#nameOnParcel': validateName,
+      '#itemDescription': validateDescription,
+      '#quantity': validateQuantity,
+      '#price': validatePrice,
+      '#collectionPoint': validateCollectionPoint,
+      '#itemCategory': validateCategory
+    };
 
-Object.entries(validationMap).forEach(([selector, validator]) => {
-  const element = document.querySelector(selector);
-  if(element) {
-    const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
-    element.addEventListener(eventType, () => {
-      validator(element);
+    Object.entries(validationMap).forEach(([selector, validator]) => {
+      const element = document.querySelector(selector);
+      if (element) {
+        const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+        element.addEventListener(eventType, () => {
+          validator(element);
+          checkAllFields();
+        });
+      }
+    });
+
+    // 4. Initialize file upload handler
+    document.getElementById('invoiceFiles').addEventListener('change', () => {
+      validateInvoiceFiles();
       checkAllFields();
     });
+
+    // 5. Initialize submission button state
+    updateSubmitButtonState();
+
+  } catch (error) {
+    console.error('Initialization error:', error);
+    safeRedirect('login.html');
   }
 });
 
-document.getElementById('invoiceFiles').addEventListener('change', () => {
-  validateInvoiceFiles();
-  checkAllFields();
-});
-
-  // Submission Handling
+// 6. Submission handler with proper error handling
 async function handleParcelSubmission() {
   try {
-    console.log('Submission started'); // Debug log
-    
-    // Validate form
     if (!checkAllFields()) {
       showError('Please fix validation errors');
       return;
     }
 
-    showLoading(true);
-    
-    // Prepare data
-    const formData = {
-      trackingNumber: document.getElementById('trackingNumber').value.trim(),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: parseInt(document.getElementById('quantity').value),
-      price: parseFloat(document.getElementById('price').value),
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
+    const filesInput = document.getElementById('invoiceFiles');
+    const files = await handleFileUpload(filesInput.files);
+    if (!files) return;
+
+    const submissionData = {
+      data: {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      },
+      files: files
     };
 
-    console.log('Form Data:', formData); // Debug log
-
-    // Process files
-    const fileInput = document.getElementById('invoiceFiles');
-    const files = await processFiles(fileInput);
-    console.log('Processed Files:', files); // Debug log
-
-    // Submit data
-    const response = await callAPI('submitParcelDeclaration', {
-      data: formData,
-      files: files
-    });
-
-    if (response?.success) {
-      alert(`Submitted! Tracking: ${response.trackingNumber}`);
+    const result = await callAPI('submitParcelDeclaration', submissionData);
+    
+    if (result.success) {
+      alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
       safeRedirect('dashboard.html');
     } else {
-      throw new Error(response?.message || 'Submission failed');
+      showError(result.message || 'Submission failed');
     }
   } catch (error) {
     console.error('Submission Error:', error);
     showError(error.message);
-  } finally {
-    showLoading(false);
   }
 }
 
-async function processFiles(fileInput) {
-  try {
-    return await Promise.all(
-      Array.from(fileInput.files).map(async file => ({
-        name: file.name,
-        type: file.type || getMimeTypeFromExtension(file.name),
-        base64: await readFileAsBase64(file)
-      }))
-    );
-  } catch (error) {
-    console.error('File processing error:', error);
-    throw new Error('Failed to process files');
+// 7. File upload validation helper
+async function handleFileUpload(files) {
+  if (files.length > CONFIG.MAX_FILES) {
+    showError(`Maximum ${CONFIG.MAX_FILES} files allowed`);
+    return null;
   }
+
+  const uploads = [];
+  for (const file of files) {
+    if (file.size > CONFIG.MAX_FILE_SIZE) {
+      showError(`File ${file.name} exceeds 5MB limit`);
+      return null;
+    }
+    
+    if (!CONFIG.ALLOWED_FILE_TYPES.includes(file.type)) {
+      showError(`Invalid file type for ${file.name}`);
+      return null;
+    }
+
+    uploads.push({
+      name: file.name,
+      type: file.type,
+      base64: await readFileAsBase64(file)
+    });
+  }
+  
+  return uploads;
+}
+
+// 8. Submit button state management
+function updateSubmitButtonState() {
+  if (!document.getElementById('submitBtn')) return;
+  
+  const isValid = [
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateName(document.getElementById('nameOnParcel')),
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    validateInvoiceFiles()
+  ].every(valid => valid);
+
+  document.getElementById('submitBtn').disabled = !isValid;
 }
 
 function getMimeTypeFromExtension(filename) {
-  const extMap = {
+  const ext = filename.split('.').pop().toLowerCase();
+  const types = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
     'pdf': 'application/pdf'
   };
-  const ext = filename.split('.').pop().toLowerCase();
-  return extMap[ext] || 'application/octet-stream';
+  return types[ext] || 'application/octet-stream';
 }
 
   function readFileAsBase64(file) {
