@@ -329,7 +329,8 @@ function validateTrackingNumber(input) {
     }
 
     // 2. INITIALIZE VALIDATION
-    initValidationListeners();
+    initValidationListeners(); // Now properly defined
+    updateSubmitButtonState(); // Initial state check
     
   } catch (error) {
     console.error('Initialization error:', error);
