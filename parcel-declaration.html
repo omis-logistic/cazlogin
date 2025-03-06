@@ -84,12 +84,12 @@
     <div class="input-group">
   <label for="trackingNumber">Tracking Number</label>
   <input type="text" 
-         id="trackingNumber" 
-         placeholder="Enter tracking number" 
-         required
-         pattern="[A-Za-z0-9-]{5,}"
-         title="5+ characters (letters, numbers, hyphens)"
-         oninput="this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '')">
+       id="trackingNumber" 
+       placeholder="Enter tracking number" 
+       required
+       pattern="[A-Za-z0-9-]{5,}"
+       title="5+ alphanumeric characters and hyphens"
+       oninput="this.value = this.value.replace(/[^A-Za-z0-9-]/g, '')">
   <div class="error-message" id="trackingNumberError"></div>
 </div>
 
