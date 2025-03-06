@@ -306,31 +306,34 @@ function validateTrackingNumber(input) {
   }
 
   // Event Handlers
-  document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
   try {
     detectViewMode();
     
     // Verify session exists
     const userData = checkSession();
-    console.log('Session Data:', userData); // Debug log
-    
     if (!userData) {
       safeRedirect('login.html');
       return;
     }
 
-    // Set phone number
+    // Set initial field values
     const phoneField = document.getElementById('phoneNumber');
     if (userData?.phone) {
-      phoneField.value = userData.phone;
-      phoneField.placeholder = ''; // Remove "Loading..."
-      phoneField.style.color = '#ffffff'; // Ensure visible text
-      console.log('Phone set:', userData.phone); // Debug log
+      phoneField.value = userData.phone.trim();
+      phoneField.style.color = '#ffffff';
     }
 
-    // 2. INITIALIZE VALIDATION
-    initValidationListeners(); // Now properly defined
-    updateSubmitButtonState(); // Initial state check
+    // Initialize empty values for validation
+    document.getElementById('trackingNumber').value = '';
+    document.getElementById('nameOnParcel').value = '';
+    document.getElementById('itemDescription').value = '';
+    document.getElementById('quantity').value = '';
+    document.getElementById('price').value = '';
+
+    // Initialize validation after DOM is ready
+    initValidationListeners();
+    checkAllFields(); // Initial validation check
     
   } catch (error) {
     console.error('Initialization error:', error);
