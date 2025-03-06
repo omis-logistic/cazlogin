@@ -87,7 +87,7 @@
        id="trackingNumber" 
        placeholder="Enter tracking number" 
        required
-       pattern="[A-Za-zd-]{5,}"
+       pattern="[A-Za-z0-9-]{5,}"
        title="Minimum 5 characters. Only letters, numbers, and hyphens are allowed">
       <div class="error-message" id="trackingNumberError"></div>
     </div>
@@ -209,9 +209,9 @@
   <script src="scripts/app.js"></script>
   <script>
   // Validation Functions
-  const validateTrackingNumber = (input) => {
+  function validateTrackingNumber(input) {
   const value = input.value.trim();
-  const isValid = /^[A-Za-zd-]{5,}$/.test(value); // Fixed regex
+  const isValid = /^[A-Za-z0-9-]{5,}$/.test(value);
   showError(isValid ? '' : 'Minimum 5 alphanumeric characters, hyphens allowed', 'trackingNumberError');
   return isValid;
 }
@@ -311,42 +311,43 @@
   if (!userData) return safeRedirect('login.html');
 
   const phoneField = document.getElementById('phoneNumber');
-  phoneField.value = userData.phone || '';
-  phoneField.placeholder = 'Phone Number';
-  phoneField.style.backgroundColor = '#2a2a2a';
-  phoneField.style.color = '#ffffff';
-  phoneField.style.cursor = 'default';
+  if (userData && userData.phone) {
+    phoneField.value = userData.phone;
+    phoneField.placeholder = '';
+    phoneField.style.backgroundColor = '#2a2a2a';
+    phoneField.style.color = '#ffffff';
+    phoneField.style.cursor = 'not-allowed';
+  }
+
+  // Initialize validation listeners
+  const validationMap = {
+    '#trackingNumber': validateTrackingNumber,
+    '#nameOnParcel': validateName,
+    '#itemDescription': validateDescription,
+    '#quantity': validateQuantity,
+    '#price': validatePrice,
+    '#collectionPoint': validateCollectionPoint,
+    '#itemCategory': validateCategory
+  };
+
+  Object.entries(validationMap).forEach(([selector, validator]) => {
+    const element = document.querySelector(selector);
+    if(element) {
+      const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
+      element.addEventListener(eventType, () => {
+        validator(element);
+        checkAllFields();
+      });
     }
+  });
 
-    // Setup validation listeners
-    const validationMap = {
-      '#trackingNumber': validateTrackingNumber,
-      '#nameOnParcel': validateName,
-      '#itemDescription': validateDescription,
-      '#quantity': validateQuantity,
-      '#price': validatePrice,
-      '#collectionPoint': validateCollectionPoint,
-      '#itemCategory': validateCategory
-    };
-
-    Object.entries(validationMap).forEach(([selector, validator]) => {
-      const element = document.querySelector(selector);
-      if(element) {
-        const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
-        element.addEventListener(eventType, () => {
-          validator(element);
-          checkAllFields();
-        });
-      }
-    });
-
-    document.getElementById('invoiceFiles').addEventListener('change', () => {
-      validateInvoiceFiles();
-      checkAllFields();
-    });
-
+  document.getElementById('invoiceFiles').addEventListener('change', () => {
+    validateInvoiceFiles();
     checkAllFields();
   });
+
+  checkAllFields();
+});
 
   // Submission Handling
   async function handleParcelSubmission() {
@@ -359,6 +360,13 @@
     showLoading(true);
     clearErrors();
 
+    // Validate numbers
+    const quantity = parseInt(document.getElementById('quantity').value);
+    const price = parseFloat(document.getElementById('price').value);
+    
+    if (isNaN(quantity) throw new Error('Invalid quantity value');
+    if (isNaN(price)) throw new Error('Invalid price value');
+
     const formData = {
       trackingNumber: document.getElementById('trackingNumber').value.trim()
         .toUpperCase()
@@ -366,29 +374,24 @@
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
       itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: parseInt(document.getElementById('quantity').value),
-      price: parseFloat(document.getElementById('price').value),
+      quantity: quantity,
+      price: price,
       collectionPoint: document.getElementById('collectionPoint').value,
       itemCategory: document.getElementById('itemCategory').value
     };
 
-    if (isNaN(formData.quantity)) {
-      throw new Error('Invalid quantity value');
-    }
-    if (isNaN(formData.price)) {
-      throw new Error('Invalid price value');
-    }
-
+    // Process files
     const fileInput = document.getElementById('invoiceFiles');
-    const filesBase64 = await processFiles(fileInput);
+    const files = await processFiles(fileInput);
 
+    // Submit via API
     const response = await callAPI('submitParcelDeclaration', {
       data: formData,
-      files: filesBase64
+      files: files
     });
 
     if (response.success) {
-      alert('Declaration submitted! Tracking: ' + response.trackingNumber);
+      alert(`Declaration submitted! Tracking: ${response.trackingNumber}`);
       safeRedirect('dashboard.html');
     } else {
       showError(response.message || 'Submission failed');
@@ -408,7 +411,7 @@
       const type = file.type || getMimeTypeFromExtension(file.name);
       return {
         name: file.name,
-        type: type || 'application/octet-stream',
+        type: type,
         base64: await readFileAsBase64(file)
       };
     })
