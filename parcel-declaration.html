@@ -370,13 +370,12 @@ async function handleParcelSubmission() {
     
     // Prepare data
     const formData = {
-      trackingNumber: document.getElementById('trackingNumber').value.trim()
-        .replace(/[^A-Z0-9-]/g, '').toUpperCase(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
       nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
       itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: quantity,
-      price: price,
+      quantity: parseInt(document.getElementById('quantity').value),
+      price: parseFloat(document.getElementById('price').value),
       collectionPoint: document.getElementById('collectionPoint').value,
       itemCategory: document.getElementById('itemCategory').value
     };
