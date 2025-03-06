@@ -196,6 +196,127 @@
 
   <script src="scripts/app.js"></script>
   <script>
+  function validateTrackingNumber(input) {
+  const isValid = /^[A-Za-z0-9-]{5,}$/.test(input.value);
+  showError(isValid ? '' : 'Min 5 chars, only letters, numbers, and hyphens', 'trackingNumberError');
+  return isValid;
+}
+
+function validateName(input) {
+  const isValid = input.value.trim().length > 0;
+  showError(isValid ? '' : 'Name is required', 'nameOnParcelError');
+  return isValid;
+}
+
+function validateDescription(input) {
+  const isValid = input.value.trim().length > 0;
+  showError(isValid ? '' : 'Description is required', 'itemDescriptionError');
+  return isValid;
+}
+
+function validateQuantity(input) {
+  const value = parseInt(input.value);
+  const isValid = !isNaN(value) && value > 0;
+  showError(isValid ? '' : 'Must be at least 1', 'quantityError');
+  return isValid;
+}
+
+function validatePrice(input) {
+  const value = parseFloat(input.value);
+  const isValid = !isNaN(value) && value > 0;
+  showError(isValid ? '' : 'Must be positive number', 'priceError');
+  return isValid;
+}
+
+function validateCollectionPoint(select) {
+  const isValid = select.value !== '';
+  showError(isValid ? '' : 'Required field', 'collectionPointError');
+  return isValid;
+}
+
+function validateCategory(select) {
+  const isValid = select.value !== '';
+  showError(isValid ? '' : 'Required field', 'itemCategoryError');
+  
+  // Check invoice requirements if category changes
+  if(isValid) checkInvoiceRequirements();
+  return isValid;
+}
+
+function validateInvoiceFiles() {
+  const mandatoryCategories = [
+    'Books', 'Cosmetics/Skincare/Bodycare', 
+    'Food Beverage/Drinks', 'Gadgets',
+    'Oil Ointment', 'Supplement'
+  ];
+  
+  const category = document.getElementById('itemCategory').value;
+  const files = document.getElementById('invoiceFiles').files;
+  const isValid = !mandatoryCategories.includes(category) || files.length > 0;
+  
+  showError(isValid ? '' : 'At least 1 invoice required', 'invoiceFilesError');
+  return isValid;
+}
+
+function checkInvoiceRequirements() {
+  validateInvoiceFiles();
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  // Existing initialization code
+  
+  // Add real-time validation listeners
+  const fields = {
+    '#trackingNumber': validateTrackingNumber,
+    '#nameOnParcel': validateName,
+    '#itemDescription': validateDescription,
+    '#quantity': validateQuantity,
+    '#price': validatePrice,
+    '#collectionPoint': validateCollectionPoint,
+    '#itemCategory': validateCategory,
+    '#invoiceFiles': validateInvoiceFiles
+  };
+
+  Object.entries(fields).forEach(([selector, validator]) => {
+    const element = document.querySelector(selector);
+    if(element) {
+      element.addEventListener(element.tagName === 'SELECT' ? 'change' : 'input', () => {
+        validator(element);
+        checkAllFields();
+      });
+    }
+  });
+
+  // Add live feedback for file input
+  document.getElementById('invoiceFiles').addEventListener('change', () => {
+    validateInvoiceFiles();
+    checkAllFields();
+  });
+});
+
+function checkAllFields() {
+  const isValid = [
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateName(document.getElementById('nameOnParcel')),
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    validateInvoiceFiles()
+  ].every(result => result);
+
+  document.querySelector('button[onclick="handleParcelSubmission()"]')
+    .disabled = !isValid;
+}
+
+// Modify existing handleParcelSubmission function
+async function handleParcelSubmission() {
+  if (!checkAllFields()) {
+    showError('Please fix validation errors before submitting');
+    return;
+  }
   // ================= INITIALIZATION =================
   document.addEventListener('DOMContentLoaded', () => {
     detectViewMode();
