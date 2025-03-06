@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzFzCiCJqVHyuSJXH6wElIHV13QIJKpBJISjppna8rX7Bx4NNJEAlPt6kz4Wh8Z5WJ6/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbww25aKRXOVmYeuo5BUXxheF5Chg99HP-zuV2E2sPkU0ZHRy3dE-DQsm0FRqsaDWCEV/exec',
   SESSION_TIMEOUT: 3600, // 1 hour in seconds
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -254,6 +254,10 @@ function formatCurrency(amount) {
   }).format(amount || 0);
 }
 
+function sanitizeInput(value, pattern, replaceWith = '') {
+  return value.replace(new RegExp(`[^${pattern}]`, 'g'), replaceWith);
+}
+
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
@@ -302,6 +306,10 @@ function updateSubmitButtonState() {
   ].every(valid => valid);
 
   document.getElementById('submitBtn').disabled = !isValid;
+}
+
+function sanitizeInput(value, pattern, replaceWith = '') {
+  return value.replace(new RegExp(`[^${pattern}]`, 'g'), replaceWith);
 }
 
 // ================= AUTHENTICATION HANDLERS =================
@@ -531,16 +539,18 @@ function validateDescription(input) {
 }
 
 function validateQuantity(input) {
+  input.value = sanitizeInput(input.value, '0-9');
   const value = parseInt(input.value);
   const isValid = !isNaN(value) && value > 0 && value < 1000;
-  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
+  showError(isValid ? '' : 'Valid quantity (1-999)', 'quantityError');
   return isValid;
 }
 
 function validatePrice(input) {
+  input.value = sanitizeInput(input.value, '0-9.');
   const value = parseFloat(input.value);
   const isValid = !isNaN(value) && value > 0 && value < 100000;
-  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
+  showError(isValid ? '' : 'Valid price required', 'priceError');
   return isValid;
 }
 
