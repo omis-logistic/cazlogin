@@ -164,8 +164,8 @@ async function handleParcelSubmission() {
 // ================= VALIDATION CORE =================
 function validateTrackingNumber(inputElement) {
   const value = inputElement?.value?.trim() || '';
-  const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
-  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
+  const isValid = /^[A-Za-z0-9-]{5,}$/.test(value);
+  showError(isValid ? '' : '5+ alphanumeric characters and hyphens required', 'trackingNumberError');
   return isValid;
 }
 
@@ -545,7 +545,7 @@ function safeRedirect(path) {
 }
 
 function formatTrackingNumber(trackingNumber) {
-  return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+  return trackingNumber.replace(/[^A-Za-z0-9-]/g, '').toUpperCase();
 }
 
 function formatCurrency(amount) {
