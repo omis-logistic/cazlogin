@@ -63,8 +63,16 @@ function checkSession() {
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
-  if (!sessionData || 
-      (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000)) {
+  if (!sessionData) {
+    handleLogout();
+    return null;
+  }
+
+  const userData = JSON.parse(sessionData);
+  
+  // Add phone verification
+  if (!validatePhone(userData.phone)) {
+    showError('Invalid session data');
     handleLogout();
     return null;
   }
