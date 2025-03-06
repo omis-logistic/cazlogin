@@ -2,8 +2,8 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  SESSION_TIMEOUT: 3600, // 1 hour in seconds
-  MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+  SESSION_TIMEOUT: 3600,
+  MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
   MAX_FILES: 3
 };
@@ -12,8 +12,7 @@ const CONFIG = {
 function detectViewMode() {
   const isMobile = (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  );
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   
   document.body.classList.add(isMobile ? 'mobile-view' : 'desktop-view');
   
@@ -65,13 +64,11 @@ const checkSession = () => {
   const lastActivity = localStorage.getItem('lastActivity');
 
   if (!sessionData) {
-    console.warn('No session data found');
     handleLogout();
     return null;
   }
 
   if (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000) {
-    console.warn('Session expired');
     handleLogout();
     return null;
   }
@@ -80,7 +77,6 @@ const checkSession = () => {
   const userData = JSON.parse(sessionData);
   
   if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-    console.warn('Temp password requires reset');
     handleLogout();
     return null;
   }
@@ -104,18 +100,16 @@ async function callAPI(action, payload) {
   try {
     const formData = new FormData();
     
-    // Handle files
     if (payload.files) {
       payload.files.forEach((file, index) => {
         const blob = new Blob(
           [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type } // Ensure type is always set
+          { type: file.type }
         );
         formData.append(`file${index}`, blob, file.name);
       });
     }
 
-    // Add JSON data
     formData.append('data', JSON.stringify(payload.data));
 
     const response = await fetch(CONFIG.GAS_URL, {
@@ -137,18 +131,6 @@ async function handleParcelSubmission() {
     const files = await handleFileUpload(filesInput.files);
     if (!files) return;
 
-    const mandatoryCategories = [
-      '* Books', '* Cosmetics/Skincare/Bodycare',
-      '* Food Beverage/Drinks', '* Gadgets',
-      '* Oil Ointment', '* Supplement'
-    ];
-    
-    const category = document.getElementById('itemCategory').value;
-    if (mandatoryCategories.includes(category) && files.length === 0) {
-      showError('At least 1 invoice required for this category');
-      return;
-    }
-
     const submissionData = {
       data: {
         trackingNumber: formatTrackingNumber(
@@ -160,20 +142,10 @@ async function handleParcelSubmission() {
         quantity: parseInt(document.getElementById('quantity').value),
         price: parseFloat(document.getElementById('price').value),
         collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: category
+        itemCategory: document.getElementById('itemCategory').value
       },
       files: files
     };
-
-    if (isNaN(submissionData.data.quantity) || submissionData.data.quantity < 1) {
-      showError('Invalid quantity value');
-      return;
-    }
-
-    if (isNaN(submissionData.data.price) || submissionData.data.price <= 0) {
-      showError('Invalid price value');
-      return;
-    }
 
     const result = await callAPI('submitParcelDeclaration', submissionData);
     
@@ -224,6 +196,47 @@ function validatePrice(inputElement) {
   return isValid;
 }
 
+function validateCollectionPoint(selectElement) {
+  const value = selectElement?.value || '';
+  const isValid = value !== '';
+  showError(isValid ? '' : 'Please select collection point', 'collectionPointError');
+  return isValid;
+}
+
+function validateCategory(selectElement) {
+  const value = selectElement?.value || '';
+  const isValid = value !== '';
+  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
+  if(isValid) checkInvoiceRequirements();
+  return isValid;
+}
+
+function validateInvoiceFiles() {
+  const mandatoryCategories = [
+    '* Books', '* Cosmetics/Skincare/Bodycare',
+    '* Food Beverage/Drinks', '* Gadgets',
+    '* Oil Ointment', '* Supplement'
+  ];
+  
+  const category = document.getElementById('itemCategory')?.value || '';
+  const files = document.getElementById('invoiceFiles')?.files || [];
+  let isValid = true;
+  let errorMessage = '';
+
+  if(files.length > 3) {
+    errorMessage = 'Maximum 3 files allowed';
+    isValid = false;
+  }
+  else if(mandatoryCategories.includes(category)) {
+    isValid = files.length > 0;
+    errorMessage = isValid ? '' : 'At least 1 invoice required';
+  }
+
+  showError(errorMessage, 'invoiceFilesError');
+  return isValid;
+}
+
+// ================= FILE HANDLING =================
 async function handleFileUpload(files) {
   if (files.length > CONFIG.MAX_FILES) {
     showError(`Maximum ${CONFIG.MAX_FILES} files allowed`);
@@ -261,67 +274,78 @@ function readFileAsBase64(file) {
   });
 }
 
-// ================= PARCEL UTILITIES =================
-function formatTrackingNumber(trackingNumber) {
-  return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+// ================= VALIDATION UTILITIES =================
+function checkInvoiceRequirements() {
+  return validateInvoiceFiles();
 }
 
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('ms-MY', {
-    style: 'currency',
-    currency: 'MYR',
-    minimumFractionDigits: 2
-  }).format(amount || 0);
+function checkAllFields() {
+  const validations = [
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateName(document.getElementById('nameOnParcel')),
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    validateInvoiceFiles()
+  ];
+
+  return validations.every(result => result);
 }
-
-// ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-
-  // Initialize parcel validation
-  const parcelForm = document.getElementById('parcel-declaration-form');
-  if (parcelForm) {
-    parcelForm.querySelectorAll('input, select').forEach(element => {
-      element.addEventListener('input', () => updateSubmitButtonState());
-      element.addEventListener('change', () => updateSubmitButtonState());
-    });
-  }
-
-  // Session management (existing code)
-  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
-
-  if (!isPublicPage) {
-    const userData = checkSession();
-    if (!userData) return;
-    
-    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-      handleLogout();
-    }
-  }
-
-  window.addEventListener('beforeunload', () => {
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) errorElement.style.display = 'none';
-  });
-
-  const firstInput = document.querySelector('input:not([type="hidden"])');
-  if (firstInput) firstInput.focus();
-});
 
 function updateSubmitButtonState() {
-  if (!document.getElementById('submitBtn')) return;
-  
-  const isValid = [
-    validateTrackingNumber(document.getElementById('trackingNumber').value),
-    validateQuantity(parseInt(document.getElementById('quantity').value)),
-    validatePrice(parseFloat(document.getElementById('price').value)),
-    document.getElementById('itemCategory').value !== ''
-  ].every(valid => valid);
+  const submitBtn = document.getElementById('submitBtn');
+  if(!submitBtn) return;
+  submitBtn.disabled = !checkAllFields();
+}
 
-  document.getElementById('submitBtn').disabled = !isValid;
+// ================= FORM VALIDATION INIT ================= 
+function initValidationListeners() {
+  const parcelForm = document.getElementById('parcel-declaration-form');
+  if (parcelForm) {
+    const inputs = parcelForm.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+      input.addEventListener('input', () => {
+        switch(input.id) {
+          case 'trackingNumber':
+            validateTrackingNumber(input);
+            break;
+          case 'nameOnParcel':
+            validateName(input);
+            break;
+          case 'itemDescription':
+            validateDescription(input);
+            break;
+          case 'quantity':
+            validateQuantity(input);
+            break;
+          case 'price':
+            validatePrice(input);
+            break;
+          case 'collectionPoint':
+            validateCollectionPoint(input);
+            break;
+          case 'itemCategory':
+            validateCategory(input);
+            break;
+          case 'phoneNumber':
+            validateParcelPhone(input);
+            break;
+        }
+        updateSubmitButtonState();
+      });
+    });
+
+    const fileInput = document.getElementById('invoiceFiles');
+    if(fileInput) {
+      fileInput.addEventListener('change', () => {
+        validateInvoiceFiles();
+        updateSubmitButtonState();
+      });
+    }
+  }
 }
 
 // ================= AUTHENTICATION HANDLERS =================
@@ -334,13 +358,8 @@ async function handleLogin() {
     return;
   }
 
-  if (!password) {
-    showError('Please enter your password');
-    return;
-  }
-
   try {
-    const result = await callAPI('processLogin', { phone, password }, 'GET');
+    const result = await callAPI('processLogin', { phone, password });
     
     if (result.success) {
       sessionStorage.setItem('userData', JSON.stringify(result));
@@ -416,11 +435,6 @@ async function handlePasswordReset() {
     return;
   }
 
-  if (newPass !== confirmPass) {
-    showError('Passwords do not match');
-    return;
-  }
-
   try {
     const result = await callAPI('forcePasswordReset', {
       phone: userData.phone,
@@ -442,6 +456,13 @@ async function handlePasswordReset() {
 function validatePhone(phone) {
   const regex = /^(673\d{7,}|60\d{9,})$/;
   return regex.test(phone);
+}
+
+function validateParcelPhone(input) {
+  const value = input.value.trim();
+  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
+  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
+  return isValid;
 }
 
 function validatePassword(password) {
@@ -492,191 +513,13 @@ function validateRegistrationForm() {
   return isValid;
 }
 
-// ================= FORM VALIDATION INIT ================= 
-function initValidationListeners() {
-  // Parcel declaration form validation
-  const parcelForm = document.getElementById('parcel-declaration-form');
-  if (parcelForm) {
-    const inputs = parcelForm.querySelectorAll('input, select');
-    
-    inputs.forEach(input => {
-      input.addEventListener('input', () => {
-        // Specific validation for each input
-        switch(input.id) {
-          case 'trackingNumber':
-            validateTrackingNumber(input);
-            break;
-          case 'nameOnParcel':
-            validateName(input);
-            break;
-          case 'itemDescription':
-            validateDescription(input);
-            break;
-          case 'quantity':
-            validateQuantity(input);
-            break;
-          case 'price':
-            validatePrice(input);
-            break;
-          case 'collectionPoint':
-            validateCollectionPoint(input);
-            break;
-          case 'itemCategory':
-            validateCategory(input);
-            break;
-        }
-        checkAllFields();
-      });
-    });
-
-    // Initialize file validation
-    const fileInput = document.getElementById('invoiceFiles');
-    if(fileInput) {
-      fileInput.addEventListener('change', () => {
-        validateInvoiceFiles();
-        checkAllFields();
-      });
-    }
-  }
-}
-
-// ================= PARCEL VALIDATION =================
-function checkAllFields() {
-  const validations = [
-    // Tracking Information
-    validateTrackingNumber(document.getElementById('trackingNumber')),
-    
-    // Recipient Information
-    validateName(document.getElementById('nameOnParcel')),
-    validateParcelPhone(document.getElementById('phoneNumber')),
-    
-    // Item Details
-    validateDescription(document.getElementById('itemDescription')),
-    validateQuantity(document.getElementById('quantity')),
-    validatePrice(document.getElementById('price')),
-    
-    // Collection Details
-    validateCollectionPoint(document.getElementById('collectionPoint')),
-    validateCategory(document.getElementById('itemCategory')),
-    
-    // File Uploads
-    validateInvoiceFiles()
-  ];
-
-  console.log('Validation Results:', {
-    trackingNumber: validations[0],
-    name: validations[1],
-    phone: validations[2],
-    description: validations[3],
-    quantity: validations[4],
-    price: validations[5],
-    collectionPoint: validations[6],
-    category: validations[7],
-    invoices: validations[8]
-  });
-
-  return validations.every(v => v === true);
-}
-
-// Supporting Validation Functions
-function validateParcelPhone(input) {
-  const value = input.value.trim();
-  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
-  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
-  return isValid;
-}
-
-function validateName(input) {
-  const isValid = input.value.trim().length >= 2;
-  showError(isValid ? '' : 'Minimum 2 characters required', 'nameOnParcelError');
-  return isValid;
-}
-
-function validateDescription(input) {
-  const isValid = input.value.trim().length >= 5;
-  showError(isValid ? '' : 'Minimum 5 characters required', 'itemDescriptionError');
-  return isValid;
-}
-
-function validateQuantity(input) {
-  const value = parseInt(input.value);
-  const isValid = !isNaN(value) && value > 0 && value < 1000;
-  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
-  return isValid;
-}
-
-function validatePrice(input) {
-  const value = parseFloat(input.value);
-  const isValid = !isNaN(value) && value > 0 && value < 100000;
-  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
-  return isValid;
-}
-
-function validateCategory(selectElement) {
-  const value = selectElement?.value || '';
-  const isValid = value !== '';
-  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
-  
-  // Only check invoices if category is valid
-  if(isValid) checkInvoiceRequirements(); 
-  return isValid;
-}
-
-function validateCategory(select) {
-  const isValid = select.value !== '';
-  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
-  return isValid;
-}
-
-function validateInvoiceFiles() {
-  const mandatoryCategories = [
-    '* Books', '* Cosmetics/Skincare/Bodycare',
-    '* Food Beverage/Drinks', '* Gadgets',
-    '* Oil Ointment', '* Supplement'
-  ];
-  
-  const category = document.getElementById('itemCategory')?.value || '';
-  const files = document.getElementById('invoiceFiles')?.files || [];
-  let isValid = true;
-  let errorMessage = '';
-
-  if(files.length > 3) {
-    errorMessage = 'Maximum 3 files allowed';
-    isValid = false;
-  }
-  else if(mandatoryCategories.includes(category)) {
-    isValid = files.length > 0;
-    errorMessage = isValid ? '' : 'At least 1 invoice required';
-  }
-
-  showError(errorMessage, 'invoiceFilesError');
-  return isValid;
-}
-
-// ================= VALIDATION UTILITIES =================
-function checkInvoiceRequirements() {
-  return validateInvoiceFiles();
-}
-
-function updateSubmitButtonState() {
-  const submitBtn = document.getElementById('submitBtn');
-  if(!submitBtn) return;
-  
-  submitBtn.disabled = !checkAllFields();
-}
-
-// ================= NAVIGATION & UTILITIES =================
+// ================= UTILITIES =================
 function safeRedirect(path) {
   try {
     const allowedPaths = [
-      'login.html',
-      'register.html',
-      'dashboard.html',
-      'forgot-password.html',
-      'password-reset.html',
-      'my-info.html',
-      'parcel-declaration.html',
-      'track-parcel.html'
+      'login.html', 'register.html', 'dashboard.html',
+      'forgot-password.html', 'password-reset.html',
+      'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
     ];
     
     if (!allowedPaths.includes(path)) {
@@ -690,6 +533,17 @@ function safeRedirect(path) {
   }
 }
 
+function formatTrackingNumber(trackingNumber) {
+  return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ms-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2
+  }).format(amount || 0);
+}
 
 function formatDate(dateString) {
   const options = { 
@@ -702,3 +556,31 @@ function formatDate(dateString) {
   };
   return new Date(dateString).toLocaleDateString('en-MY', options);
 }
+
+// ================= INITIALIZATION =================
+document.addEventListener('DOMContentLoaded', () => {
+  detectViewMode();
+  initValidationListeners();
+
+  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+  const isPublicPage = publicPages.some(page => 
+    window.location.pathname.includes(page)
+  );
+
+  if (!isPublicPage) {
+    const userData = checkSession();
+    if (!userData) return;
+    
+    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+      handleLogout();
+    }
+  }
+
+  window.addEventListener('beforeunload', () => {
+    const errorElement = document.getElementById('error-message');
+    if (errorElement) errorElement.style.display = 'none';
+  });
+
+  const firstInput = document.querySelector('input:not([type="hidden"])');
+  if (firstInput) firstInput.focus();
+});
