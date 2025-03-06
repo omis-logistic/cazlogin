@@ -405,13 +405,14 @@ async function processFiles(fileInput) {
 }
 
 function getMimeTypeFromExtension(filename) {
-  const extension = filename.split('.').pop().toLowerCase();
-  return {
+  const extMap = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
     'pdf': 'application/pdf'
-  }[extension] || 'application/octet-stream';
+  };
+  const ext = filename.split('.').pop().toLowerCase();
+  return extMap[ext] || 'application/octet-stream';
 }
 
   function readFileAsBase64(file) {
