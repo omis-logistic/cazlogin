@@ -209,10 +209,10 @@
   <script src="scripts/app.js"></script>
   <script>
   // Validation Functions
-  function validateTrackingNumber(input) {
+function validateTrackingNumber(input) {
   const value = input.value.trim();
-  const isValid = /^[A-Za-z0-9-]{5,}$/.test(value);
-  showError(isValid ? '' : 'Minimum 5 alphanumeric characters, hyphens allowed', 'trackingNumberError');
+  const isValid = /^[A-Z0-9-]{5,}$/i.test(value); // Case-insensitive check
+  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
   return isValid;
 }
 
@@ -305,71 +305,56 @@
   }
 
   // Event Handlers
-  document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-  const userData = checkSession();
-  if (!userData) return safeRedirect('login.html');
-
-  const phoneField = document.getElementById('phoneNumber');
-  if (userData && userData.phone) {
-    phoneField.value = userData.phone;
-    phoneField.placeholder = '';
-    phoneField.style.backgroundColor = '#2a2a2a';
-    phoneField.style.color = '#ffffff';
-    phoneField.style.cursor = 'not-allowed';
-  }
-
-  // Initialize validation listeners
-  const validationMap = {
-    '#trackingNumber': validateTrackingNumber,
-    '#nameOnParcel': validateName,
-    '#itemDescription': validateDescription,
-    '#quantity': validateQuantity,
-    '#price': validatePrice,
-    '#collectionPoint': validateCollectionPoint,
-    '#itemCategory': validateCategory
-  };
-
-  Object.entries(validationMap).forEach(([selector, validator]) => {
-    const element = document.querySelector(selector);
-    if(element) {
-      const eventType = element.tagName === 'SELECT' ? 'change' : 'input';
-      element.addEventListener(eventType, () => {
-        validator(element);
-        checkAllFields();
-      });
+  document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    detectViewMode();
+    
+    // Verify session exists
+    const userData = checkSession();
+    console.log('Session Data:', userData); // Debug log
+    
+    if (!userData) {
+      safeRedirect('login.html');
+      return;
     }
-  });
 
-  document.getElementById('invoiceFiles').addEventListener('change', () => {
-    validateInvoiceFiles();
-    checkAllFields();
-  });
+    // Set phone number
+    const phoneField = document.getElementById('phoneNumber');
+    if (userData?.phone) {
+      phoneField.value = userData.phone;
+      phoneField.placeholder = ''; // Remove "Loading..."
+      phoneField.style.color = '#ffffff'; // Ensure visible text
+      console.log('Phone set:', userData.phone); // Debug log
+    }
+
+    // 2. INITIALIZE VALIDATION
+    initValidationListeners();
+    
+  } catch (error) {
+    console.error('Initialization error:', error);
+    showError('Failed to initialize form');
+  }
+});
 
   // Submission Handling
-  async function handleParcelSubmission() {
+async function handleParcelSubmission() {
   try {
+    console.log('Submission started'); // Debug log
+    
+    // Validate form
     if (!checkAllFields()) {
-      showError('Please fix validation errors before submitting');
+      showError('Please fix validation errors');
       return;
     }
 
     showLoading(true);
-    clearErrors();
-
-    // Validate numbers
-    const quantity = parseInt(document.getElementById('quantity').value);
-    const price = parseFloat(document.getElementById('price').value);
     
-    if (isNaN(quantity) throw new Error('Invalid quantity value');
-    if (isNaN(price)) throw new Error('Invalid price value');
-
+    // Prepare data
     const formData = {
       trackingNumber: document.getElementById('trackingNumber').value.trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9-]/g, ''),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        .replace(/[^A-Z0-9-]/g, '').toUpperCase(),
       phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
       itemDescription: document.getElementById('itemDescription').value.trim(),
       quantity: quantity,
       price: price,
@@ -377,53 +362,56 @@
       itemCategory: document.getElementById('itemCategory').value
     };
 
+    console.log('Form Data:', formData); // Debug log
+
     // Process files
     const fileInput = document.getElementById('invoiceFiles');
     const files = await processFiles(fileInput);
+    console.log('Processed Files:', files); // Debug log
 
-    // Submit via API
+    // Submit data
     const response = await callAPI('submitParcelDeclaration', {
       data: formData,
       files: files
     });
 
-    if (response.success) {
-      alert(`Declaration submitted! Tracking: ${response.trackingNumber}`);
+    if (response?.success) {
+      alert(`Submitted! Tracking: ${response.trackingNumber}`);
       safeRedirect('dashboard.html');
     } else {
-      showError(response.message || 'Submission failed');
+      throw new Error(response?.message || 'Submission failed');
     }
   } catch (error) {
+    console.error('Submission Error:', error);
     showError(error.message);
   } finally {
     showLoading(false);
   }
 }
 
-  async function processFiles(fileInput) {
-  if (!fileInput.files.length) return [];
-  
-  return Promise.all(
-    Array.from(fileInput.files).map(async file => {
-      const type = file.type || getMimeTypeFromExtension(file.name);
-      return {
+async function processFiles(fileInput) {
+  try {
+    return await Promise.all(
+      Array.from(fileInput.files).map(async file => ({
         name: file.name,
-        type: type,
+        type: file.type || getMimeTypeFromExtension(file.name),
         base64: await readFileAsBase64(file)
-      };
-    })
-  );
+      }))
+    );
+  } catch (error) {
+    console.error('File processing error:', error);
+    throw new Error('Failed to process files');
+  }
 }
 
 function getMimeTypeFromExtension(filename) {
   const extension = filename.split('.').pop().toLowerCase();
-  const types = {
+  return {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
     'pdf': 'application/pdf'
-  };
-  return types[extension] || 'application/octet-stream';
+  }[extension] || 'application/octet-stream';
 }
 
   function readFileAsBase64(file) {
