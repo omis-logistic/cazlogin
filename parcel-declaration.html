@@ -207,51 +207,60 @@
 
   // ================= FORM HANDLING =================
   async function handleParcelSubmission() {
-    try {
-      showLoading(true);
-      clearErrors();
+  try {
+    showLoading(true);
+    clearErrors();
 
-      // Collect form data
-      const formData = {
-        trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
-        quantity: document.getElementById('quantity').value,
-        price: document.getElementById('price').value,
-        collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
-      };
+    // Collect form data
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: document.getElementById('quantity').value,
+      price: document.getElementById('price').value,
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
 
-      // Process files
-      const fileInput = document.getElementById('invoiceFiles');
-      const filesBase64 = await processFiles(fileInput);
+    // ==== ADD VALIDATIONS HERE ====
+    const mandatoryCategories = [
+      'Books',
+      'Cosmetics/Skincare/Bodycare',
+      'Food Beverage/Drinks',
+      'Gadgets',
+      'Oil Ointment',
+      'Supplement'
+    ];
 
-      // Create JSONP request
-      const callbackName = `parcel_${Date.now()}`;
-      const script = document.createElement('script');
-      const params = new URLSearchParams({
-        action: 'submitParcelDeclaration',
-        callback: callbackName,
-        ...formData,
-        filesBase64: JSON.stringify(filesBase64)
-      });
-
-      script.src = `${CONFIG.GAS_URL}?${params}`;
-
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        handleSubmissionResponse(response);
-      };
-
-      document.body.appendChild(script);
-
-    } catch (error) {
-      showError(error.message);
+    // Tracking Number validation
+    if (!/^[A-Za-z0-9-]{5,}$/i.test(formData.trackingNumber)) {
+      showError('Invalid tracking number format (minimum 5 alphanumeric characters, hyphens allowed)');
       showLoading(false);
+      return;
     }
+
+    // Invoice requirement check
+    const requiresInvoice = mandatoryCategories.includes(formData.itemCategory);
+    const fileInput = document.getElementById('invoiceFiles');
+    if (requiresInvoice && fileInput.files.length === 0) {
+      showError('Invoice required for this item category');
+      showLoading(false);
+      return;
+    }
+
+    // Process files (keep existing code below validations)
+    const filesBase64 = await processFiles(fileInput);
+
+    // Rest of your existing code
+    const callbackName = `parcel_${Date.now()}`;
+    const script = document.createElement('script');
+    // ... keep remaining existing code ...
+  } catch (error) {
+    showError(error.message);
+    showLoading(false);
   }
+}
 
   // ================= FILE PROCESSING =================
   async function processFiles(fileInput) {
