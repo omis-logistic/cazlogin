@@ -133,25 +133,23 @@ async function callAPI(action, payload) {
 // ================= PARCEL DECLARATION HANDLERS =================
 async function handleParcelSubmission() {
   try {
-    const filesInput = document.getElementById('invoiceFiles');
-    const files = await handleFileUpload(filesInput.files);
-    if (!files) return;
-
-    const mandatoryCategories = [
-  '* Books', 
-  '* Cosmetics/Skincare/Bodycare',
-  '* Food Beverage/Drinks',
-  '* Gadgets',
-  '* Oil Ointment',
-  '* Supplement'
-];
-    
-    const category = document.getElementById('itemCategory').value;
-    if (mandatoryCategories.includes(category) && files.length === 0) {
-      showError('At least 1 invoice required for this category');
+    // Validate form before submission
+    if (!checkAllFields()) {
+      showError('Please fix validation errors before submitting');
       return;
     }
 
+    // Get files and validate
+    const filesInput = document.getElementById('invoiceFiles');
+    const files = await handleFileUpload(filesInput.files);
+    
+    // Null check for failed file processing
+    if (files === null) {
+      showError('Invalid file upload');
+      return;
+    }
+
+    // Prepare submission data
     const submissionData = {
       data: {
         trackingNumber: formatTrackingNumber(
@@ -163,23 +161,29 @@ async function handleParcelSubmission() {
         quantity: parseInt(document.getElementById('quantity').value),
         price: parseFloat(document.getElementById('price').value),
         collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: category
+        itemCategory: document.getElementById('itemCategory').value
       },
       files: files
     };
 
-    if (isNaN(submissionData.data.quantity) || submissionData.data.quantity < 1) {
+    // Validate numeric values
+    if (isNaN(submissionData.data.quantity) {
       showError('Invalid quantity value');
       return;
     }
 
-    if (isNaN(submissionData.data.price) || submissionData.data.price <= 0) {
+    if (isNaN(submissionData.data.price)) {
       showError('Invalid price value');
       return;
     }
 
+    // Show loading state
+    showLoading(true);
+
+    // Submit to API
     const result = await callAPI('submitParcelDeclaration', submissionData);
     
+    // Handle response
     if (result.success) {
       alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
       safeRedirect('dashboard.html');
@@ -187,7 +191,11 @@ async function handleParcelSubmission() {
       showError(result.message || 'Submission failed');
     }
   } catch (error) {
-    showError(error.message);
+    console.error('Submission Error:', error);
+    showError(error.message || 'An unexpected error occurred');
+  } finally {
+    // Hide loading state
+    showLoading(false);
   }
 }
 
