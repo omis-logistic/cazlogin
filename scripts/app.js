@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwUwVqcg4M5lgZ9_Vm_NL_-3MPAHYE_XeTIGvbJxuyLgwD0S0UYC5ZEozB5QUb6RXuV/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycby-AkZULDmho0ahEsNON-ib8CFYO7NYwE7LRveX6t6rlYQet0Gc4HqEUCmzx7yYmzw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -164,8 +164,8 @@ async function handleParcelSubmission() {
 // ================= VALIDATION CORE =================
 function validateTrackingNumber(inputElement) {
   const value = inputElement?.value?.trim() || '';
-  const isValid = /^[a-zA-Z0-9-]{5,}$/.test(value); // Case-insensitive check
-  showError(isValid ? '' : '5+ alphanumeric characters and hyphens required', 'trackingNumberError');
+  const isValid = value.length >= 5;
+  showError(isValid ? '' : 'Minimum 5 characters required', 'trackingNumberError');
   return isValid;
 }
 
