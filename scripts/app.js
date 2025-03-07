@@ -393,35 +393,70 @@ function initValidationListeners() {
 }
 
 // ================= AUTHENTICATION HANDLERS =================
+// ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
-  const phone = document.getElementById('phone').value.trim();
-  const password = document.getElementById('password').value;
+  const phoneInput = document.getElementById('phone');
+  const passwordInput = document.getElementById('password');
+  const phone = phoneInput.value.trim();
+  const password = passwordInput.value;
 
+  // Clear previous errors
+  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+  
+  // Validate inputs
   if (!validatePhone(phone)) {
     showError('Invalid phone number format');
+    phoneInput.focus();
+    return;
+  }
+
+  if (!password) {
+    showError('Please enter your password');
+    passwordInput.focus();
     return;
   }
 
   try {
+    // Make JSONP request
     const result = await jsonpRequest('processLogin', { 
       phone: phone.replace(/[^\d]/g, ''),
       password: password
     });
-    
+
+    // Handle login result
     if (result.success) {
-      sessionStorage.setItem('userData', JSON.stringify(result));
-      localStorage.setItem('lastActivity', Date.now());
-      
+      // Clean and store user data
+      const cleanPhone = result.phone.replace(/[^\d]/g, '');
+      const userData = {
+        ...result,
+        phone: cleanPhone,
+        timestamp: Date.now()
+      };
+
+      // Update session storage
+      sessionStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('lastActivity', Date.now().toString());
+
+      // Handle temporary password flow
       if (result.tempPassword) {
         safeRedirect('password-reset.html');
       } else {
         safeRedirect('dashboard.html');
       }
+      
+      // Clear form inputs
+      phoneInput.value = '';
+      passwordInput.value = '';
+      
     } else {
       showError(result.message || 'Authentication failed');
+      passwordInput.select();
     }
+    
   } catch (error) {
+    console.error('Login error:', error);
     showError('Login failed - please try again');
+    phoneInput.select();
   }
 }
 
