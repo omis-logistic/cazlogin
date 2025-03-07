@@ -197,7 +197,7 @@
       <div class="error-message" id="invoiceFilesError"></div>
     </div>
 
-    <button id="submitBtn" onclick="handleParcelSubmission(); return false;">Submit</button>
+    <button id="submitBtn" onclick="handleParcelSubmission(event)">Submit</button>
     <button class="secondary-btn" 
             onclick="safeRedirect('dashboard.html'); return false;"
             style="margin-top: 10px;">
@@ -232,43 +232,47 @@
     }
   });
 
-  async function handleParcelSubmission() {
-    try {
-      if (!checkAllFields()) {
-        showError('Please fix validation errors');
-        return;
-      }
-
-      showLoading(true);
-      
-      const submissionData = {
-        data: {
-          trackingNumber: document.getElementById('trackingNumber').value.trim(),
-          phoneNumber: document.getElementById('phoneNumber').value.trim(),
-          nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-          itemDescription: document.getElementById('itemDescription').value.trim(),
-          quantity: parseInt(document.getElementById('quantity').value),
-          price: parseFloat(document.getElementById('price').value),
-          collectionPoint: document.getElementById('collectionPoint').value,
-          itemCategory: document.getElementById('itemCategory').value
-        },
-        files: await handleFileUpload(document.getElementById('invoiceFiles').files)
-      };
-
-      const result = await callAPI('submitParcelDeclaration', submissionData);
-      
-      if (result.success) {
-        alert(`Submitted! Tracking: ${result.trackingNumber}`);
-        safeRedirect('dashboard.html');
-      } else {
-        showError(result.message || 'Submission failed');
-      }
-    } catch (error) {
-      showError(error.message);
-    } finally {
-      showLoading(false);
+async function handleParcelSubmission(event) {
+  event.preventDefault();
+  try {
+    console.log('Submission initiated');
+    
+    if (!checkAllFields()) {
+      showError('Please fix validation errors');
+      return;
     }
+
+    showLoading(true);
+    
+    const submissionData = {
+      data: {
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      },
+      files: await handleFileUpload(document.getElementById('invoiceFiles').files)
+    };
+
+    const result = await callAPI('submitParcelDeclaration', submissionData);
+    
+    if (result.success) {
+      alert(`Submitted! Tracking: ${result.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(result.message || 'Submission failed');
+    }
+  } catch (error) {
+    console.error('Submission error:', error);
+    showError(error.message);
+  } finally {
+    showLoading(false);
   }
+}
 
   function showLoading(show) {
     const loader = document.getElementById('loader') || createLoader();
