@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwxfQS729BqrAjhmJ211Qy2N1EPS51zzOwJlE-o4XkXjJcn56zRK_fEEZhYS0GOBJ4h/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzDo3ma6tl80dlZNdgDk8JuDDsvPesHAWfGRi4NS0eS7DVcimm9xAMEZa_6U4QgSGb_/exec',
   SESSION_TIMEOUT: 3600, // 1 hour
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -287,14 +287,13 @@ async function handlePasswordReset() {
 async function handleParcelSubmission(event) {
   event.preventDefault();
   console.log('[Frontend] Submission started');
-  
+
   try {
     const files = await handleFileUpload(document.getElementById('invoiceFiles').files);
-    console.log('[Frontend] Files processed:', files?.length || 0);
-
+    
     const payload = {
       data: {
-        action: 'submitParcelDeclaration', // <-- THIS WAS MISSING
+        action: 'submitParcelDeclaration',
         trackingNumber: document.getElementById('trackingNumber').value.trim(),
         nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
         phoneNumber: document.getElementById('phoneNumber').value.trim(),
@@ -307,23 +306,24 @@ async function handleParcelSubmission(event) {
       files: files || []
     };
 
-    console.log('[Frontend] Sending payload:', payload);
+    // Add cache-buster to URL
+    const url = new URL(CONFIG.GAS_URL);
+    url.searchParams.append('cache', Date.now());
 
-    const response = await fetch(CONFIG.GAS_URL, {
+    const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(payload),
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      redirect: 'follow'
     });
 
     const result = await response.json();
-    console.log('[Frontend] Received response:', result);
-
+    
     if (result.success) {
       alert(`Submitted! Tracking: ${result.trackingNumber}`);
       document.getElementById('parcel-declaration-form').reset();
-      safeRedirect('dashboard.html');
     } else {
       showError(result.message || 'Submission failed');
     }
