@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyF7AhZuN-5PT0SJhk5szF5MA8EV1XgrYrT58FdpBcBAxXGt6Pa08-EyiT1lb_aY5Uc/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxHKmc9443HBIFGokeSAxX2OZ8ORqHdNUpibu3N6zzidW2oYbnp4-8UoDH9YzjBZpzh/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -158,17 +158,25 @@ function jsonpRequest(action, params) {
 }
 
 // ================= PARCEL HANDLERS =================
-async function handleParcelSubmission() {
+async function handleParcelSubmission(event) {
+  event.preventDefault(); // Add this line
+  console.log('[DEBUG] Submission started');
+  
   try {
     const filesInput = document.getElementById('invoiceFiles');
     const files = await handleFileUpload(filesInput.files);
-    if (!files) return;
+    
+    // Basic validation check
+    if (!checkAllFields()) {
+      console.warn('[DEBUG] Validation failed');
+      showError('Please fix form errors');
+      return;
+    }
 
+    // Prepare payload
     const submissionData = {
       data: {
-        trackingNumber: formatTrackingNumber(
-          document.getElementById('trackingNumber').value
-        ),
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
         nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
         phoneNumber: document.getElementById('phoneNumber').value.trim(),
         itemDescription: document.getElementById('itemDescription').value.trim(),
@@ -180,7 +188,14 @@ async function handleParcelSubmission() {
       files: files
     };
 
+    console.log('[DEBUG] Submission payload:', submissionData);
+    
+    // Show loading state
+    showLoading(true);
+    
+    // Use callAPI for POST request
     const result = await callAPI('submitParcelDeclaration', submissionData);
+    console.log('[DEBUG] API Response:', result);
     
     if (result.success) {
       alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
@@ -189,7 +204,10 @@ async function handleParcelSubmission() {
       showError(result.message || 'Submission failed');
     }
   } catch (error) {
+    console.error('[DEBUG] Submission error:', error);
     showError(error.message);
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -600,28 +618,8 @@ function formatDate(dateString) {
 
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-  initValidationListeners();
-
-  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
-
-  if (!isPublicPage) {
-    const userData = checkSession();
-    if (!userData) return;
-    
-    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-      handleLogout();
-    }
+  const form = document.getElementById('parcel-declaration-form');
+  if (form) {
+    form.addEventListener('submit', handleParcelSubmission);
   }
-
-  window.addEventListener('beforeunload', () => {
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) errorElement.style.display = 'none';
-  });
-
-  const firstInput = document.querySelector('input:not([type="hidden"])');
-  if (firstInput) firstInput.focus();
 });
