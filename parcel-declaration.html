@@ -234,46 +234,32 @@
 
 async function handleParcelSubmission(event) {
   event.preventDefault();
-  try {
-    console.log('[DEBUG] Submission started');
-    const filesInput = document.getElementById('invoiceFiles');
-    
-    // Basic validation check
-    if (!checkAllFields()) {
-      console.warn('[DEBUG] Validation failed');
-      showError('Please fix form errors');
-      return;
-    }
+  
+  // Convert files to base64 strings
+  const files = await Promise.all(
+    Array.from(document.getElementById('invoiceFiles').files).map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          name: file.name,
+          type: file.type,
+          base64: reader.result.split(',')[1]
+        });
+        reader.readAsDataURL(file);
+      });
+    })
+  );
 
-    // Simple test payload
-    const testPayload = {
-      data: {
-        trackingNumber: 'TEST123',
-        nameOnParcel: 'Test User',
-        phoneNumber: '6731234567',
-        itemDescription: 'Test Item',
-        quantity: 1,
-        price: 10,
-        collectionPoint: 'Rimba',
-        itemCategory: 'Others'
-      },
-      files: []
-    };
+  const payload = {
+    // Your form data
+    files: files
+  };
 
-    console.log('[DEBUG] Test payload:', testPayload);
-    
-    const result = await callAPI('submitParcelDeclaration', testPayload);
-    console.log('[DEBUG] API Response:', result);
-    
-    if (result.success) {
-      alert('Test submission successful!');
-      safeRedirect('dashboard.html');
-    } else {
-      showError(result.message || 'Submission failed');
-    }
-  } catch (error) {
-    console.error('[DEBUG] Submission error:', error);
-    showError(error.message);
+  const result = await callAPI('submitParcelDeclaration', payload);
+  
+  if (result.success) {
+    alert('Submission successful!');
+    safeRedirect('dashboard.html');
   }
 }
 
