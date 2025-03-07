@@ -124,11 +124,10 @@
       <button onclick="handleLogin()">LOGIN</button>
       
       <div class="auth-links">
-        <button onclick="showRegistration()">CREATE ACCOUNT</button>
-        <button class="secondary-btn" 
-                onclick="showForgotPassword()">
-          FORGOT PASSWORD?
-        </button>
+        <button onclick="handleRegistration()" id="registerBtn">CREATE ACCOUNT</button>
+        <button class="secondary-btn" onclick="handleForgotPassword()" id="forgotBtn">
+    FORGOT PASSWORD?
+  </button>
       </div>
     </div>
   </div>
@@ -174,6 +173,21 @@
     function showForgotPassword() {
       safeRedirect('forgot-password.html');
     }
+document.addEventListener('DOMContentLoaded', () => {
+  // Login button handler (assuming your login button has ID 'loginBtn')
+  const loginBtn = document.getElementById('loginBtn') || 
+                  document.querySelector('button[onclick*="handleLogin"]');
+  
+  if (loginBtn) loginBtn.onclick = handleLogin;
+  
+  // Registration and forgot password handlers
+  const registerBtn = document.getElementById('registerBtn');
+  const forgotBtn = document.getElementById('forgotBtn');
+  
+  if (registerBtn) registerBtn.onclick = handleRegistration;
+  if (forgotBtn) forgotBtn.onclick = handleForgotPassword;
+});
+  
   </script>
 </body>
 </html>
