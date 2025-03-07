@@ -1,133 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Cahaya Az Zahra Enterprise</title>
-    <link rel="stylesheet" href="styles/main.css">
-    <style>
-        /* Mobile-first styles */
-        .login-container {
-            max-width: 400px;
-            margin: 2rem auto;
-            padding: 2rem;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(197, 160, 71, 0.3);
-        }
+  <base target="_top">
+  <title>Login - Cahaya Az Zahra Enterprise</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* Mobile-first styles */
+    .login-page {
+      width: 100%;
+      padding: 1rem;
+      animation: fadeIn 0.3s ease-in;
+    }
 
-        .login-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            color: #c5a047;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
+    h1.login-header {
+      font-size: 2.5rem;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 2rem;
+      color: var(--gold);
+      padding: 1rem;
+      border-bottom: 3px solid var(--gold);
+    }
 
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
+    .login-container {
+      background: rgba(0, 0, 0, 0.7);
+      padding: 1.5rem;
+      border-radius: 10px;
+      width: 100%;
+      margin: 0 auto;
+      box-shadow: 0 0 15px rgba(197, 160, 71, 0.3);
+    }
 
-        input[type="tel"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border: 1px solid #c5a047;
-            border-radius: 5px;
-            background: #333;
-            color: white;
-            font-size: 16px;
-        }
+    /* Desktop overrides */
+    body.desktop-view .login-container {
+      max-width: 400px;
+      padding: 2rem;
+      margin: 2rem auto;
+    }
 
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 1rem;
-            background-color: #c5a047;
-            color: #1a1a1a;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.3s;
-        }
+    input {
+      background: #333;
+      border: 1px solid var(--gold);
+      color: var(--text-light);
+      font-size: 16px;
+      margin: 1rem 0;
+      width: 100%;
+      padding: 12px;
+      border-radius: 5px;
+      transition: border-color 0.3s ease;
+    }
 
-        button.secondary-btn {
-            background: transparent;
-            border: 1px solid #c5a047;
-            color: #c5a047;
-            margin-top: 0.5rem;
-        }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 0.5rem 0;
+      font-size: 16px;
+      min-height: 44px;
+      transition: all 0.3s ease;
+    }
 
-        @media (max-width: 768px) {
-            .login-container {
-                margin: 1rem;
-                padding: 1.5rem;
-            }
-            
-            input[type="tel"],
-            input[type="password"] {
-                font-size: 16px;
-                padding: 12px;
-            }
-        }
-    </style>
+    .auth-links {
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .secondary-btn {
+      background: transparent !important;
+      border: 1px solid var(--gold) !important;
+      color: var(--gold) !important;
+    }
+
+    .secondary-btn:hover {
+      background: var(--gold) !important;
+      color: var(--dark-bg) !important;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile-specific adjustments */
+    @media (max-width: 768px) {
+      h1.login-header {
+        font-size: 1.8rem;
+        padding: 0.5rem;
+      }
+      
+      body.mobile-view .login-container {
+        padding: 1rem;
+      }
+      
+      input {
+        font-size: 16px;
+        padding: 12px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="login-page">
+    <h1 class="login-header">CAHAYA AZ ZAHRA ENTERPRISE</h1>
+    
     <div class="login-container">
-        <h1 class="login-header">CAHAYA AZ ZAHRA ENTERPRISE</h1>
-        
-        <div class="input-group">
-            <input type="tel" 
-                   id="phone" 
-                   placeholder="Phone Number (673/60 format)"
-                   pattern="^(673\d{7,}|60\d{9,})$"
-                   required>
-        </div>
-        
-        <div class="input-group">
-            <input type="password" 
-                   id="password" 
-                   placeholder="Password" 
-                   required>
-        </div>
-        
-        <button type="button" id="loginBtn">LOGIN</button>
-        
-        <div class="auth-links">
-            <button type="button" class="secondary-btn" id="registerBtn">
-                CREATE ACCOUNT
-            </button>
-            <button type="button" class="secondary-btn" id="forgotBtn">
-                FORGOT PASSWORD?
-            </button>
-        </div>
+      <div class="input-group">
+        <input type="tel" 
+               id="phone" 
+               placeholder="Phone Number"
+               pattern="^(673\d{7,}|60\d{9,})$" 
+               required>
+      </div>
+      
+      <div class="input-group">
+        <input type="password" 
+               id="password" 
+               placeholder="Password" 
+               required>
+      </div>
+      
+      <button onclick="handleLogin()">LOGIN</button>
+      
+      <div class="auth-links">
+        <button onclick="showRegistration()">CREATE ACCOUNT</button>
+        <button class="secondary-btn" 
+                onclick="showForgotPassword()">
+          FORGOT PASSWORD?
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- Error message container -->
-    <div id="error-message" style="display: none;"></div>
+  <!-- Error message container -->
+  <div id="error-message" class="error-message" style="display: none;"></div>
 
-    <script src="scripts/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize event listeners
-            const loginBtn = document.getElementById('loginBtn');
-            const registerBtn = document.getElementById('registerBtn');
-            const forgotBtn = document.getElementById('forgotBtn');
+  <script src="scripts/app.js"></script>
+  <script>
+    // Integrated with app.js functions
+    function handleLogin() {
+      const phone = document.getElementById('phone').value;
+      const password = document.getElementById('password').value;
 
-            if (loginBtn) loginBtn.addEventListener('click', handleLogin);
-            if (registerBtn) registerBtn.addEventListener('click', handleRegistration);
-            if (forgotBtn) forgotBtn.addEventListener('click', handlePasswordRecovery);
+      if (!phone || !password) {
+        showError('Please fill in all fields');
+        return;
+      }
 
-            // Auto-format phone input
-            const phoneInput = document.getElementById('phone');
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function(e) {
-                    this.value = this.value.replace(/[^\d]/g, '');
-                });
-            }
-        });
-    </script>
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response.success) {
+          sessionStorage.setItem('userData', JSON.stringify(response));
+          safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+        } else {
+          showError(response.message || 'Login failed');
+        }
+      };
+
+      document.body.appendChild(script);
+    }
+
+    function showRegistration() {
+      safeRedirect('register.html');
+    }
+
+    function showForgotPassword() {
+      safeRedirect('forgot-password.html');
+    }
+  </script>
 </body>
 </html>
