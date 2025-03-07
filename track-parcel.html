@@ -67,25 +67,29 @@
   let selectedParcel = null;
 
   async function loadParcelData() {
-    try {
-      const userData = checkSession();
-      if (!userData) return safeRedirect('login.html');
+  try {
+    const userData = checkSession();
+    if (!userData) return safeRedirect('login.html');
 
-      const response = await callAPI('getParcelData', {
-        phone: userData.phone
-      });
+    console.log('Fetching parcels for:', userData.phone); // Add logging
+    
+    const response = await callAPI('getParcelData', {
+      phone: userData.phone
+    });
 
-      if (response.success) {
-        allParcels = response.data;
-        renderTrackingList(allParcels);
-      } else {
-        showError('Failed to load parcel data');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      showError('Error loading parcel data');
+    console.log('API Response:', response); // Log the response
+
+    if (response.success) {
+      allParcels = response.data;
+      renderTrackingList(allParcels);
+    } else {
+      showError(response.message || 'Failed to load parcel data');
     }
+  } catch (error) {
+    console.error('API Call Failed:', error);
+    showError(`Error: ${error.message}`);
   }
+}
 
   function filterTracking() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
