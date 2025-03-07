@@ -99,25 +99,39 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   const url = new URL(CONFIG.GAS_URL);
+  
+  // Encode all parameters in URL
   url.searchParams.append('action', action);
   url.searchParams.append('data', JSON.stringify(payload.data));
+  
+  // Handle file attachments
+  if (payload.files && payload.files.length > 0) {
+    const filesBase64 = payload.files.map(file => ({
+      name: file.name,
+      type: file.type,
+      data: file.base64
+    }));
+    url.searchParams.append('files', JSON.stringify(filesBase64));
+  }
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: new URLSearchParams({
-        dummy: 'data' // Required for POST body
-      })
+    const response = await fetch(url.toString(), {
+      method: 'GET', // Switch to GET for CORS compatibility
+      mode: 'cors',
+      cache: 'no-cache'
     });
+
+    if (!response.ok) throw new Error('Network response was not ok');
     
-    // Since we're using no-cors, handle opaque response
-    return { success: true }; // Assume success
+    const result = await response.json();
+    return result;
+    
   } catch (error) {
-    return { success: false, message: 'Request failed' };
+    console.error('API Error:', error);
+    return {
+      success: false,
+      message: 'Failed to connect to server. Please try again later.'
+    };
   }
 }
 
