@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzDo3ma6tl80dlZNdgDk8JuDDsvPesHAWfGRi4NS0eS7DVcimm9xAMEZa_6U4QgSGb_/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxkn5jFwhReoNxENzqJ9h1saCIALQB5rBYZUKJU4KXWZw4eB5dZ8YmcmlMM0JDs7wIh/exec',
   SESSION_TIMEOUT: 3600, // 1 hour
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -164,32 +164,51 @@ async function handleLogin() {
   const phone = phoneInput.value.trim();
   const password = passwordInput.value;
 
-  if (!validatePhone(phone)) {
-    showError('Invalid phone format (673/60 prefix required)');
-    return;
-  }
-
   try {
+    // Use JSONP for login to maintain compatibility
     const result = await jsonpRequest('processLogin', {
       phone: phone.replace(/[^\d]/g, ''),
       password: password
     });
-    
+
     if (result.success) {
       sessionStorage.setItem('userData', JSON.stringify({
         phone: result.phone,
         email: result.email,
         tempPassword: result.tempPassword
       }));
-      localStorage.setItem('lastActivity', Date.now());
-      
       safeRedirect(result.tempPassword ? 'password-reset.html' : 'dashboard.html');
     } else {
       showError(result.message || 'Authentication failed');
     }
   } catch (error) {
     showError('Login failed - please try again');
+    console.error('Login Error:', error);
   }
+}
+
+// JSONP handler (keep this unchanged)
+function jsonpRequest(action, params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    
+    const urlParams = new URLSearchParams({
+      ...params,
+      action: action,
+      callback: callbackName
+    });
+    
+    window[callbackName] = response => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      response.success ? resolve(response) : reject(response);
+    };
+
+    script.src = `${CONFIG.GAS_URL}?${urlParams}`;
+    script.onerror = () => reject(new Error('Request failed'));
+    document.body.appendChild(script);
+  });
 }
 
 async function handleRegistration() {
