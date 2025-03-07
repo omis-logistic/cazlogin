@@ -1,92 +1,78 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base target="_top">
   <title>Parcel Declaration - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
     .parcel-declaration-page {
       max-width: 600px;
-      margin: 2rem auto;
       animation: slideIn 0.3s ease-out;
     }
 
-    .input-group {
-      margin-bottom: 1.5rem;
-    }
-
-    label {
+    .input-group label {
       display: block;
-      color: #c5a047;
-      margin-bottom: 0.5rem;
-      font-weight: bold;
+      color: var(--gold);
+      margin-bottom: 8px;
+      font-size: 0.9em;
     }
 
-    input, select {
+    select {
       width: 100%;
-      padding: 0.8rem;
-      border: 1px solid #c5a047;
-      border-radius: 5px;
+      padding: 12px;
       background: #2a2a2a;
-      color: white;
-      font-size: 1rem;
+      border: 1px solid var(--gold);
+      color: var(--text-light);
+      border-radius: 5px;
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23c5a047%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.7rem top 50%;
+      background-size: 0.65rem auto;
     }
 
     input[type="file"] {
       background: transparent;
-      border: 1px dashed #c5a047;
-      padding: 1rem;
+      border: 1px dashed var(--gold);
+      padding: 15px;
+      color: var(--text-light);
     }
 
     input[type="file"]::file-selector-button {
-      background: #c5a047;
-      color: #1a1a1a;
+      background: var(--gold);
+      color: var(--dark-bg);
       border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-right: 10px;
       cursor: pointer;
     }
 
     .error-message {
+      min-height: 1.2em;
+      margin-top: 4px;
+      font-size: 0.75em;
+      line-height: 1.2;
       color: #ff4444;
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-      display: none;
-    }
-
-    button {
-      background: #c5a047;
-      color: #1a1a1a;
-      padding: 1rem 2rem;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      width: 100%;
-      margin-top: 1rem;
-    }
-
-    button.secondary-btn {
-      background: transparent;
-      border: 1px solid #c5a047;
-      color: #c5a047;
     }
 
     @keyframes slideIn {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 480px) {
       .parcel-declaration-page {
-        padding: 1rem;
-        margin: 1rem;
+        padding: 15px;
       }
       
-      input, select {
-        padding: 1rem;
-        font-size: 1rem;
+      select {
+        padding: 10px;
+        font-size: 14px;
+      }
+      
+      input[type="file"] {
+        padding: 10px;
       }
     }
   </style>
@@ -94,166 +80,410 @@
 <body>
   <div class="container parcel-declaration-page">
     <h1>Submit Parcel Declaration</h1>
-    
-    <form id="parcel-declaration-form">
-      <div class="input-group">
-        <label for="trackingNumber">Tracking Number</label>
-        <input type="text" 
-               id="trackingNumber" 
-               placeholder="Enter tracking number"
-               required
-               minlength="5">
-        <div class="error-message" id="trackingNumberError"></div>
-      </div>
 
-      <div class="input-group">
-        <label for="nameOnParcel">Name on Parcel</label>
-        <input type="text" 
-               id="nameOnParcel" 
-               placeholder="Enter receiver's name"
-               required>
-        <div class="error-message" id="nameOnParcelError"></div>
-      </div>
+    <div class="input-group">
+  <label for="trackingNumber">Tracking Number</label>
+  <input type="text" 
+         id="trackingNumber" 
+         placeholder="Enter tracking number" 
+         required
+         pattern="[A-Za-z0-9-]{5,}"
+         title="5+ characters (letters, numbers, hyphens)"
+         oninput="this.value = this.value.replace(/[^a-zA-Z0-9-]/g, '')">
+  <div class="error-message" id="trackingNumberError"></div>
+</div>
 
-      <div class="input-group">
-        <label for="phoneNumber">Phone Number</label>
-        <input type="tel" 
-               id="phoneNumber" 
-               placeholder="Loading..."
-               readonly
-               style="background-color: #333; color: #fff;">
-        <div class="error-message" id="phoneNumberError"></div>
-      </div>
+    <div class="input-group">
+      <label for="nameOnParcel">Name on Parcel</label>
+      <input type="text" id="nameOnParcel" placeholder="Enter name on parcel" required>
+      <div class="error-message" id="nameOnParcelError"></div>
+    </div>
 
-      <div class="input-group">
-        <label for="itemDescription">Item Description</label>
-        <input type="text" 
-               id="itemDescription" 
-               placeholder="Describe the item contents"
-               required>
-        <div class="error-message" id="itemDescriptionError"></div>
-      </div>
+    <div class="input-group">
+      <label for="phoneNumber">Phone Number</label>
+      <input type="tel" id="phoneNumber" 
+             placeholder="Loading..." 
+             readonly
+             style="background-color: #333; color: #888; cursor: not-allowed">
+    </div>
 
-      <div class="input-group">
-        <label for="quantity">Quantity</label>
-        <input type="number" 
-               id="quantity" 
-               placeholder="Enter quantity"
-               min="1"
-               required>
-        <div class="error-message" id="quantityError"></div>
-      </div>
+    <div class="input-group">
+      <label for="itemDescription">Item Description</label>
+      <input type="text" id="itemDescription" placeholder="Enter item description" required>
+      <div class="error-message" id="itemDescriptionError"></div>
+    </div>
 
-      <div class="input-group">
-        <label for="price">Price (MYR)</label>
-        <input type="number" 
-               id="price" 
-               placeholder="Enter total value"
-               step="0.01"
-               required>
-        <div class="error-message" id="priceError"></div>
-      </div>
+    <div class="input-group">
+      <label for="quantity">Quantity</label>
+      <input type="number" id="quantity" placeholder="Enter quantity" min="1" required>
+      <div class="error-message" id="quantityError"></div>
+    </div>
 
-      <div class="input-group">
-        <label for="collectionPoint">Collection Point</label>
-        <select id="collectionPoint" required>
-          <option value="">Select Location</option>
-          <option value="Rimba">Rimba</option>
-          <option value="Bengkurong">Bengkurong</option>
-        </select>
-        <div class="error-message" id="collectionPointError"></div>
-      </div>
+    <div class="input-group">
+      <label for="price">Price in RM</label>
+      <input type="number" id="price" placeholder="Enter price in RM" step="0.01" required>
+      <div class="error-message" id="priceError"></div>
+    </div>
 
-      <div class="input-group">
-        <label for="itemCategory">Item Category</label>
-        <select id="itemCategory" required>
-          <option value="">Select Category</option>
-          <option value="Accessories/Jewellery">Accessories/Jewellery</option>
-          <option value="Baby Appliances">Baby Appliances</option>
-          <option value="Bag">Bag</option>
-          <option value="* Books">* Books</option>
-          <option value="Car Parts/Accessories">Car Parts/Accessories</option>
-          <option value="Carpets/Mat">Carpets/Mat</option>
-          <option value="Clothing">Clothing</option>
-          <option value="Computer Accessories">Computer Accessories</option>
-          <option value="Cordless">Cordless</option>
-          <option value="* Cosmetics/Skincare/Bodycare">* Cosmetics/Skincare/Bodycare</option>
-          <option value="Decorations">Decorations</option>
-          <option value="Disposable Pad/Mask">Disposable Pad/Mask</option>
-          <option value="Electrical Appliances">Electrical Appliances</option>
-          <option value="Fabric">Fabric</option>
-          <option value="Fashion Accessories">Fashion Accessories</option>
-          <option value="Fishing kits/Accessories">Fishing kits/Accessories</option>
-          <option value="* Food Beverage/Drinks">* Food Beverage/Drinks</option>
-          <option value="Footware Shoes/Slippers">Footware Shoes/Slippers</option>
-          <option value="* Gadgets">* Gadgets</option>
-          <option value="Game/Console/Board">Game/Console/Board</option>
-          <option value="Hand Tools">Hand Tools</option>
-          <option value="Handphone Casing">Handphone Casing</option>
-          <option value="Headgear">Headgear</option>
-          <option value="Home Fitting/Furniture">Home Fitting/Furniture</option>
-          <option value="Kitchenware">Kitchenware</option>
-          <option value="LED/Lamp">LED/Lamp</option>
-          <option value="Matters/Bedding">Matters/Bedding</option>
-          <option value="Mix Item">Mix Item</option>
-          <option value="Motor Part/Accessories">Motor Part/Accessories</option>
-          <option value="* Oil Ointment">* Oil Ointment</option>
-          <option value="Others">Others</option>
-          <option value="Perfume">Perfume</option>
-          <option value="Phone Accessories">Phone Accessories</option>
-          <option value="Plastic Article">Plastic Article</option>
-          <option value="RC Parts/Accessories">RC Parts/Accessories</option>
-          <option value="Rubber">Rubber</option>
-          <option value="Seluar">Seluar</option>
-          <option value="Socks">Socks</option>
-          <option value="Sport Equipment">Sport Equipment</option>
-          <option value="Stationery">Stationery</option>
-          <option value="Stickers">Stickers</option>
-          <option value="Storage">Storage</option>
-          <option value="* Supplement">* Supplement</option>
-          <option value="Telkong">Telkong</option>
-          <option value="Toys">Toys</option>
-          <option value="Tudong">Tudong</option>
-          <option value="Tumbler">Tumbler</option>
-          <option value="Underwear">Underwear</option>
-          <option value="Watch & Accessories">Watch & Accessories</option>
-          <option value="Wire, Adapter & Plug">Wire, Adapter & Plug</option>
-        </select>
-        <div class="error-message" id="itemCategoryError"></div>
-      </div>
+    <div class="input-group">
+      <label for="collectionPoint">Collection Point</label>
+      <select id="collectionPoint" required>
+        <option value="">Select Collection Point</option>
+        <option value="Rimba">Rimba</option>
+        <option value="Bengkurong">Bengkurong</option>
+      </select>
+      <div class="error-message" id="collectionPointError"></div>
+    </div>
 
-      <div class="input-group">
-        <label for="invoiceFiles">Upload Invoices (Max 3 files)</label>
-        <input type="file" 
-               id="invoiceFiles" 
-               multiple
-               accept=".pdf,.jpg,.jpeg,.png">
-        <div class="error-message" id="invoiceFilesError"></div>
-      </div>
+    <div class="input-group">
+  <label for="itemCategory">Item Category</label>
+  <select id="itemCategory" required>
+    <option value="">Select Item Category</option>
+    <option value="Accessories/Jewellery">Accessories/Jewellery</option>
+    <option value="Baby Appliances">Baby Appliances</option>
+    <option value="Bag">Bag</option>
+    <option value="* Books">* Books</option>
+    <option value="Car Parts/Accessories">Car Parts/Accessories</option>
+    <option value="Carpets/Mat">Carpets/Mat</option>
+    <option value="Clothing">Clothing</option>
+    <option value="Computer Accessories">Computer Accessories</option>
+    <option value="Cordless">Cordless</option>
+    <option value="* Cosmetics/Skincare/Bodycare">* Cosmetics/Skincare/Bodycare</option>
+    <option value="Decorations">Decorations</option>
+    <option value="Disposable Pad/Mask">Disposable Pad/Mask</option>
+    <option value="Electrical Appliances">Electrical Appliances</option>
+    <option value="Fabric">Fabric</option>
+    <option value="Fashion Accessories">Fashion Accessories</option>
+    <option value="Fishing kits/Accessories">Fishing kits/Accessories</option>
+    <option value="* Food Beverage/Drinks">* Food Beverage/Drinks</option>
+    <option value="Footware Shoes/Slippers">Footware Shoes/Slippers</option>
+    <option value="* Gadgets">* Gadgets</option>
+    <option value="Game/Console/Board">Game/Console/Board</option>
+    <option value="Hand Tools">Hand Tools</option>
+    <option value="Handphone Casing">Handphone Casing</option>
+    <option value="Headgear">Headgear</option>
+    <option value="Home Fitting/Furniture">Home Fitting/Furniture</option>
+    <option value="Kitchenware">Kitchenware</option>
+    <option value="LED/Lamp">LED/Lamp</option>
+    <option value="Matters/Bedding">Matters/Bedding</option>
+    <option value="Mix Item">Mix Item</option>
+    <option value="Motor Part/Accessories">Motor Part/Accessories</option>
+    <option value="* Oil Ointment">* Oil Ointment</option>
+    <option value="Others">Others</option>
+    <option value="Perfume">Perfume</option>
+    <option value="Phone Accessories">Phone Accessories</option>
+    <option value="Plastic Article">Plastic Article</option>
+    <option value="RC Parts/Accessories">RC Parts/Accessories</option>
+    <option value="Rubber">Rubber</option>
+    <option value="Seluar">Seluar</option>
+    <option value="Socks">Socks</option>
+    <option value="Sport Equipment">Sport Equipment</option>
+    <option value="Stationery">Stationery</option>
+    <option value="Stickers">Stickers</option>
+    <option value="Storage">Storage</option>
+    <option value="* Supplement">* Supplement</option>
+    <option value="Telkong">Telkong</option>
+    <option value="Toys">Toys</option>
+    <option value="Tudong">Tudong</option>
+    <option value="Tumbler">Tumbler</option>
+    <option value="Underwear">Underwear</option>
+    <option value="Watch & Accessories">Watch & Accessories</option>
+    <option value="Wire, Adapter & Plug">Wire, Adapter & Plug</option>
+  </select>
+  <div class="error-message" id="itemCategoryError"></div>
+</div>
 
-      <button type="submit" id="submitBtn">Submit Declaration</button>
-      <button type="button" 
-              class="secondary-btn" 
-              id="backBtn"
-              onclick="safeRedirect('dashboard.html')">
-        Back to Dashboard
-      </button>
-    </form>
+    <div class="input-group">
+      <label for="invoiceFiles">Upload Invoices (Max 3 files, at least 1 required for * categories)</label>
+      <input type="file" id="invoiceFiles" multiple accept=".pdf,.jpg,.jpeg,.png">
+      <div class="error-message" id="invoiceFilesError"></div>
+    </div>
+
+    <button id="submitBtn" onclick="handleParcelSubmission(); return false;">Submit</button>
+    <button class="secondary-btn" 
+            onclick="safeRedirect('dashboard.html'); return false;"
+            style="margin-top: 10px;">
+      Back to Dashboard
+    </button>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // Initialize phone number from session
-      const phoneField = document.getElementById('phoneNumber');
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      
-      if (userData?.phone) {
-        phoneField.value = userData.phone;
-        phoneField.style.color = '#ffffff';
-        phoneField.placeholder = '';
-      }
+  // Validation Functions
+function validateTrackingNumber(input) {
+  const value = input.value.trim();
+  const isValid = /^[A-Z0-9-]{5,}$/i.test(value); // Case-insensitive check
+  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
+  return isValid;
+}
+
+  function validateName(input) {
+    const isValid = input.value.trim().length > 0;
+    showError(isValid ? '' : 'Name is required', 'nameOnParcelError');
+    return isValid;
+  }
+
+  function validateDescription(input) {
+    const isValid = input.value.trim().length > 0;
+    showError(isValid ? '' : 'Description is required', 'itemDescriptionError');
+    return isValid;
+  }
+
+  function validateQuantity(input) {
+    const value = parseInt(input.value);
+    const isValid = !isNaN(value) && value > 0;
+    showError(isValid ? '' : 'Must be at least 1', 'quantityError');
+    return isValid;
+  }
+
+  function validatePrice(input) {
+    const value = parseFloat(input.value);
+    const isValid = !isNaN(value) && value > 0;
+    showError(isValid ? '' : 'Must be positive number', 'priceError');
+    return isValid;
+  }
+
+  function validateCollectionPoint(select) {
+    const isValid = select.value !== '';
+    showError(isValid ? '' : 'Required field', 'collectionPointError');
+    return isValid;
+  }
+
+  function validateCategory(select) {
+    const isValid = select.value !== '';
+    showError(isValid ? '' : 'Required field', 'itemCategoryError');
+    if(isValid) checkInvoiceRequirements();
+    return !!isValid;
+  }
+
+  function validateInvoiceFiles() {
+    const mandatoryCategories = [
+      '* Books', 
+      '* Cosmetics/Skincare/Bodycare',
+      '* Food Beverage/Drinks',
+      '* Gadgets',
+      '* Oil Ointment',
+      '* Supplement'
+    ];
+    
+    const category = document.getElementById('itemCategory').value;
+    const files = document.getElementById('invoiceFiles').files;
+    let isValid = true;
+    let errorMessage = '';
+
+    if(files.length > 3) {
+      errorMessage = 'Maximum 3 files allowed';
+      isValid = false;
+    }
+    else if(mandatoryCategories.includes(category)) {
+      isValid = files.length > 0;
+      errorMessage = isValid ? '' : 'At least 1 invoice required';
+    }
+
+    showError(errorMessage, 'invoiceFilesError');
+    return isValid;
+  }
+
+  // Core Logic
+  function checkInvoiceRequirements() {
+    return validateInvoiceFiles();
+  }
+
+  function checkAllFields() {
+    const isValid = [
+      validateTrackingNumber(document.getElementById('trackingNumber')),
+      validateName(document.getElementById('nameOnParcel')),
+      validateDescription(document.getElementById('itemDescription')),
+      validateQuantity(document.getElementById('quantity')),
+      validatePrice(document.getElementById('price')),
+      validateCollectionPoint(document.getElementById('collectionPoint')),
+      validateCategory(document.getElementById('itemCategory')),
+      validateInvoiceFiles()
+    ].every(result => result);
+
+    document.getElementById('submitBtn').disabled = !isValid;
+    return isValid;
+  }
+
+  // Event Handlers
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    detectViewMode();
+    
+    // Verify session exists
+    const userData = checkSession();
+    if (!userData) {
+      safeRedirect('login.html');
+      return;
+    }
+
+    // Set initial field values
+    const phoneField = document.getElementById('phoneNumber');
+    if (userData?.phone) {
+      phoneField.value = userData.phone.trim();
+      phoneField.style.color = '#ffffff';
+    }
+
+    // Initialize empty values for validation
+    document.getElementById('trackingNumber').value = '';
+    document.getElementById('nameOnParcel').value = '';
+    document.getElementById('itemDescription').value = '';
+    document.getElementById('quantity').value = '';
+    document.getElementById('price').value = '';
+
+    // Initialize validation after DOM is ready
+    initValidationListeners();
+    checkAllFields(); // Initial validation check
+    
+  } catch (error) {
+    console.error('Initialization error:', error);
+    showError('Failed to initialize form');
+  }
+});
+
+  // Submission Handling
+async function handleParcelSubmission() {
+  try {
+    console.log('Submission started'); // Debug log
+    
+    // Validate form
+    if (!checkAllFields()) {
+      showError('Please fix validation errors');
+      return;
+    }
+
+    showLoading(true);
+    
+    // Prepare data
+    const formData = {
+      trackingNumber: document.getElementById('trackingNumber').value.trim()
+        .replace(/[^A-Z0-9-]/g, '').toUpperCase(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: quantity,
+      price: price,
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    };
+
+    console.log('Form Data:', formData); // Debug log
+
+    // Process files
+    const fileInput = document.getElementById('invoiceFiles');
+    const files = await processFiles(fileInput);
+    console.log('Processed Files:', files); // Debug log
+
+    // Submit data
+    const response = await callAPI('submitParcelDeclaration', {
+      data: formData,
+      files: files
     });
+
+    if (response?.success) {
+      alert(`Submitted! Tracking: ${response.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      throw new Error(response?.message || 'Submission failed');
+    }
+  } catch (error) {
+    console.error('Submission Error:', error);
+    showError(error.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function processFiles(fileInput) {
+  try {
+    return await Promise.all(
+      Array.from(fileInput.files).map(async file => ({
+        name: file.name,
+        type: file.type || getMimeTypeFromExtension(file.name),
+        base64: await readFileAsBase64(file)
+      }))
+    );
+  } catch (error) {
+    console.error('File processing error:', error);
+    throw new Error('Failed to process files');
+  }
+}
+
+function getMimeTypeFromExtension(filename) {
+  const extMap = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'pdf': 'application/pdf'
+  };
+  const ext = filename.split('.').pop().toLowerCase();
+  return extMap[ext] || 'application/octet-stream';
+}
+
+  function readFileAsBase64(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleSubmissionResponse(response) {
+    showLoading(false);
+    if (response.success) {
+      alert(`Declaration submitted! Tracking: ${response.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(response.message || 'Submission failed');
+    }
+  }
+
+  // UI Utilities
+  function showLoading(show) {
+    const loader = document.getElementById('loader') || createLoader();
+    loader.style.display = show ? 'block' : 'none';
+  }
+
+  function createLoader() {
+    const loader = document.createElement('div');
+    loader.id = 'loader';
+    loader.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 1000;
+    `;
+    loader.innerHTML = `
+      <div class="loader-spinner" style="
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid ${getComputedStyle(document.documentElement)
+          .getPropertyValue('--gold')};
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      "></div>
+      <p style="margin-top: 1rem;">Submitting declaration...</p>
+    `;
+    document.body.appendChild(loader);
+    return loader;
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(el => {
+      el.textContent = '';
+    });
+  }
+
+  function showError(message, targetId = 'error-message') {
+    const errorElement = document.getElementById(targetId);
+    if (errorElement) {
+      errorElement.textContent = message;
+      errorElement.style.display = message ? 'block' : 'none';
+    }
+  }
   </script>
 </body>
 </html>
