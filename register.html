@@ -7,70 +7,44 @@
   <style>
     .registration-page {
       max-width: 500px;
-      animation: slideUp 0.3s ease-out;
+      margin: 2rem auto;
+      animation: fadeIn 0.3s ease-in;
     }
 
     .password-rules {
       font-size: 0.8em;
-      color: var(--gold);
-      margin: 5px 0 10px;
-      opacity: 0.8;
+      color: #c5a047;
+      margin: 5px 0 15px;
+      padding-left: 10px;
     }
 
-    .status-message {
-      padding: 12px;
-      margin: 15px 0;
-      border-radius: 5px;
-      text-align: center;
-      font-size: 14px;
-      display: none;
-    }
-
-    .status-message.success {
-      background: rgba(0, 200, 81, 0.1);
-      border: 1px solid #00C851;
-      color: #00C851;
-      display: block;
-    }
-
-    .status-message.error {
-      background: rgba(255, 68, 68, 0.1);
-      border: 1px solid #ff4444;
-      color: #ff4444;
-      display: block;
-    }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
       .registration-page {
-        padding: 15px;
+        padding: 1rem;
+        margin: 1rem auto;
       }
       
-      input {
-        padding: 10px;
-        font-size: 14px;
-      }
-      
-      button {
-        padding: 10px;
-        font-size: 14px;
+      input, button {
+        font-size: 16px;
+        padding: 12px;
       }
     }
   </style>
 </head>
 <body>
   <div class="container registration-page">
-    <h1>New Registration</h1>
+    <h1>New Account Registration</h1>
     
     <div class="input-group">
       <input type="tel" 
              id="regPhone" 
-             placeholder="Phone (673/60 format)" 
-             pattern="^(673\d{7,}|60\d{9,})$" 
+             placeholder="Phone Number (673/60 format)"
+             pattern="^(673|60)\d+"
              required>
       <div class="error-message" id="phoneError"></div>
     </div>
@@ -79,9 +53,8 @@
       <input type="password" 
              id="regPassword" 
              placeholder="Create Password"
-             pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" 
              required>
-      <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+      <div class="password-rules">6+ characters, 1 uppercase letter, 1 number</div>
       <div class="error-message" id="passError"></div>
     </div>
 
@@ -109,70 +82,50 @@
       <div class="error-message" id="confirmEmailError"></div>
     </div>
 
-    <button onclick="handleRegistration()">Register</button>
-    <button class="secondary-btn" onclick="safeRedirect('login.html')" style="margin-top: 10px;">Back to Login</button>
+    <button id="registerBtn" onclick="handleRegistration()">Register</button>
+    
+    <div class="auth-links" style="margin-top: 1.5rem;">
+      <button class="secondary-btn" 
+              onclick="safeRedirect('login.html')">
+        Already have an account? Login
+      </button>
+    </div>
 
     <div id="registrationStatus" class="status-message"></div>
   </div>
 
   <script src="scripts/app.js"></script>
   <script>
-    function handleRegistration() {
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-      const statusElement = document.getElementById('registrationStatus');
-      statusElement.className = '';
-      statusElement.textContent = '';
+    document.addEventListener('DOMContentLoaded', () => {
+      detectViewMode();
+      
+      // Real-time validation listeners
+      document.getElementById('regPhone')?.addEventListener('input', function() {
+        document.getElementById('phoneError').textContent = 
+          !validatePhone(this.value) ? 'Invalid phone format' : '';
+      });
 
-      if (!validateRegistrationForm()) return;
+      document.getElementById('regPassword')?.addEventListener('input', function() {
+        document.getElementById('passError').textContent = 
+          !validatePassword(this.value) ? 'Invalid password format' : '';
+      });
 
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
-      const email = document.getElementById('regEmail').value;
+      document.getElementById('regConfirmPass')?.addEventListener('input', function() {
+        const pass = document.getElementById('regPassword')?.value;
+        document.getElementById('confirmPassError').textContent = 
+          this.value !== pass ? 'Passwords mismatch' : '';
+      });
 
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
+      document.getElementById('regEmail')?.addEventListener('input', function() {
+        document.getElementById('emailError').textContent = 
+          !validateEmail(this.value) ? 'Invalid email format' : '';
+      });
 
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          statusElement.className = 'status-message success';
-          statusElement.textContent = 'Registration successful! Redirecting...';
-          setTimeout(() => safeRedirect('login.html'), 1500);
-        } else {
-          statusElement.className = 'status-message error';
-          statusElement.textContent = response.message || 'Registration failed';
-        }
-      };
-
-      document.body.appendChild(script);
-    }
-
-    document.getElementById('regPhone').addEventListener('input', function() {
-      document.getElementById('phoneError').textContent = 
-        !validatePhone(this.value) ? 'Invalid phone format' : '';
-    });
-
-    document.getElementById('regPassword').addEventListener('input', function() {
-      document.getElementById('passError').textContent = 
-        !validatePassword(this.value) ? '6+ chars, 1 uppercase, 1 number' : '';
-    });
-
-    document.getElementById('regConfirmPass').addEventListener('input', function() {
-      document.getElementById('confirmPassError').textContent = 
-        this.value !== document.getElementById('regPassword').value ? 'Passwords mismatch' : '';
-    });
-
-    document.getElementById('regEmail').addEventListener('input', function() {
-      document.getElementById('emailError').textContent = 
-        !validateEmail(this.value) ? 'Invalid email format' : '';
-    });
-
-    document.getElementById('regConfirmEmail').addEventListener('input', function() {
-      document.getElementById('confirmEmailError').textContent = 
-        this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
+      document.getElementById('regConfirmEmail')?.addEventListener('input', function() {
+        const email = document.getElementById('regEmail')?.value;
+        document.getElementById('confirmEmailError').textContent = 
+          this.value !== email ? 'Emails mismatch' : '';
+      });
     });
   </script>
 </body>
