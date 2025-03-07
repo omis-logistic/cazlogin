@@ -69,25 +69,25 @@
   async function loadParcelData() {
   try {
     const userData = checkSession();
-    if (!userData) return safeRedirect('login.html');
+    if (!userData || !userData.phone) {
+      safeRedirect('login.html');
+      return;
+    }
 
-    console.log('Fetching parcels for:', userData.phone); // Add logging
-    
     const response = await callAPI('getParcelData', {
+      action: 'getParcelData', // Explicit action declaration
       phone: userData.phone
     });
 
-    console.log('API Response:', response); // Log the response
-
-    if (response.success) {
-      allParcels = response.data;
+    if (response?.success) {
+      allParcels = response.data || [];
       renderTrackingList(allParcels);
     } else {
-      showError(response.message || 'Failed to load parcel data');
+      showError(response?.message || 'Failed to load tracking data');
     }
   } catch (error) {
-    console.error('API Call Failed:', error);
-    showError(`Error: ${error.message}`);
+    console.error('Loading Error:', error);
+    showError('Connection error. Please check your internet connection.');
   }
 }
 
