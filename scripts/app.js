@@ -99,30 +99,35 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
-    const formData = new FormData();
-    
-    if (payload.files) {
-      payload.files.forEach((file, index) => {
-        const blob = new Blob(
-          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type }
-        );
-        formData.append(`file${index}`, blob, file.name);
-      });
-    }
-
-    formData.append('data', JSON.stringify(payload.data));
-
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      body: createFormData(payload) // Modified formData handling
     });
+
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Invalid content type: ${contentType}`);
+    }
 
     return await response.json();
   } catch (error) {
     console.error('API Call Failed:', error);
-    return { success: false, message: error.message };
+    return { 
+      success: false,
+      message: 'Connection failed. Please try again later.',
+      error: error.message
+    };
   }
+}
+
+function createFormData(payload) {
+  const formData = new FormData();
+  formData.append('data', JSON.stringify({
+    action: payload.action,
+    phone: payload.phone
+  }));
+  return formData;
 }
 
 // ================= PARCEL HANDLERS =================
