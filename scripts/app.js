@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyS1Ou2XItVCwuOVzkMnOKpKgC566hGRg1vNC6DsdwkZEwz7AG56CG6iM3nrN0_4wz6/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyF7AhZuN-5PT0SJhk5szF5MA8EV1XgrYrT58FdpBcBAxXGt6Pa08-EyiT1lb_aY5Uc/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -132,6 +132,29 @@ function createFormData(payload) {
   }
   
   return formData;
+}
+
+function jsonpRequest(action, params) {
+  return new Promise((resolve, reject) => {
+    const callbackName = `jsonp_${Date.now()}`;
+    const script = document.createElement('script');
+    
+    const urlParams = new URLSearchParams({
+      ...params,
+      action: action,
+      callback: callbackName
+    });
+    
+    window[callbackName] = response => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      resolve(response);
+    };
+
+    script.src = `${CONFIG.GAS_URL}?${urlParams}`;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
 }
 
 // ================= PARCEL HANDLERS =================
@@ -375,13 +398,11 @@ async function handleLogin() {
     return;
   }
 
-  if (!password) {
-    showError('Please enter your password');
-    return;
-  }
-
   try {
-    const result = await callAPI('processLogin', { phone, password });
+    const result = await jsonpRequest('processLogin', { 
+      phone: phone.replace(/[^\d]/g, ''),
+      password: password
+    });
     
     if (result.success) {
       sessionStorage.setItem('userData', JSON.stringify(result));
