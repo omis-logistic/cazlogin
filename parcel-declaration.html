@@ -235,31 +235,71 @@
 async function handleParcelSubmission(event) {
   event.preventDefault();
   
-  // Convert files to base64 strings
-  const files = await Promise.all(
-    Array.from(document.getElementById('invoiceFiles').files).map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({
-          name: file.name,
-          type: file.type,
-          base64: reader.result.split(',')[1]
+  try {
+    // 1. Validate form inputs
+    if (!checkAllFields()) {
+      showError('Please fix all form errors before submitting');
+      return;
+    }
+
+    // 2. Show loading state
+    showLoading(true);
+
+    // 3. Convert files to base64 strings
+    const files = await Promise.all(
+      Array.from(document.getElementById('invoiceFiles').files).map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({
+            name: file.name,
+            type: file.type,
+            base64: reader.result.split(',')[1]
+          });
+          reader.readAsDataURL(file);
         });
-        reader.readAsDataURL(file);
-      });
-    })
-  );
+      })
+    );
 
-  const payload = {
-    // Your form data
-    files: files
-  };
+    // 4. Prepare payload with sanitized data
+    const payload = {
+      data: {
+        trackingNumber: document.getElementById('trackingNumber').value.trim().toUpperCase(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.replace(/[^\d]/g, ''),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      },
+      files: files
+    };
 
-  const result = await callAPI('submitParcelDeclaration', payload);
-  
-  if (result.success) {
-    alert('Submission successful!');
-    safeRedirect('dashboard.html');
+    // 5. Validate numerical values
+    if (isNaN(payload.data.quantity) {
+      throw new Error('Invalid quantity value');
+    }
+    if (isNaN(payload.data.price)) {
+      throw new Error('Invalid price value');
+    }
+
+    // 6. Make API call
+    const result = await callAPI('submitParcelDeclaration', payload);
+    
+    // 7. Handle response
+    if (result.success) {
+      alert(`Submission successful! Tracking Number: ${payload.data.trackingNumber}`);
+      safeRedirect('dashboard.html');
+    } else {
+      showError(result.message || 'Submission failed. Please try again.');
+    }
+  } catch (error) {
+    console.error('Submission Error:', error);
+    showError(error.message || 'An unexpected error occurred');
+  } finally {
+    // 8. Cleanup
+    showLoading(false);
+    document.getElementById('invoiceFiles').value = ''; // Clear file input
   }
 }
 
