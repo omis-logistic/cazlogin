@@ -286,45 +286,50 @@ async function handlePasswordReset() {
 // ================= PARCEL HANDLERS =================
 async function handleParcelSubmission(event) {
   event.preventDefault();
-  console.log('[Frontend] Submission started'); // Add logging
+  console.log('[Frontend] Submission started');
   
   try {
     const files = await handleFileUpload(document.getElementById('invoiceFiles').files);
-    if (!files) return;
-
-    // Add basic validation
-    if (!checkAllFields()) {
-      showError('Please fill all required fields correctly');
-      return;
-    }
+    console.log('[Frontend] Files processed:', files?.length || 0);
 
     const payload = {
-      data: { // Main data payload
+      data: {
+        action: 'submitParcelDeclaration', // <-- THIS WAS MISSING
         trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
         nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
         itemDescription: document.getElementById('itemDescription').value.trim(),
         quantity: parseInt(document.getElementById('quantity').value),
         price: parseFloat(document.getElementById('price').value),
         collectionPoint: document.getElementById('collectionPoint').value,
         itemCategory: document.getElementById('itemCategory').value
       },
-      files: files
+      files: files || []
     };
 
-    console.log('[Frontend] Sending payload:', payload); // Debug log
-    
-    const result = await callAPI('submitParcelDeclaration', payload);
-    
+    console.log('[Frontend] Sending payload:', payload);
+
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const result = await response.json();
+    console.log('[Frontend] Received response:', result);
+
     if (result.success) {
       alert(`Submitted! Tracking: ${result.trackingNumber}`);
       document.getElementById('parcel-declaration-form').reset();
+      safeRedirect('dashboard.html');
     } else {
       showError(result.message || 'Submission failed');
     }
   } catch (error) {
-    showError('Submission error - please try again');
     console.error('[Frontend Error]', error);
+    showError(`Submission failed: ${error.message}`);
   }
 }
 
