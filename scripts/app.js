@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwGugwXhwMfpfS355u3tsvgFp6HxBbySdaFmU-oWBLFBi_MTOtvuqottLn-g-XxVprV/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzbNAJuNM2GYfFPVqLf_Q5G5SfYOzqhfdGjYAZxMKCJnOnBc0QD0QKQOkqWGlWKk1kQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -98,31 +98,21 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
-  try {
-    const formData = new FormData();
-    formData.append('data', JSON.stringify(payload.data));
-    
-    if (payload.files) {
-      payload.files.forEach((file, index) => {
-        const blob = new Blob(
-          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type }
-        );
-        formData.append(`file${index}`, blob, file.name);
-      });
-    }
+  const formData = new FormData();
+  formData.append('data', JSON.stringify(payload.data));
+  
+  payload.files?.forEach((file, index) => {
+    const blob = new Blob(
+      [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+      { type: file.type }
+    );
+    formData.append(`file${index}`, blob, file.name);
+  });
 
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData,
-      redirect: 'follow'
-    });
-
-    return await response.json();
-  } catch (error) {
-    console.error('API Call Failed:', error);
-    return { success: false, message: error.message };
-  }
+  return fetch(CONFIG.GAS_URL, {
+    method: 'POST',
+    body: formData
+  }).then(r => r.json());
 }
 
 // Helper function for FormData creation
