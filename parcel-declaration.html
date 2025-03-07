@@ -207,30 +207,33 @@
 
   <script src="scripts/app.js"></script>
   <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    try {
-      detectViewMode();
-      
-      const userData = checkSession();
-      if (!userData) {
-        safeRedirect('login.html');
-        return;
-      }
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    detectViewMode();
+    
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    const phoneField = document.getElementById('phoneNumber');
 
-      const phoneField = document.getElementById('phoneNumber');
-      if (userData?.phone) {
-        phoneField.value = userData.phone.trim();
-        phoneField.style.color = '#ffffff';
-      }
-
-      initValidationListeners();
-      updateSubmitButtonState();
-      
-    } catch (error) {
-      console.error('Initialization error:', error);
-      showError('Failed to initialize form');
+    if (!userData || !phoneField) {
+      safeRedirect('login.html');
+      return;
     }
-  });
+
+    if (userData.phone) {
+      phoneField.value = userData.phone;
+      phoneField.style.color = '#ffffff';
+      phoneField.readOnly = true;
+      phoneField.placeholder = '';
+    }
+
+    initValidationListeners();
+    updateSubmitButtonState();
+    
+  } catch (error) {
+    console.error('Initialization error:', error);
+    safeRedirect('login.html');
+  }
+});
 
 async function handleParcelSubmission(event) {
   event.preventDefault();
