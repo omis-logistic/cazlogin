@@ -1,29 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
-    /* Dashboard-specific styles */
     .dashboard-page {
       max-width: 1200px;
       margin: 20px auto;
+      padding: 20px;
     }
 
     .thumbnail-container {
       display: grid;
       gap: 20px;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-top: 30px;
     }
 
     .thumbnail {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 25px;
       border-radius: 10px;
       cursor: pointer;
       transition: all 0.3s ease;
       border: 1px solid var(--gold);
+      text-align: center;
     }
 
     .thumbnail:hover {
@@ -33,170 +36,79 @@
 
     .thumbnail h2 {
       color: var(--gold);
-      margin-bottom: 10px;
+      margin-bottom: 15px;
       font-size: 1.4em;
     }
 
-    .thumbnail p {
-      color: var(--text-light);
-      font-size: 0.95em;
-      opacity: 0.9;
-    }
-
-    /* Welcome Modal Styles */
     .welcome-modal {
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
+      width: 100%;
+      height: 100%;
       background: rgba(0,0,0,0.9);
       z-index: 1000;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 20px 10px;
     }
 
     .welcome-content {
       background: var(--dark-bg);
+      margin: 2% auto;
+      padding: 30px;
       border: 2px solid var(--gold);
       border-radius: 10px;
       max-width: 800px;
-      margin: 20px auto;
-      padding: 25px;
-      color: var(--text-light);
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 0 15px rgba(197, 160, 71, 0.2);
+      color: white;
     }
 
     .gold-text {
       color: var(--gold) !important;
       font-weight: bold;
-    }
-
-    .modal-section {
       margin: 15px 0;
-      padding: 15px 20px;
-      background: rgba(255,255,255,0.05);
-      border-radius: 5px;
-      border: 1px solid rgba(197, 160, 71, 0.1);
     }
 
-    .guidelines {
-      padding-left: 15px;
-      margin: 10px 0;
-    }
-
-    .guidelines li {
-      margin: 8px 0;
-      line-height: 1.5;
-    }
-
-    .agree-btn {
-      background: var(--gold);
-      color: var(--dark-bg);
-      padding: 12px 30px;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
-      cursor: pointer;
-      display: block;
-      margin: 25px auto 15px;
-      transition: opacity 0.3s;
-    }
-
-    .agree-btn:hover {
-      opacity: 0.9;
-    }
-
-    strong.gold-text {
-      display: block;
-      margin: 0 0 10px 0;
-      padding: 5px 0;
-    }
-
-    /* Mobile Optimization */
     @media (max-width: 768px) {
       .dashboard-page {
         padding: 10px;
+      }
+      
+      .welcome-content {
+        padding: 15px;
+        margin: 10px;
       }
       
       .thumbnail {
         margin: 10px 0;
         padding: 15px;
       }
-      
-      .thumbnail h2 {
-        font-size: 1.2em;
-      }
-
-      .welcome-modal {
-        padding: 10px 5px;
-      }
-
-      .welcome-content {
-        max-height: 85vh;
-        padding: 15px;
-        margin: 10px auto;
-        border-width: 1.5px;
-      }
-
-      .modal-section {
-        margin: 10px 0;
-        padding: 10px 15px;
-      }
-
-      .guidelines {
-        font-size: 0.9em;
-        padding-left: 10px;
-      }
-
-      .agree-btn {
-        width: calc(100% - 30px);
-        padding: 15px;
-        font-size: 1em;
-        margin: 20px auto;
-      }
     }
-
-    @media (max-width: 480px) {
-      .welcome-content {
-        padding: 12px;
-      }
-
-      .modal-section {
-        padding: 10px 12px;
-      }
-
-      .guidelines li {
-        font-size: 0.85em;
-      }
-    }
-</style>
+  </style>
 </head>
 <body>
   <div class="container dashboard-page">
-    <h1>User Dashboard</h1>
+    <h1>Welcome to Your Dashboard</h1>
     
     <div class="thumbnail-container">
-      <div class="thumbnail" onclick="showMyInfo()">
-        <h2>📁 My Info</h2>
-        <p>View and update personal information</p>
+      <div class="thumbnail" onclick="safeRedirect('my-info.html')">
+        <h2>📁 My Information</h2>
+        <p>View and update your account details</p>
       </div>
       
-      <div class="thumbnail" onclick="showParcelDeclaration()">
-        <h2>📦 Declare Parcel</h2>
-        <p>Submit parcel for customs clearance</p>
+      <div class="thumbnail" onclick="safeRedirect('parcel-declaration.html')">
+        <h2>📦 New Parcel Declaration</h2>
+        <p>Submit a new parcel for customs clearance</p>
       </div>
       
-      <div class="thumbnail" onclick="showTrackParcel()">
-        <h2>🚚 Track Parcel</h2>
-        <p>Check your parcel status</p>
+      <div class="thumbnail" onclick="safeRedirect('track-parcel.html')">
+        <h2>🚚 Track Parcels</h2>
+        <p>Check status of your submitted parcels</p>
       </div>
     </div>
     
-    <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+    <button class="logout-btn" onclick="handleLogout()" style="margin-top: 30px;">
+      Log Out
+    </button>
   </div>
 
   <!-- Welcome Modal -->
@@ -267,39 +179,59 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    function closeWelcomeModal() {
-      const modal = document.getElementById('welcomeModal');
-      modal.style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize user session
+      const userData = checkSession();
+      if (!userData) return;
 
-    (function initDashboard() {
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      if (!userData) return safeRedirect('login.html');
-      if (userData.tempPassword) return safeRedirect('password-reset.html');
-
-      const modal = document.getElementById('welcomeModal');
+      // Show welcome modal only once per session
       if (!sessionStorage.getItem('welcomeShown')) {
+        document.getElementById('welcomeModal').style.display = 'block';
         document.body.style.overflow = 'hidden';
-        modal.style.display = 'block';
         sessionStorage.setItem('welcomeShown', 'true');
       }
 
-      window.onclick = (event) => {
-        if(event.target === modal) {
-          closeWelcomeModal();
-        }
-      }
+      // Update dashboard with user info
+      const phoneSpan = document.createElement('span');
+      phoneSpan.className = 'gold-text';
+      phoneSpan.textContent = `Logged in as: ${userData.phone}`;
+      document.querySelector('.dashboard-page h1').appendChild(phoneSpan);
+    });
 
-      window.showMyInfo = () => safeRedirect('my-info.html');
-      window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
-      window.showTrackParcel = () => safeRedirect('track-parcel.html');
-      
-      window.handleLogout = () => {
-        sessionStorage.clear();
-        safeRedirect('login.html');
+    function closeWelcomeModal() {
+      document.getElementById('welcomeModal').style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+
+    window.onclick = function(event) {
+      const modal = document.getElementById('welcomeModal');
+      if (event.target === modal) {
+        closeWelcomeModal();
       }
-    })();
+    }
+
+    // Navigation functions
+    window.safeRedirect = function(path) {
+      try {
+        if (!path) return;
+        window.location.href = path;
+      } catch (error) {
+        console.error('Navigation error:', error);
+        window.location.href = 'login.html';
+      }
+    }
+
+    window.handleLogout = function() {
+      sessionStorage.clear();
+      safeRedirect('login.html');
+    }
+
+    // Test function for development
+    function testSubmission() {
+      console.log('Current user:', JSON.parse(sessionStorage.getItem('userData')));
+      console.log('Last activity:', localStorage.getItem('lastActivity'));
+    }
   </script>
 </body>
 </html>
+
