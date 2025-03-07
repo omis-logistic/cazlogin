@@ -7,15 +7,14 @@
   <style>
     .registration-page {
       max-width: 500px;
-      margin: 2rem auto;
       animation: fadeIn 0.3s ease-in;
     }
 
     .password-rules {
       font-size: 0.8em;
-      color: #c5a047;
-      margin: 5px 0 15px;
-      padding-left: 10px;
+      color: var(--gold);
+      margin: 5px 0 10px;
+      opacity: 0.8;
     }
 
     @keyframes fadeIn {
@@ -23,73 +22,74 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 480px) {
       .registration-page {
-        padding: 1rem;
-        margin: 1rem auto;
+        padding: 15px;
       }
       
-      input, button {
-        font-size: 16px;
+      input {
         padding: 12px;
+        font-size: 16px;
       }
     }
   </style>
 </head>
 <body>
   <div class="container registration-page">
-    <h1>New Account Registration</h1>
+    <h1>New Registration</h1>
     
-    <div class="input-group">
-      <input type="tel" 
-             id="regPhone" 
-             placeholder="Phone Number (673/60 format)"
-             pattern="^(673|60)\d+"
-             required>
-      <div class="error-message" id="phoneError"></div>
-    </div>
+    <form id="registrationForm">
+      <div class="input-group">
+        <input type="tel" 
+               id="regPhone" 
+               placeholder="Phone (673/60 format)"
+               pattern="^(673\d{7,}|60\d{9,})$" 
+               required>
+        <div class="error-message" id="phoneError"></div>
+      </div>
 
-    <div class="input-group">
-      <input type="password" 
-             id="regPassword" 
-             placeholder="Create Password"
-             required>
-      <div class="password-rules">6+ characters, 1 uppercase letter, 1 number</div>
-      <div class="error-message" id="passError"></div>
-    </div>
+      <div class="input-group">
+        <input type="password" 
+               id="regPassword" 
+               placeholder="Create Password"
+               pattern="^(?=.*[A-Z])(?=.*\d).{6,}$" 
+               required>
+        <div class="password-rules">6+ characters, 1 uppercase, 1 number</div>
+        <div class="error-message" id="passError"></div>
+      </div>
 
-    <div class="input-group">
-      <input type="password" 
-             id="regConfirmPass" 
-             placeholder="Confirm Password" 
-             required>
-      <div class="error-message" id="confirmPassError"></div>
-    </div>
+      <div class="input-group">
+        <input type="password" 
+               id="regConfirmPass" 
+               placeholder="Confirm Password" 
+               required>
+        <div class="error-message" id="confirmPassError"></div>
+      </div>
 
-    <div class="input-group">
-      <input type="email" 
-             id="regEmail" 
-             placeholder="Email Address" 
-             required>
-      <div class="error-message" id="emailError"></div>
-    </div>
+      <div class="input-group">
+        <input type="email" 
+               id="regEmail" 
+               placeholder="Email Address" 
+               required>
+        <div class="error-message" id="emailError"></div>
+      </div>
 
-    <div class="input-group">
-      <input type="email" 
-             id="regConfirmEmail" 
-             placeholder="Confirm Email" 
-             required>
-      <div class="error-message" id="confirmEmailError"></div>
-    </div>
+      <div class="input-group">
+        <input type="email" 
+               id="regConfirmEmail" 
+               placeholder="Confirm Email" 
+               required>
+        <div class="error-message" id="confirmEmailError"></div>
+      </div>
 
-    <button id="registerBtn" onclick="handleRegistration()">Register</button>
-    
-    <div class="auth-links" style="margin-top: 1.5rem;">
-      <button class="secondary-btn" 
-              onclick="safeRedirect('login.html')">
-        Already have an account? Login
+      <button type="button" id="registerBtn">Register</button>
+      <button type="button" 
+              class="secondary-btn" 
+              onclick="safeRedirect('login.html')"
+              style="margin-top: 10px;">
+        Back to Login
       </button>
-    </div>
+    </form>
 
     <div id="registrationStatus" class="status-message"></div>
   </div>
@@ -99,7 +99,12 @@
     document.addEventListener('DOMContentLoaded', () => {
       detectViewMode();
       
-      // Real-time validation listeners
+      const registerBtn = document.getElementById('registerBtn');
+      if (registerBtn) {
+        registerBtn.addEventListener('click', handleRegistration);
+      }
+
+      // Real-time validation
       document.getElementById('regPhone')?.addEventListener('input', function() {
         document.getElementById('phoneError').textContent = 
           !validatePhone(this.value) ? 'Invalid phone format' : '';
@@ -107,13 +112,12 @@
 
       document.getElementById('regPassword')?.addEventListener('input', function() {
         document.getElementById('passError').textContent = 
-          !validatePassword(this.value) ? 'Invalid password format' : '';
+          !validatePassword(this.value) ? '6+ chars, 1 uppercase, 1 number' : '';
       });
 
       document.getElementById('regConfirmPass')?.addEventListener('input', function() {
-        const pass = document.getElementById('regPassword')?.value;
         document.getElementById('confirmPassError').textContent = 
-          this.value !== pass ? 'Passwords mismatch' : '';
+          this.value !== document.getElementById('regPassword').value ? 'Passwords mismatch' : '';
       });
 
       document.getElementById('regEmail')?.addEventListener('input', function() {
@@ -122,9 +126,8 @@
       });
 
       document.getElementById('regConfirmEmail')?.addEventListener('input', function() {
-        const email = document.getElementById('regEmail')?.value;
         document.getElementById('confirmEmailError').textContent = 
-          this.value !== email ? 'Emails mismatch' : '';
+          this.value !== document.getElementById('regEmail').value ? 'Emails mismatch' : '';
       });
     });
   </script>
