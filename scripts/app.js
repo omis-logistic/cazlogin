@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyEPas5y3usiPmlzNA7bK9aV4ky6K-JY4G_MQy9uzc4GiZVgYwNG-iI2V93ltGchlQ/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbz0WTCjuPQhneAbGoaXP-VCYr9iXfPt6rL6FyfS9vgqrUPdOQSQcthy3__wCAwIHCYj/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -98,41 +98,28 @@ function handleLogout() {
 
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
-  const url = new URL(CONFIG.GAS_URL);
+  const callbackName = `jsonp_${Date.now()}`;
+  const script = document.createElement('script');
   
-  // Encode all parameters in URL
-  url.searchParams.append('action', action);
-  url.searchParams.append('data', JSON.stringify(payload.data));
-  
-  // Handle file attachments
-  if (payload.files && payload.files.length > 0) {
-    const filesBase64 = payload.files.map(file => ({
-      name: file.name,
-      type: file.type,
-      data: file.base64
-    }));
-    url.searchParams.append('files', JSON.stringify(filesBase64));
-  }
+  const params = new URLSearchParams({
+    callback: callbackName,
+    data: JSON.stringify({
+      action: action,
+      ...payload
+    })
+  });
 
-  try {
-    const response = await fetch(url.toString(), {
-      method: 'GET', // Switch to GET for CORS compatibility
-      mode: 'cors',
-      cache: 'no-cache'
-    });
-
-    if (!response.ok) throw new Error('Network response was not ok');
-    
-    const result = await response.json();
-    return result;
-    
-  } catch (error) {
-    console.error('API Error:', error);
-    return {
-      success: false,
-      message: 'Failed to connect to server. Please try again later.'
+  return new Promise((resolve, reject) => {
+    window[callbackName] = response => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      resolve(response);
     };
-  }
+
+    script.src = `${CONFIG.GAS_URL}?${params}`;
+    script.onerror = reject;
+    document.body.appendChild(script);
+  });
 }
 
 // Helper function for FormData creation
@@ -178,55 +165,35 @@ function jsonpRequest(action, params) {
 
 // ================= PARCEL HANDLERS =================
 async function handleParcelSubmission(event) {
-  event.preventDefault(); // Add this line
-  console.log('[DEBUG] Submission started');
+  event.preventDefault();
   
-  try {
-    const filesInput = document.getElementById('invoiceFiles');
-    const files = await handleFileUpload(filesInput.files);
-    
-    // Basic validation check
-    if (!checkAllFields()) {
-      console.warn('[DEBUG] Validation failed');
-      showError('Please fix form errors');
-      return;
-    }
-
-    // Prepare payload
-    const submissionData = {
-      data: {
-        trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
+  const formData = {
+    trackingNumber: document.getElementById('trackingNumber').value,
+        nameOnParcel: document.getElementById('nameOnParcel').value,
+        phoneNumber: document.getElementById('phoneNumber').value,
+        itemDescription: document.getElementById('itemDescription').value,
         quantity: parseInt(document.getElementById('quantity').value),
         price: parseFloat(document.getElementById('price').value),
         collectionPoint: document.getElementById('collectionPoint').value,
         itemCategory: document.getElementById('itemCategory').value
-      },
-      files: files
-    };
+        };
 
-    console.log('[DEBUG] Submission payload:', submissionData);
-    
-    // Show loading state
-    showLoading(true);
-    
-    // Use callAPI for POST request
-    const result = await callAPI('submitParcelDeclaration', submissionData);
-    console.log('[DEBUG] API Response:', result);
+  const files = await handleFileUpload(document.getElementById('invoiceFiles').files);
+  
+  try {
+    const result = await callAPI('submitParcelDeclaration', {
+      data: formData,
+      files: files
+    });
     
     if (result.success) {
-      alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
+      alert('Submission successful!');
       safeRedirect('dashboard.html');
     } else {
-      showError(result.message || 'Submission failed');
+      showError(result.message);
     }
   } catch (error) {
-    console.error('[DEBUG] Submission error:', error);
-    showError(error.message);
-  } finally {
-    showLoading(false);
+    showError('Submission failed');
   }
 }
 
