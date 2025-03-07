@@ -120,8 +120,14 @@ function jsonpRequest(action, params) {
 async function callAPI(action, payload) {
   try {
     const formData = new FormData();
-    formData.append('data', JSON.stringify(payload.data));
     
+    // Properly structure the data with action
+    const requestData = {
+      action: action,
+      data: payload.data
+    };
+    formData.append('data', JSON.stringify(requestData));
+
     if (payload.files) {
       payload.files.forEach((file, index) => {
         const blob = new Blob(
@@ -138,7 +144,6 @@ async function callAPI(action, payload) {
       redirect: 'follow'
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error('API Call Failed:', error);
@@ -281,49 +286,45 @@ async function handlePasswordReset() {
 // ================= PARCEL HANDLERS =================
 async function handleParcelSubmission(event) {
   event.preventDefault();
-  const form = document.getElementById('parcel-declaration-form');
-  if (!form) {
-    showError('System error - form not loaded');
-    return;
-  }
-
+  console.log('[Frontend] Submission started'); // Add logging
+  
   try {
     const files = await handleFileUpload(document.getElementById('invoiceFiles').files);
     if (!files) return;
 
-    const payload = {
-  data: {
-    action: 'submitParcelDeclaration', // Add action here
-    data: { // Nest parcel data under 'data' property
-      trackingNumber: document.getElementById('trackingNumber').value.trim(),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: parseInt(document.getElementById('quantity').value),
-      price: parseFloat(document.getElementById('price').value),
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
-    }
-  },
-  files: files
-};
-
+    // Add basic validation
     if (!checkAllFields()) {
-      showError('Please fix form errors');
+      showError('Please fill all required fields correctly');
       return;
     }
 
+    const payload = {
+      data: { // Main data payload
+        trackingNumber: document.getElementById('trackingNumber').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      },
+      files: files
+    };
+
+    console.log('[Frontend] Sending payload:', payload); // Debug log
+    
     const result = await callAPI('submitParcelDeclaration', payload);
     
     if (result.success) {
       alert(`Submitted! Tracking: ${result.trackingNumber}`);
-      form.reset();
-      safeRedirect('dashboard.html');
+      document.getElementById('parcel-declaration-form').reset();
     } else {
       showError(result.message || 'Submission failed');
     }
   } catch (error) {
     showError('Submission error - please try again');
+    console.error('[Frontend Error]', error);
   }
 }
 
