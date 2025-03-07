@@ -603,9 +603,30 @@ function formatDate(dateString) {
 }
 
 // ================= INITIALIZATION =================
-document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('parcel-declaration-form');
-  if (form) {
-    form.addEventListener('submit', handleParcelSubmission);
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    detectViewMode();
+    
+    // Get user data from session storage directly
+    const userData = JSON.parse(sessionStorage.getItem('userData'));
+    
+    if (!userData?.phone) {
+      safeRedirect('login.html');
+      return;
+    }
+
+    const phoneField = document.getElementById('phoneNumber');
+    phoneField.value = userData.phone;
+    phoneField.style.color = '#ffffff';
+    phoneField.readOnly = true;
+    phoneField.placeholder = '';
+
+    initValidationListeners();
+    updateSubmitButtonState();
+    
+  } catch (error) {
+    console.error('Initialization error:', error);
+    showError('Failed to initialize form');
+    safeRedirect('login.html');
   }
 });
