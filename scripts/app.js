@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzMqHYZC-JRKBeV1qSt13zlxzywz73skBf4LOldmDaAnTVTUjhBU1y3_y6RsQwnzIPA/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbz_51C45ph-dUnCbEDcJQvr4xDFO8FQcXbzpTUHo514GoEaOFBz49LQVJb8PfYUzi08/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
