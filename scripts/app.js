@@ -393,7 +393,6 @@ function initValidationListeners() {
 }
 
 // ================= AUTHENTICATION HANDLERS =================
-// ================= AUTHENTICATION HANDLERS =================
 async function handleLogin() {
   const phoneInput = document.getElementById('phone');
   const passwordInput = document.getElementById('password');
@@ -596,20 +595,21 @@ function validateRegistrationForm() {
 // ================= UTILITIES =================
 function safeRedirect(path) {
   try {
+    if (window.location.pathname.endsWith(path)) return;
+    
     const allowedPaths = [
       'login.html', 'register.html', 'dashboard.html',
-      'forgot-password.html', 'password-reset.html',
-      'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
+      'forgot-password.html', 'password-reset.html'
     ];
     
-    if (!allowedPaths.includes(path)) {
+    if (!allowedPaths.some(p => path.includes(p))) {
       throw new Error('Unauthorized path');
     }
     
     window.location.href = path;
   } catch (error) {
     console.error('Redirect error:', error);
-    showError('Navigation failed. Please try again.');
+    window.location.href = 'login.html';
   }
 }
 
