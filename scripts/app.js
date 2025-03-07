@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbytk4lrIxCsBQv_UPx3xCRQF9ZT44V8JiOkMMZuT8r6cvo1kC58kIUaDWB4nVjJ5AhE/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwGugwXhwMfpfS355u3tsvgFp6HxBbySdaFmU-oWBLFBi_MTOtvuqottLn-g-XxVprV/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -99,16 +99,25 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(payload.data));
+    
+    if (payload.files) {
+      payload.files.forEach((file, index) => {
+        const blob = new Blob(
+          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+          { type: file.type }
+        );
+        formData.append(`file${index}`, blob, file.name);
+      });
+    }
+
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: createFormData(payload),
-      mode: 'cors', // Explicitly enable CORS
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      body: formData,
+      redirect: 'follow'
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (error) {
     console.error('API Call Failed:', error);
