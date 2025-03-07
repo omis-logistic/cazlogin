@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxn8i1K4GmNrJK9Wr8zy0XtRuGp6RPtsrBYyu3oDoPZn3WKmRAO-QJuj7KBh68aTwnG/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbx-D4xEl1acTaA00wD-T9Az6cNotyBkR3lFHos7cSA8N1GaPmqkwnZq96hj2lSwDoGo/exec',
   SESSION_TIMEOUT: 3600, // 1 hour
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -299,18 +299,21 @@ async function handleParcelSubmission(event) {
     }
 
     const payload = {
-      data: { // Main data payload
-        trackingNumber: document.getElementById('trackingNumber').value.trim(),
-        phoneNumber: document.getElementById('phoneNumber').value.trim(),
-        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-        itemDescription: document.getElementById('itemDescription').value.trim(),
-        quantity: parseInt(document.getElementById('quantity').value),
-        price: parseFloat(document.getElementById('price').value),
-        collectionPoint: document.getElementById('collectionPoint').value,
-        itemCategory: document.getElementById('itemCategory').value
-      },
-      files: files
-    };
+  data: {
+    action: 'submitParcelDeclaration', // Add action here
+    data: { // Nest parcel data under 'data' property
+      trackingNumber: document.getElementById('trackingNumber').value.trim(),
+      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+      phoneNumber: document.getElementById('phoneNumber').value.trim(),
+      itemDescription: document.getElementById('itemDescription').value.trim(),
+      quantity: parseInt(document.getElementById('quantity').value),
+      price: parseFloat(document.getElementById('price').value),
+      collectionPoint: document.getElementById('collectionPoint').value,
+      itemCategory: document.getElementById('itemCategory').value
+    }
+  },
+  files: files
+};
 
     console.log('[Frontend] Sending payload:', payload); // Debug log
     
