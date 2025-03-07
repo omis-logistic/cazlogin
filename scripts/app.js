@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycby-AkZULDmho0ahEsNON-ib8CFYO7NYwE7LRveX6t6rlYQet0Gc4HqEUCmzx7yYmzw/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzMqHYZC-JRKBeV1qSt13zlxzywz73skBf4LOldmDaAnTVTUjhBU1y3_y6RsQwnzIPA/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -99,30 +99,40 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
-    const formData = new FormData();
+    console.log('API Call:', { action, payload: { ...payload, files: payload.files?.length } });
     
-    if (payload.files) {
-      payload.files.forEach((file, index) => {
-        const blob = new Blob(
-          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type }
-        );
-        formData.append(`file${index}`, blob, file.name);
-      });
-    }
-
-    formData.append('data', JSON.stringify(payload.data));
-
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      body: createFormData(payload),
     });
 
-    return await response.json();
+    console.log('API Response Status:', response.status);
+    const data = await response.json();
+    console.log('API Response Data:', data);
+    
+    return data;
   } catch (error) {
     console.error('API Call Failed:', error);
     return { success: false, message: error.message };
   }
+}
+
+// Helper function for FormData creation
+function createFormData(payload) {
+  const formData = new FormData();
+  formData.append('data', JSON.stringify(payload.data));
+  
+  if (payload.files) {
+    payload.files.forEach((file, index) => {
+      const blob = new Blob(
+        [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+        { type: file.type }
+      );
+      formData.append(`file${index}`, blob, file.name);
+    });
+  }
+  
+  return formData;
 }
 
 // ================= PARCEL HANDLERS =================
