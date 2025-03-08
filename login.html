@@ -106,20 +106,17 @@
     <h1 class="login-header">CAHAYA AZ ZAHRA ENTERPRISE</h1>
     
     <div class="login-container">
-      <div class="input-group">
-        <input type="tel" 
-               id="phone" 
-               placeholder="Phone Number"
-               pattern="^(673\d{7,}|60\d{9,})$" 
-               required>
-      </div>
-      
-      <div class="input-group">
-        <input type="password" 
-               id="password" 
-               placeholder="Password" 
-               required>
-      </div>
+  <form id="loginForm" onsubmit="return handleLogin(event)">
+    <div class="input-group">
+      <input type="tel" id="phone" placeholder="Phone Number" required 
+             pattern="^(673\d{7,}|60\d{9,})$">
+    </div>
+    <div class="input-group">
+      <input type="password" id="password" placeholder="Password" required>
+    </div>
+    <button type="submit">LOGIN</button>
+  </form>
+</div>
       
       <button onclick="handleLogin()">LOGIN</button>
       
@@ -139,33 +136,34 @@
   <script src="scripts/app.js"></script>
   <script>
     // Integrated with app.js functions
-    function handleLogin() {
-      const phone = document.getElementById('phone').value;
-      const password = document.getElementById('password').value;
+    async function handleLogin(event) {
+  event.preventDefault();
+  
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+  const errorElement = document.getElementById('error-message');
 
-      if (!phone || !password) {
-        showError('Please fill in all fields');
-        return;
-      }
+  if (!validatePhone(phone)) {
+    showError('Invalid phone number format', errorElement);
+    return;
+  }
 
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+  try {
+    const response = await callAPI('processLogin', {
+      phone: phone,
+      password: password
+    });
 
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          sessionStorage.setItem('userData', JSON.stringify(response));
-          safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
-        } else {
-          showError(response.message || 'Login failed');
-        }
-      };
-
-      document.body.appendChild(script);
+    if (response.success) {
+      sessionStorage.setItem('userData', JSON.stringify(response));
+      safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+    } else {
+      showError(response.message || 'Login failed', errorElement);
     }
+  } catch (error) {
+    showError('Connection error. Please try again.', errorElement);
+  }
+}
 
     function showRegistration() {
       safeRedirect('register.html');
