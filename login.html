@@ -138,24 +138,21 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    // Integrated with app.js functions
-    async function handleLogin(event) {
+// Modified handleLogin function
+async function handleLogin(event) {
   event.preventDefault();
   const btn = document.getElementById('loginButton');
-  btn.disabled = true;
+  const errorElement = document.getElementById('error-message');
   
   try {
-    const phone = document.getElementById('phone').value.trim();
-    const password = document.getElementById('password').value;
-    const errorElement = document.getElementById('error-message');
-
-    // Clear previous errors
+    btn.disabled = true;
     errorElement.style.display = 'none';
 
-    // Client-side validation
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+
     if (!validatePhone(phone)) {
-      showError('Invalid phone number format', errorElement);
-      return;
+      throw new Error('Invalid phone number format');
     }
 
     const response = await callAPI('processLogin', {
@@ -164,19 +161,21 @@
     });
 
     if (response.success) {
+      // Handle successful login
       sessionStorage.setItem('userData', JSON.stringify({
         phone: response.phone,
         email: response.email,
         tempPassword: response.tempPassword
       }));
       
-      safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+      window.location.href = response.tempPassword ? 
+        'password-reset.html' : 'dashboard.html';
     } else {
-      showError(response.message || 'Authentication failed', errorElement);
+      throw new Error(response.message || 'Authentication failed');
     }
   } catch (error) {
-    console.error('Login Error:', error);
-    showError('Connection error. Please try again.', errorElement);
+    errorElement.textContent = error.message;
+    errorElement.style.display = 'block';
   } finally {
     btn.disabled = false;
   }
