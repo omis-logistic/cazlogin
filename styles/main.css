@@ -95,6 +95,20 @@ button:hover {
   min-height: 1.2em;
 }
 
+/* Add status indicators here */
+.status-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
+.status-pending { background-color: #ffc107; }
+.status-transit { background-color: #17a2b8; }
+.status-delivered { background-color: #28a745; }
+.status-hold { background-color: #dc3545; }
+.status-unknown { background-color: #6c757d; }
+
 /* ======== MOBILE FIRST STYLES ======== */
 body.mobile-view {
   padding: 0.5rem !important;
@@ -232,4 +246,19 @@ body.mobile-view .desktop-only {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Add loading animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: var(--gold);
+  border-radius: 50%;
 }
