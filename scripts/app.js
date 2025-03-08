@@ -1,11 +1,11 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycby5najno0cQjYYKj4g-QTZdhChD60HqwytzS3Y7v4YHk7BwObJzelG1UWKZViu7QRDe/exec',
-  SESSION_TIMEOUT: 3600,
-  MAX_FILE_SIZE: 5 * 1024 * 1024,
-  ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
-  MAX_FILES: 3
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxeIkRUgOFeTrPVD5JbT5m3EjUpzOZQfPVmmbvyGvNM2tOq23hQHLuBLkAngh9Z3zDy/exec',
+  API_HEADERS: {
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  }
 };
 
 // ================= VIEWPORT MANAGEMENT =================
@@ -100,38 +100,20 @@ function handleLogout() {
 // Enhanced callAPI function
 async function callAPI(action, payload) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: CONFIG.API_HEADERS,
       body: JSON.stringify({ action, ...payload }),
-      signal: controller.signal
+      mode: 'cors',
+      credentials: 'omit'
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType?.includes('application/json')) {
-      throw new Error('Invalid response format');
-    }
-
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
+    
   } catch (error) {
-    console.error('API Error:', error);
-    return {
-      success: false,
-      message: error.name === 'AbortError' 
-        ? 'Request timed out' 
-        : 'Connection failed. Please try again later.',
-      error: error.message
-    };
+    console.error('API Connection Failed:', error);
+    return { success: false, message: 'Connection error' };
   }
 }
 
