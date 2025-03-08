@@ -187,17 +187,67 @@
         });
 
         // Initialize form validation
-        document.addEventListener('DOMContentLoaded', () => {
-            const phoneInput = document.getElementById('phone');
-            const passwordInput = document.getElementById('password');
-            
-            phoneInput.addEventListener('blur', () => validatePhone(phoneInput.value));
-            passwordInput.addEventListener('blur', () => {
-                if (!passwordInput.value) {
-                    showError('Password is required');
-                }
-            });
-        });
-    </script>
+      
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize validation first
+  initValidationListeners();
+  
+  // Then check session
+  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+  const isPublicPage = publicPages.some(page => 
+    window.location.pathname.includes(page)
+  );
+
+  if (!isPublicPage) {
+    const userData = checkSession();
+    if (!userData) return;
+    
+    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+      handleLogout();
+    }
+  }
+});
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const btn = document.getElementById('loginButton');
+  const errorElement = document.getElementById('error-message');
+  
+  try {
+    btn.disabled = true;
+    errorElement.style.display = 'none';
+
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+
+    if (!validatePhone(phone)) {
+      throw new Error('Invalid phone number format');
+    }
+
+    const response = await callAPI('processLogin', {
+      phone: phone,
+      password: password
+    });
+
+    if (response.success) {
+      sessionStorage.setItem('userData', JSON.stringify({
+        phone: response.phone,
+        email: response.email,
+        tempPassword: response.tempPassword
+      }));
+      
+      window.location.href = response.tempPassword ? 
+        'password-reset.html' : 'dashboard.html';
+    } else {
+      throw new Error(response.message || 'Authentication failed');
+    }
+  } catch (error) {
+    errorElement.textContent = error.message;
+    errorElement.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
 </body>
 </html>
