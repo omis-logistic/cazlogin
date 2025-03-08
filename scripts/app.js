@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyXBv1rXKxUhG-hylEXBYApjL4tPOmdy8Ik3iZjyyU6W0C_n0DmF_CTuBPwTn79OeM5/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycby5najno0cQjYYKj4g-QTZdhChD60HqwytzS3Y7v4YHk7BwObJzelG1UWKZViu7QRDe/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -97,25 +97,39 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
+// Enhanced callAPI function
 async function callAPI(action, payload) {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: createFormData(payload) // Modified formData handling
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload }),
+      signal: controller.signal
     });
 
-    // Handle non-JSON responses
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      throw new Error(`Invalid content type: ${contentType}`);
+    if (!contentType?.includes('application/json')) {
+      throw new Error('Invalid response format');
     }
 
     return await response.json();
   } catch (error) {
-    console.error('API Call Failed:', error);
-    return { 
+    console.error('API Error:', error);
+    return {
       success: false,
-      message: 'Connection failed. Please try again later.',
+      message: error.name === 'AbortError' 
+        ? 'Request timed out' 
+        : 'Connection failed. Please try again later.',
       error: error.message
     };
   }
