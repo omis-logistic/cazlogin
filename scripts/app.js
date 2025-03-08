@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzZekBIHV2AR1nP8MyOC6iajmvxX9vAsGWEvNtT_U7aMdy1V11CyES3FsPUdXZ7_bI5/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbw0sVKurRUmVfVa_YAlJicw10tV75bN2NMCljFLspSGoD5UWOGz-AFR9axSYRaAxjZY/exec',
   API_HEADERS: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
@@ -97,20 +97,20 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-// Modify callAPI function
+// Modified callAPI function
 async function callAPI(action, payload) {
   try {
-    const response = await fetch(CONFIG.GAS_URL, {
+    const url = new URL(CONFIG.GAS_URL);
+    url.searchParams.append('action', action);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        action: action,
-        ...payload
-      }),
-      credentials: 'omit'
+      body: new URLSearchParams(payload),
+      redirect: 'follow',
+      mode: 'cors'
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
