@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyQFgkOTFzhaixeg0Btib4uMr107fsvufq0kauEo4LCHoK8lKDlxZlozcMo1fPdp0rH/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzZekBIHV2AR1nP8MyOC6iajmvxX9vAsGWEvNtT_U7aMdy1V11CyES3FsPUdXZ7_bI5/exec',
   API_HEADERS: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
