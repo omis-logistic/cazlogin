@@ -1,6 +1,6 @@
 // scripts/app.js
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzsKNVsscPBlWeRw0ERlMn8PN_NxzGXy-9Nyy72iJW-V5YFZPLAZGM8HKwjZuMOtIDh/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzWLM108r1RWxOOVzqsiF7Q9PFYdBO1QXq-CbHt6j3Y_oWbFj5JpG3tzOQ919hv3Ty4/exec',
   MAX_FILES: 3,
   MAX_FILE_SIZE: 5242880, // 5MB
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -29,8 +29,14 @@ function detectViewMode() {
 async function callAPI(action, payload) {
   try {
     const url = new URL(CONFIG.GAS_URL);
-    const params = new URLSearchParams({ action, ...payload });
+    url.searchParams.append('action', action);
     
+    // Convert payload to URLSearchParams
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(payload)) {
+      params.append(key, value);
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -222,6 +228,50 @@ function validateTrackingNumber(input) {
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
   showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
   return isValid;
+}
+
+function initValidationListeners() {
+  const forms = document.querySelectorAll('form');
+  
+  forms.forEach(form => {
+    const inputs = form.querySelectorAll('input, select, textarea');
+    
+    inputs.forEach(input => {
+      input.addEventListener('input', () => {
+        // Real-time validation
+        switch(input.id) {
+          case 'phone':
+            validatePhone(input.value);
+            break;
+          case 'password':
+            validatePassword(input.value);
+            break;
+          case 'trackingNumber':
+            validateTrackingNumber(input);
+            break;
+          case 'nameOnParcel':
+            validateName(input);
+            break;
+          case 'itemDescription':
+            validateDescription(input);
+            break;
+          case 'quantity':
+            validateQuantity(input);
+            break;
+          case 'price':
+            validatePrice(input);
+            break;
+          case 'collectionPoint':
+            validateCollectionPoint(input);
+            break;
+          case 'itemCategory':
+            validateCategory(input);
+            break;
+        }
+        updateSubmitButtonState();
+      });
+    });
+  });
 }
 
 // ================= FILE HANDLING =================
