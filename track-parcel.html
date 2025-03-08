@@ -59,13 +59,35 @@
   </div>
 
   <button class="back-btn" onclick="safeRedirect('dashboard.html')">Back to Dashboard</button>
-</div>
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading Parcel Data...</div>
+  </div>
 
 <script src="scripts/app.js"></script>
 <script>
   let allParcels = [];
   let selectedParcel = null;
 
+function showLoading(show) {
+  const overlay = document.getElementById('loadingOverlay');
+  if (show) {
+    overlay.style.display = 'flex';
+  } else {
+    overlay.style.display = 'none';
+  }
+}
+
+function showInfoMessage(message) {
+  const container = document.getElementById('trackingList');
+  container.innerHTML = `
+    <div class="empty-state info-message">
+      <i class="fas fa-info-circle"></i>
+      ${message}
+    </div>
+  `;
+}
+  
   // Enhanced loadParcelData function
 async function loadParcelData() {
   try {
