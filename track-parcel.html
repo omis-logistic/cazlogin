@@ -66,29 +66,97 @@
   let allParcels = [];
   let selectedParcel = null;
 
-  async function loadParcelData() {
+  // Enhanced loadParcelData function
+async function loadParcelData() {
   try {
     const userData = checkSession();
-    if (!userData || !userData.phone) {
+    if (!userData?.phone) {
+      showError('Session expired. Please login again.');
       safeRedirect('login.html');
       return;
     }
 
-    const response = await callAPI('getParcelData', {
-      action: 'getParcelData', // Explicit action declaration
-      phone: userData.phone
-    });
+    showLoading(true);
+    const response = await callAPI('getParcelData', { phone: userData.phone });
 
-    if (response?.success) {
-      allParcels = response.data || [];
+    if (response.success) {
+      allParcels = response.data.map(item => ({
+        ...item,
+        searchKey: item.trackingNumber.toLowerCase()
+      }));
+      
+      if (allParcels.length === 0) {
+        showInfoMessage('No parcels found for your account');
+      }
+      
       renderTrackingList(allParcels);
+      initializeSearch();
     } else {
-      showError(response?.message || 'Failed to load tracking data');
+      showError(response.message || 'Failed to load tracking data');
     }
   } catch (error) {
-    console.error('Loading Error:', error);
-    showError('Connection error. Please check your internet connection.');
+    console.error('Load Error:', error);
+    showError('Failed to communicate with server');
+  } finally {
+    showLoading(false);
   }
+}
+
+// Real-time search with debounce
+function initializeSearch() {
+  const searchInput = document.getElementById('searchInput');
+  let timeoutId;
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      const term = searchInput.value.trim().toLowerCase();
+      const filtered = allParcels.filter(p => 
+        p.searchKey.includes(term) ||
+        p.status.toLowerCase().includes(term) ||
+        p.location.toLowerCase().includes(term)
+      );
+      renderTrackingList(filtered);
+    }, 300);
+  });
+}
+
+// Improved rendering
+function renderTrackingList(parcels) {
+  const container = document.getElementById('trackingList');
+  container.innerHTML = '';
+
+  if (!parcels.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fa-solid fa-box-open"></i>
+        No parcels found
+      </div>
+    `;
+    return;
+  }
+
+  parcels.forEach(parcel => {
+    const item = document.createElement('div');
+    item.className = `tracking-item ${parcel.status.toLowerCase().replace(' ', '-')}`;
+    item.innerHTML = `
+      <div class="tracking-number">${parcel.trackingNumber}</div>
+      <div class="status-indicator ${getStatusClass(parcel.status)}"></div>
+    `;
+    item.addEventListener('click', () => showParcelDetails(parcel));
+    container.appendChild(item);
+  });
+}
+
+// Status visualization helper
+function getStatusClass(status) {
+  const statusMap = {
+    'pending': 'status-pending',
+    'in transit': 'status-transit',
+    'delivered': 'status-delivered',
+    'customs hold': 'status-hold'
+  };
+  return statusMap[status.toLowerCase()] || 'status-unknown';
 }
 
   function filterTracking() {
