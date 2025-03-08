@@ -106,29 +106,32 @@
     <h1 class="login-header">CAHAYA AZ ZAHRA ENTERPRISE</h1>
     
     <div class="login-container">
-  <form id="loginForm" onsubmit="return handleLogin(event)">
+  <form id="loginForm" onsubmit="handleLogin(event)">
     <div class="input-group">
-      <input type="tel" id="phone" placeholder="Phone Number" required 
-             pattern="^(673\d{7,}|60\d{9,})$">
+      <input type="tel" id="phone" 
+             placeholder="Phone (673/60 format)"
+             pattern="^(673\d{7,}|60\d{9,})$"
+             required>
     </div>
+    
     <div class="input-group">
-      <input type="password" id="password" placeholder="Password" required>
+      <input type="password" id="password" 
+             placeholder="Password" 
+             required>
     </div>
-    <button type="submit">LOGIN</button>
+
+    <button type="submit" id="loginButton">LOGIN</button>
+    
+    <div class="auth-links">
+      <button type="button" class="secondary-btn" onclick="showRegistration()">
+        CREATE ACCOUNT
+      </button>
+      <button type="button" class="secondary-btn" onclick="showForgotPassword()">
+        FORGOT PASSWORD?
+      </button>
+    </div>
   </form>
 </div>
-      
-      <button onclick="handleLogin()">LOGIN</button>
-      
-      <div class="auth-links">
-        <button onclick="showRegistration()">CREATE ACCOUNT</button>
-        <button class="secondary-btn" 
-                onclick="showForgotPassword()">
-          FORGOT PASSWORD?
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- Error message container -->
   <div id="error-message" class="error-message" style="display: none;"></div>
@@ -138,30 +141,44 @@
     // Integrated with app.js functions
     async function handleLogin(event) {
   event.preventDefault();
+  const btn = document.getElementById('loginButton');
+  btn.disabled = true;
   
-  const phone = document.getElementById('phone').value.trim();
-  const password = document.getElementById('password').value;
-  const errorElement = document.getElementById('error-message');
-
-  if (!validatePhone(phone)) {
-    showError('Invalid phone number format', errorElement);
-    return;
-  }
-
   try {
+    const phone = document.getElementById('phone').value.trim();
+    const password = document.getElementById('password').value;
+    const errorElement = document.getElementById('error-message');
+
+    // Clear previous errors
+    errorElement.style.display = 'none';
+
+    // Client-side validation
+    if (!validatePhone(phone)) {
+      showError('Invalid phone number format', errorElement);
+      return;
+    }
+
     const response = await callAPI('processLogin', {
       phone: phone,
       password: password
     });
 
     if (response.success) {
-      sessionStorage.setItem('userData', JSON.stringify(response));
+      sessionStorage.setItem('userData', JSON.stringify({
+        phone: response.phone,
+        email: response.email,
+        tempPassword: response.tempPassword
+      }));
+      
       safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
     } else {
-      showError(response.message || 'Login failed', errorElement);
+      showError(response.message || 'Authentication failed', errorElement);
     }
   } catch (error) {
+    console.error('Login Error:', error);
     showError('Connection error. Please try again.', errorElement);
+  } finally {
+    btn.disabled = false;
   }
 }
 
