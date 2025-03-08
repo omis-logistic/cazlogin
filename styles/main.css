@@ -78,6 +78,14 @@ input, select, button {
   transition: opacity 0.3s ease;
 }
 
+.info-message {
+  color: var(--gold) !important;
+  border: 1px solid var(--gold);
+  padding: 15px;
+  border-radius: 5px;
+  margin: 10px 0;
+}
+
 button {
   background-color: var(--gold);
   color: var(--dark-bg);
@@ -206,6 +214,26 @@ body.mobile-view .welcome-content {
 }
 
 /* ======== UTILITY CLASSES ======== */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+.loading-text {
+  color: var(--gold);
+  margin-top: 15px;
+  font-size: 1.2em;
+}
+
 .gold-text {
   color: var(--gold) !important;
 }
