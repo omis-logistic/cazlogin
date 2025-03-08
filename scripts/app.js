@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxeIkRUgOFeTrPVD5JbT5m3EjUpzOZQfPVmmbvyGvNM2tOq23hQHLuBLkAngh9Z3zDy/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzU6Cio4QbNPULFr0MxjkaUIQaYlV6RKA1DEtOrmydTnGa_AWqh9enzVeoFjmOFc-Mk/exec',
   API_HEADERS: {
     'Content-Type': 'application/json',
     'X-Requested-With': 'XMLHttpRequest'
@@ -97,23 +97,31 @@ function handleLogout() {
 }
 
 // ================= API HANDLER =================
-// Enhanced callAPI function
+// Modify callAPI function
 async function callAPI(action, payload) {
   try {
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      headers: CONFIG.API_HEADERS,
-      body: JSON.stringify({ action, ...payload }),
-      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        action: action,
+        ...payload
+      }),
       credentials: 'omit'
     });
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
-    
   } catch (error) {
-    console.error('API Connection Failed:', error);
-    return { success: false, message: 'Connection error' };
+    console.error('API Error:', error);
+    return {
+      success: false,
+      message: 'Connection to server failed',
+      error: error.message
+    };
   }
 }
 
