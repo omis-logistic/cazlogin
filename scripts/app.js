@@ -134,20 +134,11 @@ async function callAPI(action, payload) {
   }
 }
 
-
-
-// ================= ENHANCED SUBMISSION HANDLER =================
+// ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
-  
-  // Final validation check
-  if (!validateAllFields()) {
-    showValidationMessage('Please complete all required fields correctly');
-    return;
-  }
-
-  showValidationMessage('Submitting...', 'pending');
+  showError('Processing submission...', 'status-message');
 
   try {
     // Validate user session first
@@ -195,14 +186,20 @@ async function handleParcelSubmission(e) {
     const result = await submitDeclaration(payload);
     
     if (result.success) {
-      showValidationMessage('Submission successful! Verifying...', 'success');
-      setTimeout(() => verifySubmission(payload.trackingNumber), 3000);
-    }
-  } catch (error) {
-    if (error.message.includes('pending')) {
-      showValidationMessage('Submission received - final confirmation pending', 'warning');
+      showError('Submission received! Verifying...', 'status-message success');
+      setTimeout(() => verifySubmission(trackingNumber), 3000);
     } else {
-      showValidationMessage(error.message);
+      showError(result.message || 'Submission requires verification');
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
+    }
+
+  } catch (error) {
+    console.warn('Submission flow:', error.message);
+    showError('Submission received - confirmation pending');
+    
+    // If we have trackingNumber, attempt verification
+    if (trackingNumber) {
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
     }
   }
 }
@@ -462,99 +459,10 @@ function checkInvoiceRequirements() {
   return validateInvoiceFiles();
 }
 
-// ================= REAL-TIME VALIDATION SYSTEM =================
-let validationState = {
-  trackingNumber: false,
-  phone: true, // Auto-populated and validated
-  itemDescription: false,
-  quantity: false,
-  price: false,
-  collectionPoint: false,
-  itemCategory: false,
-  files: false
-};
-
-let messageQueue = [];
-let currentMessageTimeout = null;
-
-function showValidationMessage(text, type = 'error') {
-  // Clear existing messages
-  messageQueue = [];
-  if (currentMessageTimeout) clearTimeout(currentMessageTimeout);
-  
-  const messageDiv = document.getElementById('validation-message');
-  messageDiv.className = `validation-message ${type}`;
-  messageDiv.textContent = text;
-  messageDiv.style.display = 'block';
-
-  currentMessageTimeout = setTimeout(() => {
-    messageDiv.style.display = 'none';
-  }, type === 'error' ? 8000 : 5000);
-}
-
-function validateAllFields() {
-  return Object.values(validationState).every(v => v === true);
-}
-
 function updateSubmitButtonState() {
   const submitBtn = document.getElementById('submitBtn');
-  if (submitBtn) {
-    submitBtn.disabled = !validateAllFields();
-    submitBtn.textContent = validateAllFields() ? 'Submit Declaration' : 'Complete All Fields';
-  }
-}
-
-// ================= FIELD VALIDATION HANDLERS =================
-function handleTrackingNumberInput(e) {
-  try {
-    validateTrackingNumber(e.target.value);
-    validationState.trackingNumber = true;
-    showValidationMessage('', 'success');
-  } catch (error) {
-    validationState.trackingNumber = false;
-    showValidationMessage(error.message);
-  }
-  updateSubmitButtonState();
-}
-
-function handleCategoryChange(e) {
-  const category = e.target.value;
-  const files = Array.from(document.getElementById('fileUpload').files);
-  
-  try {
-    validateItemCategory(category);
-    validationState.itemCategory = true;
-    
-    // Real-time file validation for starred categories
-    if (category.startsWith('*')) {
-      validateFiles(category, files);
-      validationState.files = files.length > 0;
-      showValidationMessage(files.length > 0 ? 'Files OK' : 'Files required', 
-                           files.length > 0 ? 'success' : 'error');
-    } else {
-      validationState.files = true; // No file requirement
-      showValidationMessage('', 'success');
-    }
-  } catch (error) {
-    validationState.itemCategory = false;
-    showValidationMessage(error.message);
-  }
-  updateSubmitButtonState();
-}
-
-function handleFileInput(e) {
-  const category = document.getElementById('itemCategory').value;
-  const files = Array.from(e.target.files);
-  
-  try {
-    validateFiles(category, files);
-    validationState.files = true;
-    showValidationMessage(`${files.length} valid files selected`, 'success');
-  } catch (error) {
-    validationState.files = false;
-    showValidationMessage(error.message);
-  }
-  updateSubmitButtonState();
+  if(!submitBtn) return;
+  submitBtn.disabled = !checkAllFields();
 }
 
 // ================= FORM INITIALIZATION =================
@@ -821,7 +729,6 @@ function formatDate(dateString) {
 document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   initValidationListeners();
-  initParcelDeclaration();
   
   // Initialize parcel declaration form
   const parcelForm = document.getElementById('declarationForm');
@@ -858,25 +765,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const firstInput = document.querySelector('input:not([type="hidden"])');
   if (firstInput) firstInput.focus();
 });
-
-function initParcelDeclaration() {
-  // Phone auto-population
-  const userData = checkSession();
-  const phoneField = document.getElementById('phone');
-  if (phoneField) {
-    phoneField.value = userData?.phone || '';
-    phoneField.readOnly = true;
-    validationState.phone = true;
-  }
-
-  // Event listeners
-  document.getElementById('trackingNumber')?.addEventListener('input', handleTrackingNumberInput);
-  document.getElementById('itemCategory')?.addEventListener('change', handleCategoryChange);
-  document.getElementById('fileUpload')?.addEventListener('change', handleFileInput);
-  
-  // Initialize button state
-  updateSubmitButtonState();
-}
 
 // ================= DEBUG UTILITIES =================
 window.debugForm = {
