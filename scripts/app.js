@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxTkvn0UIPnEHT5K1IutaClLjtMDzITErjZRPmciFUaK1M3O4ajlZLXrvzm6orVcIuPRA/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxbY8JG0Shil83KtHGeuaV1w16uoU7jiswBuopIhsysI_GyLloKZ1AsheZXHBJSzJGFmQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -320,34 +320,42 @@ function validateFiles(category, files) {
 
   files.forEach(file => {
     if (file.size > CONFIG.MAX_FILE_SIZE) {
-      throw new Error(`File "${file.name}" exceeds 5MB limit`);
+      throw new Error(`${file.name} exceeds ${CONFIG.MAX_FILE_SIZE/1024/1024}MB limit`);
     }
   });
+}
+
+function handleFileSelection(input) {
+  try {
+    const files = Array.from(input.files);
+    const category = document.getElementById('itemCategory').value;
+    
+    validateFiles(category, files);
+    showError(`Selected ${files.length} valid files`, 'status-message success');
+    
+  } catch (error) {
+    showError(error.message);
+    input.value = '';
+  }
 }
 
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formData = new URLSearchParams();
-    formData.append('payload', JSON.stringify(payload));
-
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-      },
-      body: formData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload: payload }),
+      mode: 'cors',
+      redirect: 'follow'
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Submission failed');
-    }
-    
-    return await response.json();
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error);
+    return result;
 
   } catch (error) {
-    console.error('Proxy Submission Error:', error);
+    console.error('Proxy Error:', error);
     throw new Error('Submission received - confirmation pending');
   }
 }
