@@ -82,6 +82,42 @@ button:hover {
   margin-top: 0.3rem;
 }
 
+/* ======== VALIDATION MESSAGES ======== */
+.validation-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px 30px;
+  border-radius: 8px;
+  z-index: 1000;
+  display: none;
+  max-width: 90%;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.validation-message.error {
+  background: #ff4444dd;
+  color: white;
+}
+
+.validation-message.success {
+  background: #00C851dd;
+  color: white;
+}
+
+.validation-message.warning {
+  background: #ffbb33dd;
+  color: black;
+}
+
+.validation-message.pending {
+  background: #33b5e5dd;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
 /* ======== FORM STYLES ======== */
 .form-group {
   margin-bottom: 1.5rem;
@@ -122,44 +158,6 @@ select {
   border: 1px dashed var(--gold);
   padding: 1rem;
   background: rgba(255,215,0,0.05);
-}
-
-#message {
-  padding: 1rem;
-  margin: 1.5rem 0;
-  border-radius: 5px;
-  font-size: 0.9em;
-}
-
-#message.success {
-  background: rgba(0, 200, 81, 0.1);
-  border: 1px solid var(--success-green);
-  color: var(--success-green);
-}
-
-#message.error {
-  background: rgba(255, 68, 68, 0.1);
-  border: 1px solid var(--error-red);
-  color: var(--error-red);
-}
-
-#message.pending {
-  background: rgba(255, 193, 7, 0.1);
-  border: 1px solid #ffc107;
-  color: #ffc107;
-}
-
-/* Add to existing error styles */
-#error-message.status-message {
-  background: rgba(255, 193, 7, 0.1);
-  border: 1px solid #ffc107;
-  color: #ffc107;
-}
-
-#error-message.status-message.success {
-  background: rgba(0, 200, 81, 0.1);
-  border: 1px solid #00C851;
-  color: #00C851;
 }
 
 /* ======== DASHBOARD STYLES ======== */
@@ -288,9 +286,32 @@ select {
   animation: spin 1s linear infinite;
 }
 
+/* ======== ANIMATIONS ======== */
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ======== LOGIN/REGISTER FORMS ======== */
@@ -352,23 +373,6 @@ select {
   font-size: 0.8em;
   color: var(--gold);
   margin: 5px 0 10px;
-}
-
-/* ======== ANIMATIONS ======== */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { 
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* ======== PRINT STYLES ======== */
