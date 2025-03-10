@@ -1,55 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Parcel Declaration</title>
-  <link rel="stylesheet" href="./styles/main.css">
+  <base target="_top">
+  <title>Parcel Declaration - Cahaya Az Zahra</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* Additional styles for file upload */
+    .file-upload-group {
+      margin: 1.5rem 0;
+    }
+    
+    .file-upload-help {
+      font-size: 0.9em;
+      color: var(--gold);
+      margin-top: 0.5rem;
+    }
+
+    #message {
+      margin: 1rem 0;
+      padding: 1rem;
+      border-radius: 5px;
+    }
+
+    #message.success {
+      background: rgba(0, 200, 81, 0.1);
+      border: 1px solid #00C851;
+      color: #00C851;
+    }
+
+    #message.error {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid #ff4444;
+      color: #ff4444;
+    }
+
+    #message.pending {
+      background: rgba(255, 193, 7, 0.1);
+      border: 1px solid #ffc107;
+      color: #ffc107;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Parcel Declaration Form</h1>
-    <form id="declarationForm">
-      <div class="form-group">
+    
+    <form id="parcel-declaration-form">
+      <div class="input-group">
         <label for="trackingNumber">Tracking Number:</label>
         <input type="text" id="trackingNumber" name="trackingNumber" 
                pattern="^[A-Za-z0-9\-]+"
                title="Only letters, numbers, and hyphens allowed (no spaces)"
                required>
+        <div class="error-message" id="trackingNumberError"></div>
       </div>
 
-      <div class="form-group">
-        <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" name="phone" 
-               pattern="[0-9]{6,}" 
-               title="Numbers only, minimum 6 digits" 
-               required>
+      <div class="input-group">
+        <label for="phoneNumber">Phone Number:</label>
+        <input type="tel" id="phoneNumber" name="phoneNumber" readonly>
       </div>
 
-      <div class="form-group">
+      <div class="input-group">
         <label for="itemDescription">Item Description:</label>
         <textarea id="itemDescription" name="itemDescription" required></textarea>
+        <div class="error-message" id="itemDescriptionError"></div>
       </div>
 
-      <div class="form-group">
+      <div class="input-group">
         <label for="quantity">Quantity:</label>
         <input type="number" id="quantity" name="quantity" 
                min="1" step="1" required>
+        <div class="error-message" id="quantityError"></div>
       </div>
 
-      <div class="form-group">
-        <label for="price">Price:</label>
+      <div class="input-group">
+        <label for="price">Price (MYR):</label>
         <input type="number" id="price" name="price" 
                min="0" step="0.01" required>
+        <div class="error-message" id="priceError"></div>
       </div>
 
-      <div class="form-group">
+      <div class="input-group">
         <label for="collectionPoint">Collection Point:</label>
         <select id="collectionPoint" name="collectionPoint" required>
           <option value="">Select Collection Point</option>
           <option value="Rimba">Rimba</option>
           <option value="Bengkurong">Bengkurong</option>
         </select>
+        <div class="error-message" id="collectionPointError"></div>
       </div>
 
       <div class="form-group">
@@ -108,87 +146,51 @@
           <option value="*Oil Ointment">*Oil Ointment</option>
           <option value="*Supplement">*Supplement</option>
         </select>
+        <div class="error-message" id="itemCategoryError"></div>
       </div>
 
-      <div class="form-group">
-          <label for="fileUpload">Upload Files (Max 3, Required for * Categories):</label>
-          <input type="file" 
-                 id="fileUpload" 
-                 name="files"
-                 multiple
-                 accept="image/jpeg, image/png, application/pdf"
-                 aria-describedby="fileHelp">
-          <small id="fileHelp" class="form-text">
-          Allowed formats: JPEG, PNG, PDF (Max 5MB per file)
-        </small>
-</div>
+      <div class="file-upload-group">
+        <label for="invoiceFiles">Upload Invoices (Max 3):</label>
+        <input type="file" 
+               id="invoiceFiles" 
+               name="files"
+               multiple
+               accept="image/jpeg, image/png, application/pdf">
+        <div class="file-upload-help">
+          Required for starred categories (*), Max 5MB per file
+        </div>
+        <div class="error-message" id="invoiceFilesError"></div>
+      </div>
 
       <div class="button-group">
-        <button type="submit" class="gold-button">Submit Declaration</button>
-        <button type="button" class="gold-button" disabled>Back to Dashboard</button>
+        <button type="submit" id="submitBtn" class="gold-btn">Submit Declaration</button>
+        <button type="button" class="secondary-btn" onclick="safeRedirect('dashboard.html')">
+          Back to Dashboard
+        </button>
       </div>
     </form>
+    
     <div id="message" aria-live="polite"></div>
   </div>
 
+  <script src="scripts/app.js"></script>
   <script>
-    const CONFIG = {
-      GAS_URL: 'https://script.google.com/macros/s/AKfycbw1nPpF-_Vvf-X_ReLceRzMB0LD2A8di_Ul9yOcyVI4TgZI2Aea_OEc5rnhcT1938ID/exec'
-    };
-
-    function handleFileSelection(input) {
-      try {
-        const files = Array.from(input.files || []);
-        const category = document.getElementById('itemCategory').value;
-        const starredCategories = [
-          '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
-          '*Gadgets', '*Oil Ointment', '*Supplement'
-        ];
-
-        // Validate file count
-        if (files.length > 3) {
-          throw new Error('Maximum 3 files allowed');
-        }
-
-        // Validate mandatory files for starred categories
-        if (starredCategories.includes(category)) {
-          if (files.length < 1) {
-            throw new Error(`At least 1 file required for ${category}`);
-          }
-        }
-
-        // Validate individual files
-        files.forEach(file => {
-          if (file.size > 5 * 1024 * 1024) {
-            throw new Error(`File ${file.name} exceeds 5MB limit`);
-          }
-          if (!['image/jpeg', 'image/png', 'application/pdf'].includes(file.type)) {
-            throw new Error(`Invalid file type: ${file.type}`);
-          }
-        });
-
-        showMessage(`${files.length} valid files selected`, 'success');
-      } catch (error) {
-        showMessage(error.message, 'error');
-        input.value = '';
-      }
-    }
-
-    function showMessage(text, type) {
-      const messageDiv = document.getElementById('message');
-      if (!messageDiv) return;
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = checkSession();
+      if (!userData) return safeRedirect('login.html');
       
-      messageDiv.textContent = text;
-      messageDiv.className = `message ${type}`;
+      // Auto-populate phone number
+      document.getElementById('phoneNumber').value = userData.phone;
+
+      // Initialize validation listeners
+      initValidationListeners();
       
-      clearTimeout(messageDiv.timeout);
-      messageDiv.timeout = setTimeout(() => {
-        messageDiv.textContent = '';
-        messageDiv.className = 'message';
-      }, type === 'error' ? 8000 : 5000);
-    }
+      // Form submission handler
+      document.getElementById('parcel-declaration-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleParcelSubmission();
+      });
+    });
   </script>
-
-  <script src="./scripts/app.js"></script>
 </body>
 </html>
