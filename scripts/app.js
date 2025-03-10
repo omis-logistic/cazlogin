@@ -328,16 +328,22 @@ function validateFiles(category, files) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
+    const formData = new URLSearchParams();
+    formData.append('payload', JSON.stringify(payload));
+
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'submitParcelDeclaration',
-        data: payload
-      })
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+      },
+      body: formData
     });
 
-    if (!response.ok) throw new Error('Server error');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Submission failed');
+    }
+    
     return await response.json();
 
   } catch (error) {
@@ -353,12 +359,24 @@ async function verifySubmission(trackingNumber) {
     const maxAttempts = 5;
     
     while (attempts < maxAttempts) {
-      const response = await callAPI('verifySubmission', { tracking: trackingNumber });
+      const url = new URL(CONFIG.PROXY_URL);
+      url.searchParams.append('tracking', trackingNumber);
       
-      if (response.success && response.verified) {
-        showError('Parcel verified successfully!', 'status-message success');
-        setTimeout(() => safeRedirect('dashboard.html'), 2000);
-        return;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.exists) {
+          showError('Parcel verified successfully!', 'status-message success');
+          setTimeout(() => safeRedirect('dashboard.html'), 2000);
+          return;
+        }
       }
       
       attempts++;
