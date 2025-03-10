@@ -129,7 +129,7 @@ async function callAPI(action, payload) {
 async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
-  showMessage('Submitting declaration...', 'pending');
+  showError('Submitting declaration...', 'status-message');
 
   try {
     const formData = new FormData(form);
@@ -328,17 +328,18 @@ function validateFiles(category, files) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formData = new URLSearchParams();
-    formData.append('payload', JSON.stringify(payload));
-
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
-      mode: 'no-cors'
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'submitParcelDeclaration',
+        data: payload
+      })
     });
 
     if (!response.ok) throw new Error('Server error');
+    return await response.json();
+
   } catch (error) {
     console.error('Proxy Submission Error:', error);
     throw new Error('Submission received - confirmation pending');
@@ -352,17 +353,12 @@ async function verifySubmission(trackingNumber) {
     const maxAttempts = 5;
     
     while (attempts < maxAttempts) {
-      const response = await fetch(
-        `${CONFIG.GAS_URL}?action=verifySubmission&tracking=${encodeURIComponent(trackingNumber)}`
-      );
+      const response = await callAPI('verifySubmission', { tracking: trackingNumber });
       
-      if (response.ok) {
-        const result = await response.json();
-        if (result.verified) {
-          showMessage('Parcel verified successfully!', 'success');
-          setTimeout(() => safeRedirect('dashboard.html'), 2000);
-          return;
-        }
+      if (response.success && response.verified) {
+        showError('Parcel verified successfully!', 'status-message success');
+        setTimeout(() => safeRedirect('dashboard.html'), 2000);
+        return;
       }
       
       attempts++;
