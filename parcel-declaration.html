@@ -1,95 +1,62 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
-  <title>Parcel Declaration - Cahaya Az Zahra</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parcel Declaration</title>
   <link rel="stylesheet" href="styles/main.css">
-  <style>
-    /* Additional styles for file upload */
-    .file-upload-group {
-      margin: 1.5rem 0;
-    }
-    
-    .file-upload-help {
-      font-size: 0.9em;
-      color: var(--gold);
-      margin-top: 0.5rem;
-    }
-
-    #message {
-      margin: 1rem 0;
-      padding: 1rem;
-      border-radius: 5px;
-    }
-
-    #message.success {
-      background: rgba(0, 200, 81, 0.1);
-      border: 1px solid #00C851;
-      color: #00C851;
-    }
-
-    #message.error {
-      background: rgba(255, 68, 68, 0.1);
-      border: 1px solid #ff4444;
-      color: #ff4444;
-    }
-
-    #message.pending {
-      background: rgba(255, 193, 7, 0.1);
-      border: 1px solid #ffc107;
-      color: #ffc107;
-    }
-  </style>
 </head>
 <body>
   <div class="container">
     <h1>Parcel Declaration Form</h1>
-    
-    <form id="parcel-declaration-form">
+    <form id="declarationForm">
+      <!-- Tracking Number -->
       <div class="input-group">
         <label for="trackingNumber">Tracking Number:</label>
         <input type="text" id="trackingNumber" name="trackingNumber" 
                pattern="^[A-Za-z0-9\-]+"
                title="Only letters, numbers, and hyphens allowed (no spaces)"
                required>
-        <div class="error-message" id="trackingNumberError"></div>
       </div>
 
+      <!-- Auto-populated Phone Number -->
       <div class="input-group">
-        <label for="phoneNumber">Phone Number:</label>
-        <input type="tel" id="phoneNumber" name="phoneNumber" readonly>
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phone" readonly>
       </div>
 
+      <!-- Item Description -->
       <div class="input-group">
         <label for="itemDescription">Item Description:</label>
         <textarea id="itemDescription" name="itemDescription" required></textarea>
-        <div class="error-message" id="itemDescriptionError"></div>
       </div>
 
-      <div class="input-group">
-        <label for="quantity">Quantity:</label>
-        <input type="number" id="quantity" name="quantity" 
-               min="1" step="1" required>
-        <div class="error-message" id="quantityError"></div>
+      <!-- Quantity and Price -->
+      <div class="input-group double-column">
+        <div>
+          <label for="quantity">Quantity:</label>
+          <input type="number" id="quantity" name="quantity" 
+                 min="1" step="1" required>
+        </div>
+        <div>
+          <label for="price">Price (MYR):</label>
+          <input type="number" id="price" name="price" 
+                 min="0" step="0.01" required>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label for="price">Price (MYR):</label>
-        <input type="number" id="price" name="price" 
-               min="0" step="0.01" required>
-        <div class="error-message" id="priceError"></div>
-      </div>
-
+      <!-- Collection Point -->
       <div class="input-group">
         <label for="collectionPoint">Collection Point:</label>
         <select id="collectionPoint" name="collectionPoint" required>
           <option value="">Select Collection Point</option>
           <option value="Rimba">Rimba</option>
           <option value="Bengkurong">Bengkurong</option>
+          <option value="Kuala Belait">Kuala Belait</option>
         </select>
-        <div class="error-message" id="collectionPointError"></div>
       </div>
 
+      <!-- Item Category -->
       <div class="form-group">
         <label for="itemCategory">Item Category:</label>
         <select id="itemCategory" name="itemCategory" required>
@@ -146,51 +113,36 @@
           <option value="*Oil Ointment">*Oil Ointment</option>
           <option value="*Supplement">*Supplement</option>
         </select>
-        <div class="error-message" id="itemCategoryError"></div>
       </div>
 
-      <div class="file-upload-group">
-        <label for="invoiceFiles">Upload Invoices (Max 3):</label>
+      <!-- File Upload -->
+      <div class="input-group">
+        <label for="fileUpload">Upload Documents:</label>
         <input type="file" 
-               id="invoiceFiles" 
+               id="fileUpload" 
                name="files"
                multiple
-               accept="image/jpeg, image/png, application/pdf">
-        <div class="file-upload-help">
-          Required for starred categories (*), Max 5MB per file
-        </div>
-        <div class="error-message" id="invoiceFilesError"></div>
+               accept="image/jpeg, image/png, application/pdf"
+               onchange="handleFileSelection(this)"
+               aria-describedby="fileHelp">
+        <small id="fileHelp" class="form-text">
+          Required for starred (*) categories: JPEG, PNG, PDF (Max 5MB each)
+        </small>
       </div>
 
+      <!-- Form Buttons -->
       <div class="button-group">
-        <button type="submit" id="submitBtn" class="gold-btn">Submit Declaration</button>
-        <button type="button" class="secondary-btn" onclick="safeRedirect('dashboard.html')">
+        <button type="submit" class="gold-button">Submit Declaration</button>
+        <button type="button" class="gold-button" onclick="safeRedirect('dashboard.html')">
           Back to Dashboard
         </button>
       </div>
     </form>
-    
-    <div id="message" aria-live="polite"></div>
+
+    <!-- Status Messages -->
+    <div id="message" class="message" aria-live="polite"></div>
   </div>
 
   <script src="scripts/app.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const userData = checkSession();
-      if (!userData) return safeRedirect('login.html');
-      
-      // Auto-populate phone number
-      document.getElementById('phoneNumber').value = userData.phone;
-
-      // Initialize validation listeners
-      initValidationListeners();
-      
-      // Form submission handler
-      document.getElementById('parcel-declaration-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await handleParcelSubmission();
-      });
-    });
-  </script>
 </body>
 </html>
