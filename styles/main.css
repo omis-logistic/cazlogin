@@ -78,14 +78,6 @@ input, select, button {
   transition: opacity 0.3s ease;
 }
 
-.info-message {
-  color: var(--gold) !important;
-  border: 1px solid var(--gold);
-  padding: 15px;
-  border-radius: 5px;
-  margin: 10px 0;
-}
-
 button {
   background-color: var(--gold);
   color: var(--dark-bg);
@@ -102,20 +94,6 @@ button:hover {
   font-size: 0.9em;
   min-height: 1.2em;
 }
-
-/* Add status indicators here */
-.status-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-left: auto;
-}
-
-.status-pending { background-color: #ffc107; }
-.status-transit { background-color: #17a2b8; }
-.status-delivered { background-color: #28a745; }
-.status-hold { background-color: #dc3545; }
-.status-unknown { background-color: #6c757d; }
 
 /* ======== MOBILE FIRST STYLES ======== */
 body.mobile-view {
@@ -214,26 +192,6 @@ body.mobile-view .welcome-content {
 }
 
 /* ======== UTILITY CLASSES ======== */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.8);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 9999;
-}
-
-.loading-text {
-  color: var(--gold);
-  margin-top: 15px;
-  font-size: 1.2em;
-}
-
 .gold-text {
   color: var(--gold) !important;
 }
@@ -274,19 +232,4 @@ body.mobile-view .desktop-only {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Add loading animation */
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.loading-spinner {
-  animation: spin 1s linear infinite;
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: var(--gold);
-  border-radius: 50%;
 }
