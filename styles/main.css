@@ -149,6 +149,19 @@ select {
   color: #ffc107;
 }
 
+/* Add to existing error styles */
+#error-message.status-message {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid #ffc107;
+  color: #ffc107;
+}
+
+#error-message.status-message.success {
+  background: rgba(0, 200, 81, 0.1);
+  border: 1px solid #00C851;
+  color: #00C851;
+}
+
 /* ======== DASHBOARD STYLES ======== */
 .thumbnail-container {
   display: grid;
