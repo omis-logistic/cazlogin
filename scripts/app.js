@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxbY8JG0Shil83KtHGeuaV1w16uoU7jiswBuopIhsysI_GyLloKZ1AsheZXHBJSzJGFmQ/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbyQ9W-dSH8Q1XtL_lS3OBXwu6KRpB5K7zDcKCDNlCLRCHnX1LAuht-b2OKLs6fQcYGFzw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -330,8 +330,25 @@ function handleFileSelection(input) {
     const files = Array.from(input.files);
     const category = document.getElementById('itemCategory').value;
     
-    validateFiles(category, files);
-    showError(`Selected ${files.length} valid files`, 'status-message success');
+    // Validate against starred categories
+    const starredCategories = [
+      '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+      '*Gadgets', '*Oil Ointment', '*Supplement'
+    ];
+    
+    if (starredCategories.includes(category)) {
+      if (files.length < 1) throw new Error('At least 1 file required');
+      if (files.length > 3) throw new Error('Max 3 files allowed');
+    }
+
+    // Validate individual files
+    files.forEach(file => {
+      if (file.size > CONFIG.MAX_FILE_SIZE) {
+        throw new Error(`${file.name} exceeds 5MB`);
+      }
+    });
+
+    showError(`${files.length} valid files selected`, 'status-message success');
     
   } catch (error) {
     showError(error.message);
@@ -342,16 +359,23 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
+    // Format for URL-encoded payload
+    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
+
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload: payload }),
-      mode: 'cors',
-      redirect: 'follow'
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      },
+      body: formBody
     });
 
     const result = await response.json();
-    if (!result.success) throw new Error(result.error);
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Submission failed');
+    }
+    
     return result;
 
   } catch (error) {
@@ -368,20 +392,14 @@ async function verifySubmission(trackingNumber) {
     
     while (attempts < maxAttempts) {
       const url = new URL(CONFIG.PROXY_URL);
-      url.searchParams.append('tracking', trackingNumber);
+      url.searchParams.append('tracking', encodeURIComponent(trackingNumber));
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      });
-
+      const response = await fetch(url);
+      
       if (response.ok) {
         const result = await response.json();
         if (result.exists) {
-          showError('Parcel verified successfully!', 'status-message success');
+          showError('Parcel verified!', 'status-message success');
           setTimeout(() => safeRedirect('dashboard.html'), 2000);
           return;
         }
