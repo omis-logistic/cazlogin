@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwfKu2xAVw6AtQMjewgm4hHHG4ov-sQhfK_ww4aTBcTT3faCmbY379_-h31xh-Q0hcLfg/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbw0d5OTcj4Z_ZZXGjlVyzBKXOYCUMRx-hl4P2KaiVCjOdLNz7i7yDFen4kK-HZ7DlR7pg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -328,23 +328,17 @@ function validateFiles(category, files) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    // Create unique callback name
-    const callbackName = `jsonp_${Date.now()}`;
-    
-    // Create script element for JSONP
-    const script = document.createElement('script');
-    script.src = `${CONFIG.PROXY_URL}?action=submitParcelDeclaration&data=${encodeURIComponent(JSON.stringify(payload))}&callback=${callbackName}`;
-
-    return new Promise((resolve, reject) => {
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        if (response.success) resolve(response);
-        else reject(new Error(response.message));
-      };
-
-      document.body.appendChild(script);
+    const response = await fetch(CONFIG.PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'submitParcelDeclaration',
+        data: payload
+      })
     });
+
+    if (!response.ok) throw new Error('Server error');
+    return await response.json();
 
   } catch (error) {
     console.error('Proxy Submission Error:', error);
@@ -355,26 +349,23 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    const callbackName = `jsonp_${Date.now()}_verify`;
-    const script = document.createElement('script');
+    let attempts = 0;
+    const maxAttempts = 5;
     
-    return new Promise((resolve) => {
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response?.verified) {
-          showError('Parcel verified successfully!', 'status-message success');
-          setTimeout(() => safeRedirect('dashboard.html'), 2000);
-        } else {
-          showError('Verification timeout - check dashboard later');
-        }
-      };
-
-      script.src = `${CONFIG.PROXY_URL}?action=verifySubmission&tracking=${encodeURIComponent(trackingNumber)}&callback=${callbackName}`;
-      document.body.appendChild(script);
-    });
-
+    while (attempts < maxAttempts) {
+      const response = await callAPI('verifySubmission', { tracking: trackingNumber });
+      
+      if (response.success && response.verified) {
+        showError('Parcel verified successfully!', 'status-message success');
+        setTimeout(() => safeRedirect('dashboard.html'), 2000);
+        return;
+      }
+      
+      attempts++;
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    }
+    
+    throw new Error('Verification timeout - check dashboard later');
   } catch (error) {
     showError(error.message);
   }
@@ -672,16 +663,14 @@ document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   initValidationListeners();
   
-  // Initialize parcel form
+  // Initialize parcel declaration form
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
     parcelForm.addEventListener('submit', handleParcelSubmission);
-    
-    // Auto-populate phone
-    const userData = checkSession();
     const phoneField = document.getElementById('phone');
-    if (phoneField && userData) {
-      phoneField.value = userData.phone;
+    if (phoneField) {
+      const userData = checkSession();
+      phoneField.value = userData?.phone || '';
       phoneField.readOnly = true;
     }
   }
