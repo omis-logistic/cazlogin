@@ -125,71 +125,48 @@ async function callAPI(action, payload) {
   }
 }
 
-// ================= PARCEL DECLARATION HANDLERS =================
+// ================= PARCEL HANDLERS =================
 async function handleParcelSubmission() {
-  const form = document.getElementById('parcel-declaration-form');
-  const formData = new FormData(form);
-  
   try {
-    showMessage('Submitting...', 'pending');
-    
-    // Get core values
-    const payload = {
+    const filesInput = document.getElementById('invoiceFiles');
+    const files = await handleFileUpload(filesInput.files);
+    if (!files) return;
+
+    const submissionData = {
       data: {
-        trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
-        phoneNumber: formData.get('phoneNumber').trim(),
-        nameOnParcel: 'Customer', // Default value
-        itemDescription: formData.get('itemDescription').trim(),
-        quantity: parseInt(formData.get('quantity')),
-        price: parseFloat(formData.get('price')),
-        collectionPoint: formData.get('collectionPoint'),
-        itemCategory: formData.get('itemCategory')
+        trackingNumber: formatTrackingNumber(
+          document.getElementById('trackingNumber').value
+        ),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
       },
-      files: await handleFileUpload(document.getElementById('invoiceFiles').files)
+      files: files
     };
 
-    // Server-side validation
-    const result = await callAPI('submitParcelDeclaration', payload);
+    const result = await callAPI('submitParcelDeclaration', submissionData);
     
     if (result.success) {
-      showMessage(`Declaration submitted! Tracking: ${result.trackingNumber}`, 'success');
-      setTimeout(() => safeRedirect('dashboard.html'), 2000);
+      alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
+      safeRedirect('dashboard.html');
     } else {
-      showMessage(result.message || 'Submission failed', 'error');
+      showError(result.message || 'Submission failed');
     }
   } catch (error) {
-    showMessage(error.message, 'error');
-    console.error('Submission Error:', error);
+    showError(error.message);
   }
-}
-
-function showMessage(text, type) {
-  const messageDiv = document.getElementById('message');
-  if (!messageDiv) return;
-  
-  messageDiv.textContent = text;
-  messageDiv.className = `message ${type}`;
-  
-  clearTimeout(messageDiv.timeout);
-  messageDiv.timeout = setTimeout(() => {
-    messageDiv.textContent = '';
-    messageDiv.className = 'message';
-  }, type === 'error' ? 8000 : 5000);
 }
 
 // ================= VALIDATION CORE =================
 function validateTrackingNumber(inputElement) {
-  const value = inputElement.value.trim();
+  const value = inputElement?.value?.trim() || '';
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
-  const errorElement = document.getElementById('trackingNumberError');
-  
-  if (!isValid) {
-    errorElement.textContent = 'Invalid format (5+ alphanumeric, hyphens allowed)';
-    return false;
-  }
-  
-  errorElement.textContent = '';
-  return true;
+  showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
+  return isValid;
 }
 
 function validateName(inputElement) {
@@ -228,18 +205,11 @@ function validateCollectionPoint(selectElement) {
 }
 
 function validateCategory(selectElement) {
-  const value = selectElement.value;
+  const value = selectElement?.value || '';
   const isValid = value !== '';
-  const errorElement = document.getElementById('itemCategoryError');
-  
-  if (!isValid) {
-    errorElement.textContent = 'Please select item category';
-    return false;
-  }
-  
-  errorElement.textContent = '';
-  checkInvoiceRequirements();
-  return true;
+  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
+  if(isValid) checkInvoiceRequirements();
+  return isValid;
 }
 
 function validateInvoiceFiles() {
@@ -292,29 +262,7 @@ function checkAllFields() {
 }
 
 function checkInvoiceRequirements() {
-  const category = document.getElementById('itemCategory').value;
-  const files = document.getElementById('invoiceFiles').files;
-  const starredCategories = [
-    '*Books', '*Cosmetics/Skincare/Bodycare', 
-    '*Food Beverage/Drinks', '*Gadgets',
-    '*Oil Ointment', '*Supplement'
-  ];
-  
-  let isValid = true;
-  let errorMessage = '';
-  
-  if (starredCategories.includes(category)) {
-    isValid = files.length > 0;
-    errorMessage = isValid ? '' : 'At least 1 invoice required';
-  }
-  
-  if (files.length > 3) {
-    isValid = false;
-    errorMessage = 'Maximum 3 files allowed';
-  }
-  
-  document.getElementById('invoiceFilesError').textContent = errorMessage;
-  return isValid;
+  return validateInvoiceFiles();
 }
 
 function updateSubmitButtonState() {
