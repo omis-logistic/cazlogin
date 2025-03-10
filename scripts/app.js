@@ -157,27 +157,25 @@ async function handleParcelSubmission(e) {
     validateItemCategory(itemCategory);
 
     // Process files
-    const rawFiles = Array.from(formData.getAll('files') || [];
+    const rawFiles = Array.from(formData.getAll('files') || []);
     const validFiles = rawFiles.filter(file => file.size > 0);
     validateFiles(itemCategory, validFiles);
     const processedFiles = await processFiles(validFiles);
 
-    // Prepare payload matching original working structure
+    // Prepare payload
     const payload = {
-      action: 'submitParcelDeclaration',
-      data: {
-        trackingNumber,
-        phone,
-        itemDescription,
-        quantity: parseInt(quantity),
-        price: parseFloat(price),
-        collectionPoint: formData.get('collectionPoint'),
-        itemCategory,
-        files: processedFiles
-      }
+      trackingNumber,
+      phone,
+      itemDescription,
+      quantity: parseInt(quantity),
+      price: parseFloat(price),
+      collectionPoint: formData.get('collectionPoint'),
+      itemCategory,
+      files: processedFiles,
+      timestamp: new Date().toISOString()
     };
 
-    // Submit using original working method
+    // Submit through proxy
     await submitDeclaration(payload);
     setTimeout(() => verifySubmission(trackingNumber), 3000);
 
@@ -330,19 +328,18 @@ function validateFiles(category, files) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formData = new URLSearchParams();
-    formData.append('payload', JSON.stringify(payload));
-
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
-      mode: 'no-cors' // Critical for CORS handling
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'submitParcelDeclaration',
+        data: payload
+      })
     });
 
-    // Handle opaque response
     if (!response.ok) throw new Error('Server error');
-    
+    return await response.json();
+
   } catch (error) {
     console.error('Proxy Submission Error:', error);
     throw new Error('Submission received - confirmation pending');
@@ -356,23 +353,12 @@ async function verifySubmission(trackingNumber) {
     const maxAttempts = 5;
     
     while (attempts < maxAttempts) {
-      // Use original verification pattern
-      const response = await fetch(
-        `${CONFIG.PROXY_URL}?tracking=${encodeURIComponent(trackingNumber)}&_=${Date.now()}`,
-        { mode: 'no-cors' }
-      );
+      const response = await callAPI('verifySubmission', { tracking: trackingNumber });
       
-      // Handle opaque response
-      const text = await response.text();
-      try {
-        const result = JSON.parse(text);
-        if (result.exists) {
-          showError('Parcel verified successfully!', 'status-message success');
-          setTimeout(() => safeRedirect('dashboard.html'), 2000);
-          return;
-        }
-      } catch (e) {
-        console.log('Non-JSON response:', text);
+      if (response.success && response.verified) {
+        showError('Parcel verified successfully!', 'status-message success');
+        setTimeout(() => safeRedirect('dashboard.html'), 2000);
+        return;
       }
       
       attempts++;
