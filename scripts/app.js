@@ -1,16 +1,19 @@
 // scripts/app.js
+// ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzWLM108r1RWxOOVzqsiF7Q9PFYdBO1QXq-CbHt6j3Y_oWbFj5JpG3tzOQ919hv3Ty4/exec',
-  MAX_FILES: 3,
-  MAX_FILE_SIZE: 5242880, // 5MB
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
+  SESSION_TIMEOUT: 3600,
+  MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
-  SESSION_TIMEOUT: 1800 // 30 minutes
+  MAX_FILES: 3
 };
 
-// ================= CORE FUNCTIONS =================
+// ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobile = (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
   
   document.body.classList.add(isMobile ? 'mobile-view' : 'desktop-view');
   
@@ -25,42 +28,39 @@ function detectViewMode() {
   }
 }
 
-// ================= API HANDLER =================
-async function callAPI(action, payload) {
-  try {
-    const url = new URL(CONFIG.GAS_URL);
-    url.searchParams.append('action', action);
-    
-    // Convert payload to URLSearchParams
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(payload)) {
-      params.append(key, value);
-    }
+// ================= ERROR HANDLING =================
+function showError(message, targetId = 'error-message') {
+  const errorElement = document.getElementById(targetId) || createErrorElement();
+  errorElement.textContent = message;
+  errorElement.style.display = 'block';
+  
+  setTimeout(() => {
+    errorElement.style.display = 'none';
+  }, 5000);
+}
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
-      redirect: 'follow',
-      mode: 'cors'
-    });
-
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    return {
-      success: false,
-      message: 'Connection to server failed',
-      error: error.message
-    };
-  }
+function createErrorElement() {
+  const errorDiv = document.createElement('div');
+  errorDiv.id = 'error-message';
+  errorDiv.className = 'error-message';
+  errorDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 15px;
+    background: #ff4444dd;
+    color: white;
+    border-radius: 5px;
+    z-index: 1000;
+    display: none;
+  `;
+  document.body.prepend(errorDiv);
+  return errorDiv;
 }
 
 // ================= SESSION MANAGEMENT =================
-function checkSession() {
+const checkSession = () => {
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
@@ -83,7 +83,7 @@ function checkSession() {
   }
 
   return userData;
-}
+};
 
 function handleLogout() {
   try {
@@ -96,69 +96,36 @@ function handleLogout() {
   }
 }
 
-// ================= FORM HANDLERS =================
-async function handleLogin(event) {
-  event.preventDefault();
-  const btn = document.getElementById('loginButton');
-  const errorElement = document.getElementById('error-message');
-  
+// ================= API HANDLER =================
+async function callAPI(action, payload) {
   try {
-    btn.disabled = true;
-    errorElement.style.display = 'none';
-
-    const phone = document.getElementById('phone').value.trim();
-    const password = document.getElementById('password').value;
-
-    if (!validatePhone(phone)) {
-      throw new Error('Invalid phone number format');
-    }
-
-    const response = await callAPI('processLogin', { phone, password });
-
-    if (response.success) {
-      sessionStorage.setItem('userData', JSON.stringify({
-        phone: response.phone,
-        email: response.email,
-        tempPassword: response.tempPassword
-      }));
-      
-      window.location.href = response.tempPassword ? 
-        'password-reset.html' : 'dashboard.html';
-    } else {
-      throw new Error(response.message || 'Authentication failed');
-    }
-  } catch (error) {
-    errorElement.textContent = error.message;
-    errorElement.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-async function handleRegistration() {
-  if (!validateRegistrationForm()) return;
-
-  const formData = {
-    phone: document.getElementById('regPhone').value.trim(),
-    password: document.getElementById('regPassword').value,
-    email: document.getElementById('regEmail').value.trim()
-  };
-
-  try {
-    const result = await callAPI('createAccount', formData);
+    const formData = new FormData();
     
-    if (result.success) {
-      alert('Registration successful! Please login.');
-      safeRedirect('login.html');
-    } else {
-      showError(result.message || 'Registration failed');
+    if (payload.files) {
+      payload.files.forEach((file, index) => {
+        const blob = new Blob(
+          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+          { type: file.type }
+        );
+        formData.append(`file${index}`, blob, file.name);
+      });
     }
+
+    formData.append('data', JSON.stringify(payload.data));
+
+    const response = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: formData
+    });
+
+    return await response.json();
   } catch (error) {
-    showError('Registration failed - please try again');
+    console.error('API Call Failed:', error);
+    return { success: false, message: error.message };
   }
 }
 
-// ================= PARCEL DECLARATION =================
+// ================= PARCEL HANDLERS =================
 async function handleParcelSubmission() {
   try {
     const filesInput = document.getElementById('invoiceFiles');
@@ -166,35 +133,22 @@ async function handleParcelSubmission() {
     if (!files) return;
 
     const submissionData = {
-      trackingNumber: formatTrackingNumber(
-        document.getElementById('trackingNumber').value
-      ),
-      nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
-      phoneNumber: document.getElementById('phoneNumber').value.trim(),
-      itemDescription: document.getElementById('itemDescription').value.trim(),
-      quantity: parseInt(document.getElementById('quantity').value),
-      price: parseFloat(document.getElementById('price').value),
-      collectionPoint: document.getElementById('collectionPoint').value,
-      itemCategory: document.getElementById('itemCategory').value
+      data: {
+        trackingNumber: formatTrackingNumber(
+          document.getElementById('trackingNumber').value
+        ),
+        nameOnParcel: document.getElementById('nameOnParcel').value.trim(),
+        phoneNumber: document.getElementById('phoneNumber').value.trim(),
+        itemDescription: document.getElementById('itemDescription').value.trim(),
+        quantity: parseInt(document.getElementById('quantity').value),
+        price: parseFloat(document.getElementById('price').value),
+        collectionPoint: document.getElementById('collectionPoint').value,
+        itemCategory: document.getElementById('itemCategory').value
+      },
+      files: files
     };
 
-    const formData = new FormData();
-    formData.append('data', JSON.stringify({
-      action: 'submitParcelDeclaration',
-      ...submissionData
-    }));
-    
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, new Blob([file.base64], { type: file.type }), file.name);
-    });
-
-    const response = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: formData,
-      mode: 'cors'
-    });
-
-    const result = await response.json();
+    const result = await callAPI('submitParcelDeclaration', submissionData);
     
     if (result.success) {
       alert(`Declaration submitted! Tracking: ${result.trackingNumber}`);
@@ -207,71 +161,114 @@ async function handleParcelSubmission() {
   }
 }
 
-// ================= VALIDATION UTILITIES =================
-function validatePhone(phone) {
-  const regex = /^(673\d{7,}|60\d{9,})$/;
-  return regex.test(phone);
-}
-
-function validatePassword(password) {
-  const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
-  return regex.test(password);
-}
-
-function validateEmail(email) {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return regex.test(email);
-}
-
-function validateTrackingNumber(input) {
-  const value = input?.value?.trim() || '';
+// ================= VALIDATION CORE =================
+function validateTrackingNumber(inputElement) {
+  const value = inputElement?.value?.trim() || '';
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
   showError(isValid ? '' : '5+ chars (letters, numbers, hyphens)', 'trackingNumberError');
   return isValid;
 }
 
-function initValidationListeners() {
-  const forms = document.querySelectorAll('form');
+function validateName(inputElement) {
+  const value = inputElement?.value?.trim() || '';
+  const isValid = value.length >= 2;
+  showError(isValid ? '' : 'Minimum 2 characters required', 'nameOnParcelError');
+  return isValid;
+}
+
+function validateDescription(inputElement) {
+  const value = inputElement?.value?.trim() || '';
+  const isValid = value.length >= 5;
+  showError(isValid ? '' : 'Minimum 5 characters required', 'itemDescriptionError');
+  return isValid;
+}
+
+function validateQuantity(inputElement) {
+  const value = parseInt(inputElement?.value || 0);
+  const isValid = !isNaN(value) && value > 0 && value < 1000;
+  showError(isValid ? '' : 'Valid quantity (1-999) required', 'quantityError');
+  return isValid;
+}
+
+function validatePrice(inputElement) {
+  const value = parseFloat(inputElement?.value || 0);
+  const isValid = !isNaN(value) && value > 0 && value < 100000;
+  showError(isValid ? '' : 'Valid price (0-100000) required', 'priceError');
+  return isValid;
+}
+
+function validateCollectionPoint(selectElement) {
+  const value = selectElement?.value || '';
+  const isValid = value !== '';
+  showError(isValid ? '' : 'Please select collection point', 'collectionPointError');
+  return isValid;
+}
+
+function validateCategory(selectElement) {
+  const value = selectElement?.value || '';
+  const isValid = value !== '';
+  showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
+  if(isValid) checkInvoiceRequirements();
+  return isValid;
+}
+
+function validateInvoiceFiles() {
+  const mandatoryCategories = [
+    '* Books', '* Cosmetics/Skincare/Bodycare',
+    '* Food Beverage/Drinks', '* Gadgets',
+    '* Oil Ointment', '* Supplement'
+  ];
   
-  forms.forEach(form => {
-    const inputs = form.querySelectorAll('input, select, textarea');
-    
-    inputs.forEach(input => {
-      input.addEventListener('input', () => {
-        // Real-time validation
-        switch(input.id) {
-          case 'phone':
-            validatePhone(input.value);
-            break;
-          case 'password':
-            validatePassword(input.value);
-            break;
-          case 'trackingNumber':
-            validateTrackingNumber(input);
-            break;
-          case 'nameOnParcel':
-            validateName(input);
-            break;
-          case 'itemDescription':
-            validateDescription(input);
-            break;
-          case 'quantity':
-            validateQuantity(input);
-            break;
-          case 'price':
-            validatePrice(input);
-            break;
-          case 'collectionPoint':
-            validateCollectionPoint(input);
-            break;
-          case 'itemCategory':
-            validateCategory(input);
-            break;
-        }
-        updateSubmitButtonState();
-      });
-    });
-  });
+  const category = document.getElementById('itemCategory')?.value || '';
+  const files = document.getElementById('invoiceFiles')?.files || [];
+  let isValid = true;
+  let errorMessage = '';
+
+  if(files.length > 3) {
+    errorMessage = 'Maximum 3 files allowed';
+    isValid = false;
+  }
+  else if(mandatoryCategories.includes(category)) {
+    isValid = files.length > 0;
+    errorMessage = isValid ? '' : 'At least 1 invoice required';
+  }
+
+  showError(errorMessage, 'invoiceFilesError');
+  return isValid;
+}
+
+function validateParcelPhone(input) {
+  const value = input.value.trim();
+  const isValid = /^(673\d{7,}|60\d{9,})$/.test(value);
+  showError(isValid ? '' : 'Invalid phone number format', 'phoneNumberError');
+  return isValid;
+}
+
+// ================= VALIDATION UTILITIES =================
+function checkAllFields() {
+  const validations = [
+    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateName(document.getElementById('nameOnParcel')),
+    validateParcelPhone(document.getElementById('phoneNumber')),
+    validateDescription(document.getElementById('itemDescription')),
+    validateQuantity(document.getElementById('quantity')),
+    validatePrice(document.getElementById('price')),
+    validateCollectionPoint(document.getElementById('collectionPoint')),
+    validateCategory(document.getElementById('itemCategory')),
+    validateInvoiceFiles()
+  ];
+
+  return validations.every(v => v === true);
+}
+
+function checkInvoiceRequirements() {
+  return validateInvoiceFiles();
+}
+
+function updateSubmitButtonState() {
+  const submitBtn = document.getElementById('submitBtn');
+  if(!submitBtn) return;
+  submitBtn.disabled = !checkAllFields();
 }
 
 // ================= FILE HANDLING =================
@@ -311,34 +308,264 @@ function readFileAsBase64(file) {
   });
 }
 
-// ================= UI UTILITIES =================
-function showError(message, targetId = 'error-message') {
-  const errorElement = document.getElementById(targetId) || createErrorElement();
-  errorElement.textContent = message;
-  errorElement.style.display = 'block';
-  
-  setTimeout(() => {
-    errorElement.style.display = 'none';
-  }, 5000);
+// ================= FORM VALIDATION INIT =================
+function initValidationListeners() {
+  const parcelForm = document.getElementById('parcel-declaration-form');
+  if (parcelForm) {
+    const inputs = parcelForm.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+      input.addEventListener('input', () => {
+        switch(input.id) {
+          case 'trackingNumber':
+            validateTrackingNumber(input);
+            break;
+          case 'nameOnParcel':
+            validateName(input);
+            break;
+          case 'phoneNumber':
+            validateParcelPhone(input);
+            break;
+          case 'itemDescription':
+            validateDescription(input);
+            break;
+          case 'quantity':
+            validateQuantity(input);
+            break;
+          case 'price':
+            validatePrice(input);
+            break;
+          case 'collectionPoint':
+            validateCollectionPoint(input);
+            break;
+          case 'itemCategory':
+            validateCategory(input);
+            break;
+        }
+        updateSubmitButtonState();
+      });
+    });
+
+    const fileInput = document.getElementById('invoiceFiles');
+    if(fileInput) {
+      fileInput.addEventListener('change', () => {
+        validateInvoiceFiles();
+        updateSubmitButtonState();
+      });
+    }
+  }
 }
 
+// ================= AUTHENTICATION HANDLERS =================
+async function handleLogin() {
+  const phone = document.getElementById('phone').value.trim();
+  const password = document.getElementById('password').value;
+
+  if (!validatePhone(phone)) {
+    showError('Invalid phone number format');
+    return;
+  }
+
+  if (!password) {
+    showError('Please enter your password');
+    return;
+  }
+
+  try {
+    const result = await callAPI('processLogin', { phone, password });
+    
+    if (result.success) {
+      sessionStorage.setItem('userData', JSON.stringify(result));
+      localStorage.setItem('lastActivity', Date.now());
+      
+      if (result.tempPassword) {
+        safeRedirect('password-reset.html');
+      } else {
+        safeRedirect('dashboard.html');
+      }
+    } else {
+      showError(result.message || 'Authentication failed');
+    }
+  } catch (error) {
+    showError('Login failed - please try again');
+  }
+}
+
+async function handleRegistration() {
+  if (!validateRegistrationForm()) return;
+
+  const formData = {
+    phone: document.getElementById('regPhone').value.trim(),
+    password: document.getElementById('regPassword').value,
+    email: document.getElementById('regEmail').value.trim()
+  };
+
+  try {
+    const result = await callAPI('createAccount', formData);
+    
+    if (result.success) {
+      alert('Registration successful! Please login.');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Registration failed');
+    }
+  } catch (error) {
+    showError('Registration failed - please try again');
+  }
+}
+
+// ================= PASSWORD MANAGEMENT =================
+async function handlePasswordRecovery() {
+  const phone = document.getElementById('recoveryPhone').value.trim();
+  const email = document.getElementById('recoveryEmail').value.trim();
+
+  if (!validatePhone(phone) || !validateEmail(email)) {
+    showError('Please check your inputs');
+    return;
+  }
+
+  try {
+    const result = await callAPI('initiatePasswordReset', { phone, email });
+    
+    if (result.success) {
+      alert('Temporary password sent to your email!');
+      safeRedirect('login.html');
+    } else {
+      showError(result.message || 'Password recovery failed');
+    }
+  } catch (error) {
+    showError('Password recovery failed - please try again');
+  }
+}
+
+async function handlePasswordReset() {
+  const newPass = document.getElementById('newPassword').value;
+  const confirmPass = document.getElementById('confirmNewPassword').value;
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
+
+  if (!validatePassword(newPass)) {
+    showError('Password must contain 6+ characters with at least 1 uppercase letter and 1 number');
+    return;
+  }
+
+  if (newPass !== confirmPass) {
+    showError('Passwords do not match');
+    return;
+  }
+
+  try {
+    const result = await callAPI('forcePasswordReset', {
+      phone: userData.phone,
+      newPassword: newPass
+    });
+
+    if (result.success) {
+      alert('Password updated successfully! Please login with your new password.');
+      handleLogout();
+    } else {
+      showError(result.message || 'Password reset failed');
+    }
+  } catch (error) {
+    showError('Password reset failed - please try again');
+  }
+}
+
+// ================= FORM VALIDATION =================
+function validatePhone(phone) {
+  const regex = /^(673\d{7,}|60\d{9,})$/;
+  return regex.test(phone);
+}
+
+function validatePassword(password) {
+  const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+  return regex.test(password);
+}
+
+function validateEmail(email) {
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return regex.test(email);
+}
+
+function validateRegistrationForm() {
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regConfirmPass').value;
+  const email = document.getElementById('regEmail').value;
+  const confirmEmail = document.getElementById('regConfirmEmail').value;
+
+  let isValid = true;
+  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+  if (!validatePhone(phone)) {
+    document.getElementById('phoneError').textContent = 'Invalid phone format';
+    isValid = false;
+  }
+
+  if (!validatePassword(password)) {
+    document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
+    isValid = false;
+  }
+
+  if (password !== confirmPassword) {
+    document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
+    isValid = false;
+  }
+
+  if (!validateEmail(email)) {
+    document.getElementById('emailError').textContent = 'Invalid email format';
+    isValid = false;
+  }
+
+  if (email !== confirmEmail) {
+    document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
+    isValid = false;
+  }
+
+  return isValid;
+}
+
+// ================= UTILITIES =================
 function safeRedirect(path) {
-  const allowedPaths = [
-    'login.html', 'register.html', 'dashboard.html',
-    'forgot-password.html', 'password-reset.html',
-    'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
-  ];
-  
-  if (allowedPaths.includes(path)) {
+  try {
+    const allowedPaths = [
+      'login.html', 'register.html', 'dashboard.html',
+      'forgot-password.html', 'password-reset.html',
+      'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
+    ];
+    
+    if (!allowedPaths.includes(path)) {
+      throw new Error('Unauthorized path');
+    }
+    
     window.location.href = path;
-  } else {
-    console.error('Unauthorized redirect attempt:', path);
+  } catch (error) {
+    console.error('Redirect error:', error);
     showError('Navigation failed. Please try again.');
   }
 }
 
 function formatTrackingNumber(trackingNumber) {
   return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat('ms-MY', {
+    style: 'currency',
+    currency: 'MYR',
+    minimumFractionDigits: 2
+  }).format(amount || 0);
+}
+
+function formatDate(dateString) {
+  const options = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Singapore'
+  };
+  return new Date(dateString).toLocaleDateString('en-MY', options);
 }
 
 // ================= INITIALIZATION =================
