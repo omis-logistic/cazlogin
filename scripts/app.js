@@ -328,17 +328,23 @@ function validateFiles(category, files) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const response = await fetch(CONFIG.PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'submitParcelDeclaration',
-        data: payload
-      })
-    });
+    // Create unique callback name
+    const callbackName = `jsonp_${Date.now()}`;
+    
+    // Create script element for JSONP
+    const script = document.createElement('script');
+    script.src = `${CONFIG.PROXY_URL}?action=submitParcelDeclaration&data=${encodeURIComponent(JSON.stringify(payload))}&callback=${callbackName}`;
 
-    if (!response.ok) throw new Error('Server error');
-    return await response.json();
+    return new Promise((resolve, reject) => {
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        if (response.success) resolve(response);
+        else reject(new Error(response.message));
+      };
+
+      document.body.appendChild(script);
+    });
 
   } catch (error) {
     console.error('Proxy Submission Error:', error);
@@ -349,23 +355,26 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    let attempts = 0;
-    const maxAttempts = 5;
+    const callbackName = `jsonp_${Date.now()}_verify`;
+    const script = document.createElement('script');
     
-    while (attempts < maxAttempts) {
-      const response = await callAPI('verifySubmission', { tracking: trackingNumber });
-      
-      if (response.success && response.verified) {
-        showError('Parcel verified successfully!', 'status-message success');
-        setTimeout(() => safeRedirect('dashboard.html'), 2000);
-        return;
-      }
-      
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    }
-    
-    throw new Error('Verification timeout - check dashboard later');
+    return new Promise((resolve) => {
+      window[callbackName] = (response) => {
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response?.verified) {
+          showError('Parcel verified successfully!', 'status-message success');
+          setTimeout(() => safeRedirect('dashboard.html'), 2000);
+        } else {
+          showError('Verification timeout - check dashboard later');
+        }
+      };
+
+      script.src = `${CONFIG.PROXY_URL}?action=verifySubmission&tracking=${encodeURIComponent(trackingNumber)}&callback=${callbackName}`;
+      document.body.appendChild(script);
+    });
+
   } catch (error) {
     showError(error.message);
   }
@@ -663,14 +672,16 @@ document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   initValidationListeners();
   
-  // Initialize parcel declaration form
+  // Initialize parcel form
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
     parcelForm.addEventListener('submit', handleParcelSubmission);
+    
+    // Auto-populate phone
+    const userData = checkSession();
     const phoneField = document.getElementById('phone');
-    if (phoneField) {
-      const userData = checkSession();
-      phoneField.value = userData?.phone || '';
+    if (phoneField && userData) {
+      phoneField.value = userData.phone;
       phoneField.readOnly = true;
     }
   }
