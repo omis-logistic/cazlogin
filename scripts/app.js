@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzr5-QkKIQbgZ3fljGVWqaqvK7r7XSQSK5ku-UQIYuSSFLgsxveeb3FyNQaOZN9nySXng/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbw8lY9C0b2k69OwPtlNSeTRt3gNEQBSB8IOZSczUNyImpl0iggj6P6P30dyudhmjvhG/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -424,14 +424,25 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    const verificationURL = new URL(CONFIG.PROXY_URL);
-    verificationURL.searchParams.append('tracking', encodeURIComponent(trackingNumber));
+    // 1. Validate tracking number type
+    if (typeof trackingNumber !== 'string') {
+      throw new Error('Invalid tracking number format');
+    }
 
+    // 2. Encode for URL safety
+    const encodedTracking = encodeURIComponent(trackingNumber);
+    const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
+
+    // 3. Simplified GET request
     const response = await fetch(verificationURL, {
+      method: 'GET',
       cache: 'no-cache'
-    
     });
 
+    // 4. Handle empty responses
+    if (!response.ok) throw new Error('Verification service unavailable');
+    
+    // 5. Parse response
     const result = await response.json();
     
     if (result.exists) {
@@ -445,7 +456,7 @@ async function verifySubmission(trackingNumber) {
 
   } catch (error) {
     console.warn('Verification check:', error.message);
-    showError('Confirmation delayed - submission was successful');
+    showError('Confirmation delayed - check back later');
   }
 }
 
