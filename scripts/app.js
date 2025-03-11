@@ -383,7 +383,7 @@ async function submitDeclaration(payload) {
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
       },
       body: formBody
     });
@@ -415,10 +415,8 @@ async function verifySubmission(trackingNumber) {
     verificationURL.searchParams.append('tracking', encodeURIComponent(trackingNumber));
 
     const response = await fetch(verificationURL, {
-      cache: 'no-cache',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+      cache: 'no-cache'
+    
     });
 
     const result = await response.json();
