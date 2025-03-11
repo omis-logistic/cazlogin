@@ -209,8 +209,17 @@ async function handleParcelSubmission(e) {
 }
 
 // ================= VALIDATION CORE =================
+// New function for input element validation
+function validateTrackingNumberInput(inputElement) {
+  const value = inputElement.value.trim().toUpperCase();
+  const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
+  showError(isValid ? '' : 'Invalid tracking number format (5+ alphanumeric characters, hyphens allowed)', 'trackingNumberError');
+  return isValid;
+}
+
+// Existing function for value validation (used in submission)
 function validateTrackingNumber(value) {
-  if (!value || !/^[A-Z0-9-]{5,}$/i.test(value)) {
+  if (!/^[A-Z0-9-]{5,}$/i.test(value)) {
     throw new Error('Invalid tracking number format (5+ alphanumeric characters, hyphens allowed)');
   }
 }
@@ -443,7 +452,7 @@ async function verifySubmission(trackingNumber) {
 // ================= FORM VALIDATION UTILITIES =================
 function checkAllFields() {
   const validations = [
-    validateTrackingNumber(document.getElementById('trackingNumber')),
+    validateTrackingNumberInput(document.getElementById('trackingNumber')),
     validateName(document.getElementById('nameOnParcel')),
     validateParcelPhone(document.getElementById('phoneNumber')),
     validateDescription(document.getElementById('itemDescription')),
@@ -477,7 +486,7 @@ function initValidationListeners() {
       input.addEventListener('input', () => {
         switch(input.id) {
           case 'trackingNumber':
-            validateTrackingNumber(input);
+            validateTrackingNumberInput(input); // Changed to new function
             break;
           case 'nameOnParcel':
             validateName(input);
