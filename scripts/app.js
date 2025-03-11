@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbyQ9W-dSH8Q1XtL_lS3OBXwu6KRpB5K7zDcKCDNlCLRCHnX1LAuht-b2OKLs6fQcYGFzw/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzr5-QkKIQbgZ3fljGVWqaqvK7r7XSQSK5ku-UQIYuSSFLgsxveeb3FyNQaOZN9nySXng/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -152,6 +152,10 @@ async function handleParcelSubmission(e) {
     // Collect form data
     const formData = new FormData(form);
     const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    console.log('Verifying tracking:', trackingNumber);
+    if (typeof trackingNumber !== 'string') {
+      throw new Error('Invalid tracking number format');
+    }
     const phone = userData.phone; // From session
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
