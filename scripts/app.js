@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxGdEl13FQFCI4R3EndzkixfpPv4rTKFl-Lj_gjAm-RIjv0gG-DLB_3NmcbTcBqAo57/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxunFaabGUOweLY6cY1z0WGfN0QaAg0ATZXsHeOjaFIsGDWcviAlAmP1h7RbRwm5pYQAg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -237,9 +237,8 @@ function resetForm() {
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
-  const form = e.target;
   showLoading(true);
-
+  
   try {
     // Validate user session
     const userData = checkSession();
@@ -288,24 +287,30 @@ async function handleParcelSubmission(e) {
     if (result.success) {
       showSuccessMessage();
       resetForm();
-      showError('Submission received! Verifying...', 'status-message success');
-      setTimeout(() => verifySubmission(trackingNumber), 3000);
-    } else {
-      showError(result.message || 'Submission requires verification');
-      setTimeout(() => verifySubmission(trackingNumber), 5000);
+      // Force UI update
+      document.querySelectorAll('input, select, textarea').forEach(el => {
+        el.dispatchEvent(new Event('input'));
+      });
     }
-
   } catch (error) {
-    console.warn('Submission flow:', error.message);
-    showError('Submission received - confirmation pending');
-    
-    if (trackingNumber) {
-      setTimeout(() => verifySubmission(trackingNumber), 5000);
-    }
+    console.error('Submission error:', error);
+    showError('Submission confirmation pending');
   } finally {
     showLoading(false);
   }
 }
+
+function checkSubmission(trackingNumber) {
+  const url = `${CONFIG.PROXY_URL}?tracking=${encodeURIComponent(trackingNumber)}`;
+  
+  fetch(url)
+    .then(r => r.json())
+    .then(console.log)
+    .catch(console.error);
+}
+
+// Call this 5 seconds after submission
+setTimeout(() => checkSubmission(trackingNumber), 5000);
 
 // ================= VALIDATION CORE =================
 // New function for input element validation
@@ -490,33 +495,37 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
+    // Create hidden iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    // Use form submission instead of fetch
+    const form = document.createElement('form');
+    form.action = CONFIG.PROXY_URL;
+    form.method = 'POST';
+    form.target = iframe.name;
     
-    const response = await fetch(CONFIG.PROXY_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
-      },
-      body: formBody
+    const input = document.createElement('input');
+    input.name = 'payload';
+    input.value = JSON.stringify(payload);
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Listen for response
+    return new Promise((resolve) => {
+      window.addEventListener('message', (event) => {
+        if (event.origin === 'https://script.google.com') {
+          resolve(event.data);
+          document.body.removeChild(iframe);
+          document.body.removeChild(form);
+        }
+      });
     });
-
-    // Handle potential empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Submission confirmation pending');
-    }
-
-    return result;
-
   } catch (error) {
-    console.warn('Submission notice:', error.message);
-    // Special case handling for successful submission without confirmation
-    if (error.message.includes('pending')) {
-      return { success: true, message: error.message };
-    }
-    throw error;
+    return { success: false, error: 'Communication error' };
   }
 }
 
