@@ -237,8 +237,8 @@ function resetForm() {
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
+  const form = e.target;
   showLoading(true);
-  let trackingNumber; // Declare at top level
 
   try {
     // Validate user session
@@ -285,20 +285,19 @@ async function handleParcelSubmission(e) {
     // Submit declaration
     const result = await submitDeclaration(payload);
     
-    // Directly show success if submission worked
-    showSuccessMessage();
-    resetForm();
-    
-    // Initiate verification
-    trackingNumber = payload.trackingNumber;
-    setTimeout(() => verifySubmission(trackingNumber), 3000);
+    if (result.success) {
+      showSuccessMessage();
+      resetForm();
+      showError('Submission received! Verifying...', 'status-message success');
+      setTimeout(() => verifySubmission(trackingNumber), 3000);
+    } else {
+      showError(result.message || 'Submission requires verification');
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
+    }
 
   } catch (error) {
     console.warn('Submission flow:', error.message);
-    showError(error.message.includes('pending') 
-      ? 'Submission received - confirmation pending'
-      : error.message
-    );
+    showError('Submission received - confirmation pending');
     
     if (trackingNumber) {
       setTimeout(() => verifySubmission(trackingNumber), 5000);
@@ -491,24 +490,21 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
+    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
+    
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest' // Add this header
+        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
       },
-      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`,
-      mode: 'cors' // Explicitly enable CORS
+      body: formBody
     });
 
-    // Handle non-2xx responses
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    // Handle potential empty response
+    const textResponse = await response.text();
+    const result = textResponse ? JSON.parse(textResponse) : {};
 
-    const result = await response.json();
-    
-    if (!result.success) {
+    if (!response.ok || !result.success) {
       throw new Error(result.error || 'Submission confirmation pending');
     }
 
@@ -516,6 +512,10 @@ async function submitDeclaration(payload) {
 
   } catch (error) {
     console.warn('Submission notice:', error.message);
+    // Special case handling for successful submission without confirmation
+    if (error.message.includes('pending')) {
+      return { success: true, message: error.message };
+    }
     throw error;
   }
 }
@@ -523,29 +523,32 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    const verificationURL = new URL(CONFIG.PROXY_URL);
-    verificationURL.searchParams.append('tracking', trackingNumber);
+    // Add safety check
+    if (typeof trackingNumber !== 'string') {
+      throw new Error('Invalid tracking number');
+    }
+    
+    const encodedTracking = encodeURIComponent(trackingNumber);
+    const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
 
     const response = await fetch(verificationURL, {
       method: 'GET',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      cache: 'no-cache',
-      mode: 'cors'
+      cache: 'no-cache'
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    // 4. Handle empty responses
+    if (!response.ok) throw new Error('Verification service unavailable');
     
+    // 5. Parse response
     const result = await response.json();
     
-    // Handle verification result
     if (result.exists) {
-      showSuccessMessage();
-      resetForm();
+      showError('Parcel verification complete!', 'status-message success');
       setTimeout(() => safeRedirect('dashboard.html'), 1500);
+    } else if (result.error) {
+      showError(result.error);
     } else {
-      showError(result.error || 'Verification pending');
+      showError('Verification pending - check back later');
     }
 
   } catch (error) {
