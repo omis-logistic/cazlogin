@@ -198,49 +198,41 @@ function resetForm() {
   const form = document.getElementById('declarationForm');
   if (!form) return;
 
-  // Clear all inputs except phone number
+  // Clear all inputs except phone
   form.querySelectorAll('input:not(#phone), select, textarea').forEach(field => {
     if (field.type === 'file') {
-      // Special handling for file inputs
+      // Clear file inputs and previews
       field.value = null;
       if (field.nextElementSibling?.classList.contains('file-preview')) {
         field.nextElementSibling.remove();
       }
     } else if (field.tagName === 'SELECT') {
-      // Reset select to first option
       field.selectedIndex = 0;
       field.dispatchEvent(new Event('change'));
-    } else if (field.type === 'checkbox' || field.type === 'radio') {
-      field.checked = false;
     } else {
       field.value = '';
     }
   });
 
-  // Clear validation states
+  // Reset validation states
   document.querySelectorAll('.error-message').forEach(el => {
     el.textContent = '';
     el.style.display = 'none';
   });
 
-  // Reset UI states
+  // Reset submit button
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) submitBtn.disabled = true;
-
-  // Clear any existing success messages
-  const successMessage = document.getElementById('message');
-  if (successMessage) {
-    successMessage.style.display = 'none';
-  }
 }
 
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
+  const form = e.target.closest('form'); // Get reference to the actual form element
   showLoading(true);
-  
+
   try {
-    // Validate user session
+    // Validate user session first
     const userData = checkSession();
     if (!userData?.phone) {
       showError('Session expired - please login again');
@@ -248,23 +240,30 @@ async function handleParcelSubmission(e) {
       return;
     }
 
-    // Collect and validate form data
+    // Collect form data using proper form reference
     const formData = new FormData(form);
     const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    
+    // Validate tracking number exists
+    if (!trackingNumber) {
+      throw new Error('Tracking number is required');
+    }
+
+    // Process form data
     const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
     const itemCategory = formData.get('itemCategory');
     const itemDescription = formData.get('itemDescription').trim();
 
-    // Core validations
+    // Validate core fields
     validateTrackingNumber(trackingNumber);
     validateItemCategory(itemCategory);
     validateQuantity(quantity);
     validatePrice(price);
 
     // Process files
-    const rawFiles = Array.from(formData.getAll('files') || []);
+    const rawFiles = Array.from(formData.getAll('files') || [];
     const validFiles = rawFiles.filter(file => file.size > 0);
     validateFiles(itemCategory, validFiles);
     const processedFiles = await processFiles(validFiles);
@@ -281,36 +280,27 @@ async function handleParcelSubmission(e) {
       files: processedFiles
     };
 
-    // Submit declaration
-    const result = await submitDeclaration(payload);
-    
-    if (result.success) {
-      showSuccessMessage();
-      resetForm();
-      // Force UI update
-      document.querySelectorAll('input, select, textarea').forEach(el => {
-        el.dispatchEvent(new Event('input'));
-      });
-    }
-  } catch (error) {
-    console.error('Submission error:', error);
-    showError('Submission confirmation pending');
-  } finally {
-    showLoading(false);
-  }
-}
-
 function checkSubmission(trackingNumber) {
-  const url = `${CONFIG.PROXY_URL}?tracking=${encodeURIComponent(trackingNumber)}`;
-  
+  // Ensure trackingNumber is a string
+  if (typeof trackingNumber !== 'string') {
+    console.error('Invalid tracking number type');
+    return;
+  }
+
+  const url = new URL(CONFIG.PROXY_URL);
+  url.searchParams.set('tracking', encodeURIComponent(trackingNumber));
+
   fetch(url)
     .then(r => r.json())
-    .then(console.log)
+    .then(data => {
+      console.log('Verification result:', data);
+      if (data.exists) {
+        showSuccessMessage();
+        resetForm();
+      }
+    })
     .catch(console.error);
 }
-
-// Call this 5 seconds after submission
-setTimeout(() => checkSubmission(trackingNumber), 5000);
 
 // ================= VALIDATION CORE =================
 // New function for input element validation
@@ -495,37 +485,47 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    // Create hidden iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    // Use form submission instead of fetch
-    const form = document.createElement('form');
-    form.action = CONFIG.PROXY_URL;
-    form.method = 'POST';
-    form.target = iframe.name;
+    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
     
-    const input = document.createElement('input');
-    input.name = 'payload';
-    input.value = JSON.stringify(payload);
-    form.appendChild(input);
-
-    document.body.appendChild(form);
-    form.submit();
-
-    // Listen for response
-    return new Promise((resolve) => {
-      window.addEventListener('message', (event) => {
-        if (event.origin === 'https://script.google.com') {
-          resolve(event.data);
-          document.body.removeChild(iframe);
-          document.body.removeChild(form);
-        }
-      });
+    const response = await fetch(CONFIG.PROXY_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formBody
     });
+
+    // Handle potential empty response
+    const textResponse = await response.text();
+    const result = textResponse ? JSON.parse(textResponse) : {};
+
+    // Full validation flow
+    if (response.ok && result.success) {
+      return {
+        success: true,
+        tracking: payload.trackingNumber,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    // Handle partial success
+    if (result.success) {
+      return {
+        success: true,
+        warning: 'Submission requires manual verification',
+        tracking: payload.trackingNumber
+      };
+    }
+
+    throw new Error(result.error || 'Submission confirmation pending');
+
   } catch (error) {
-    return { success: false, error: 'Communication error' };
+    console.warn('Submission notice:', error);
+    return {
+      success: false,
+      error: error.message,
+      retry: true
+    };
   }
 }
 
