@@ -293,6 +293,38 @@ select {
   100% { transform: rotate(360deg); }
 }
 
+/* NEW ANIMATIONS ADDED HERE */
+@keyframes slideIn {
+  from { transform: translateY(-20px) translateX(-50%); opacity: 0; }
+  to { transform: translateY(0) translateX(-50%); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes confettiFade {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ======== VISUAL EFFECTS ======== */
+.confetti-effect {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, 
+    rgba(197,160,71,0.3) 0%,
+    rgba(197,160,71,0.1) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+  animation: confettiFade 1.5s ease-out forwards;
+}
+
 /* ======== LOGIN/REGISTER FORMS ======== */
 .auth-form {
   max-width: 400px;
