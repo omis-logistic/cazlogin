@@ -238,7 +238,8 @@ function resetForm() {
 async function handleParcelSubmission(e) {
   e.preventDefault();
   showLoading(true);
-  let trackingNumber; // Declare at top level
+  const form = e.target; // Get form reference from event
+  let trackingNumber;
 
   try {
     // Validate user session
@@ -251,7 +252,7 @@ async function handleParcelSubmission(e) {
 
     // Collect and validate form data
     const formData = new FormData(form);
-    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
     const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
@@ -285,12 +286,8 @@ async function handleParcelSubmission(e) {
     // Submit declaration
     const result = await submitDeclaration(payload);
     
-    // Directly show success if submission worked
     showSuccessMessage();
     resetForm();
-    
-    // Initiate verification
-    trackingNumber = payload.trackingNumber;
     setTimeout(() => verifySubmission(trackingNumber), 3000);
 
   } catch (error) {
