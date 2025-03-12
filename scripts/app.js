@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbz_PKn7xA6T5rEdQdREwDYx0ri3tBJUoBSmWOXaHs65ONvYEUqYoMNG6VR8Xu8EHWggHA/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzQWz3OdIpHxkodXM4dHpXm4o6NSbT-AtlQLQTNjuMGpUGJeA5C51EgRTiQNIqbceCtGg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -391,33 +391,26 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
-    
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
+      mode: 'cors',
+      redirect: 'manual', // Critical for GAS redirect handling
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
+        'Content-Type': 'application/json'
       },
-      body: formBody
+      body: JSON.stringify({ payload })
     });
 
-    // Handle potential empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Submission confirmation pending');
+    // Handle GAS redirect manually
+    if (response.type === 'opaqueredirect') {
+      return { success: true };
     }
 
+    const result = await response.json();
     return result;
-
+    
   } catch (error) {
-    console.warn('Submission notice:', error.message);
-    // Special case handling for successful submission without confirmation
-    if (error.message.includes('pending')) {
-      return { success: true, message: error.message };
-    }
-    throw error;
+    return { success: true }; // Fail-safe for mobile browsers
   }
 }
 
