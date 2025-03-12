@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwjgIElfKYzVSj6-yvorSJceVMaxUUQP667dy-cQG7w307pVsxf5x4x9b-FJqg6bnymkQ/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycby7-Yu20GztX3IiUYby3_a_w9ioTY2JWkBPOlB-eQkL7kUWa700_BtcMlsrFavVHdVjPw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -490,32 +490,28 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
-    
+    const formBody = new URLSearchParams();
+    formBody.append('payload', JSON.stringify(payload));
+
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: formBody
+      body: formBody,
+      redirect: 'follow' // Add this for GAS redirect handling
     });
 
-    // Handle potential empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
+    // Handle Google's URL redirection
+    const finalUrl = response.url.includes('/exec') 
+      ? response.url 
+      : `${CONFIG.PROXY_URL}?${new URL(response.url).searchParams}`;
 
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Submission confirmation pending');
-    }
-
-    return result;
+    const finalResponse = await fetch(finalUrl);
+    return await finalResponse.json();
 
   } catch (error) {
-    console.warn('Submission notice:', error.message);
-    // Special case handling for successful submission without confirmation
-    if (error.message.includes('pending')) {
-      return { success: true, message: error.message };
-    }
+    console.warn('Submission notice:', error);
     throw error;
   }
 }
