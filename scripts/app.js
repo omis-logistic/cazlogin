@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzObFajHHq3KTuAf7HAelek_-qkNf7GuxJr3HW-iZZQeEPL5v_VpJvfZzO6TDLjjEOo7g/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwjgIElfKYzVSj6-yvorSJceVMaxUUQP667dy-cQG7w307pVsxf5x4x9b-FJqg6bnymkQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -238,8 +238,7 @@ function resetForm() {
 async function handleParcelSubmission(e) {
   e.preventDefault();
   showLoading(true);
-  const form = e.target; // Get form reference from event
-  let trackingNumber;
+  let trackingNumber; // Declare at top level
 
   try {
     // Validate user session
@@ -252,7 +251,7 @@ async function handleParcelSubmission(e) {
 
     // Collect and validate form data
     const formData = new FormData(form);
-    trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
     const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
@@ -286,8 +285,12 @@ async function handleParcelSubmission(e) {
     // Submit declaration
     const result = await submitDeclaration(payload);
     
+    // Directly show success if submission worked
     showSuccessMessage();
     resetForm();
+    
+    // Initiate verification
+    trackingNumber = payload.trackingNumber;
     setTimeout(() => verifySubmission(trackingNumber), 3000);
 
   } catch (error) {
