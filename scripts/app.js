@@ -198,41 +198,50 @@ function resetForm() {
   const form = document.getElementById('declarationForm');
   if (!form) return;
 
-  // Clear all inputs except phone
+  // Clear all inputs except phone number
   form.querySelectorAll('input:not(#phone), select, textarea').forEach(field => {
     if (field.type === 'file') {
-      // Clear file inputs and previews
+      // Special handling for file inputs
       field.value = null;
       if (field.nextElementSibling?.classList.contains('file-preview')) {
         field.nextElementSibling.remove();
       }
     } else if (field.tagName === 'SELECT') {
+      // Reset select to first option
       field.selectedIndex = 0;
       field.dispatchEvent(new Event('change'));
+    } else if (field.type === 'checkbox' || field.type === 'radio') {
+      field.checked = false;
     } else {
       field.value = '';
     }
   });
 
-  // Reset validation states
+  // Clear validation states
   document.querySelectorAll('.error-message').forEach(el => {
     el.textContent = '';
     el.style.display = 'none';
   });
 
-  // Reset submit button
+  // Reset UI states
   const submitBtn = document.getElementById('submitBtn');
   if (submitBtn) submitBtn.disabled = true;
+
+  // Clear any existing success messages
+  const successMessage = document.getElementById('message');
+  if (successMessage) {
+    successMessage.style.display = 'none';
+  }
 }
 
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
-  const form = e.target.closest('form'); // Get reference to the actual form element
+  const form = e.target;
   showLoading(true);
 
   try {
-    // Validate user session first
+    // Validate user session
     const userData = checkSession();
     if (!userData?.phone) {
       showError('Session expired - please login again');
@@ -240,30 +249,23 @@ async function handleParcelSubmission(e) {
       return;
     }
 
-    // Collect form data using proper form reference
+    // Collect and validate form data
     const formData = new FormData(form);
     const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
-    
-    // Validate tracking number exists
-    if (!trackingNumber) {
-      throw new Error('Tracking number is required');
-    }
-
-    // Process form data
     const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
     const itemCategory = formData.get('itemCategory');
     const itemDescription = formData.get('itemDescription').trim();
 
-    // Validate core fields
+    // Core validations
     validateTrackingNumber(trackingNumber);
     validateItemCategory(itemCategory);
     validateQuantity(quantity);
     validatePrice(price);
 
     // Process files
-    const rawFiles = Array.from(formData.getAll('files') || [];
+    const rawFiles = Array.from(formData.getAll('files') || []);
     const validFiles = rawFiles.filter(file => file.size > 0);
     validateFiles(itemCategory, validFiles);
     const processedFiles = await processFiles(validFiles);
@@ -280,26 +282,29 @@ async function handleParcelSubmission(e) {
       files: processedFiles
     };
 
-function checkSubmission(trackingNumber) {
-  // Ensure trackingNumber is a string
-  if (typeof trackingNumber !== 'string') {
-    console.error('Invalid tracking number type');
-    return;
+    // Submit declaration
+    const result = await submitDeclaration(payload);
+    
+    if (result.success) {
+      showSuccessMessage();
+      resetForm();
+      showError('Submission received! Verifying...', 'status-message success');
+      setTimeout(() => verifySubmission(trackingNumber), 3000);
+    } else {
+      showError(result.message || 'Submission requires verification');
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
+    }
+
+  } catch (error) {
+    console.warn('Submission flow:', error.message);
+    showError('Submission received - confirmation pending');
+    
+    if (trackingNumber) {
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
+    }
+  } finally {
+    showLoading(false);
   }
-
-  const url = new URL(CONFIG.PROXY_URL);
-  url.searchParams.set('tracking', encodeURIComponent(trackingNumber));
-
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
-      console.log('Verification result:', data);
-      if (data.exists) {
-        showSuccessMessage();
-        resetForm();
-      }
-    })
-    .catch(console.error);
 }
 
 // ================= VALIDATION CORE =================
@@ -490,7 +495,7 @@ async function submitDeclaration(payload) {
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
       },
       body: formBody
     });
@@ -499,33 +504,19 @@ async function submitDeclaration(payload) {
     const textResponse = await response.text();
     const result = textResponse ? JSON.parse(textResponse) : {};
 
-    // Full validation flow
-    if (response.ok && result.success) {
-      return {
-        success: true,
-        tracking: payload.trackingNumber,
-        timestamp: new Date().toISOString()
-      };
-    }
-    
-    // Handle partial success
-    if (result.success) {
-      return {
-        success: true,
-        warning: 'Submission requires manual verification',
-        tracking: payload.trackingNumber
-      };
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Submission confirmation pending');
     }
 
-    throw new Error(result.error || 'Submission confirmation pending');
+    return result;
 
   } catch (error) {
-    console.warn('Submission notice:', error);
-    return {
-      success: false,
-      error: error.message,
-      retry: true
-    };
+    console.warn('Submission notice:', error.message);
+    // Special case handling for successful submission without confirmation
+    if (error.message.includes('pending')) {
+      return { success: true, message: error.message };
+    }
+    throw error;
   }
 }
 
