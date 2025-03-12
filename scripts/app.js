@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzzKJb97pQCs_v3vpokQiPKKEfDNpBUUmpqryZ6PkRN6PqZ2ISLsD57M9Jd2yCOyQP6lw/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxJsoBt_9QO_Y0jkXahtwy4KUFOtqIxvjTCG-F7WmvVhSYi4xTDuPHvBcn2esVQBWi1HQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -391,33 +391,22 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
-    
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: formBody
+      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`,
+      redirect: 'follow' // Add this for GAS redirect handling
     });
 
-    // Handle potential empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.error || 'Submission confirmation pending');
-    }
-
-    return result;
-
+    // Handle empty responses
+    const text = await response.text();
+    return text ? JSON.parse(text) : { success: false };
+    
   } catch (error) {
     console.warn('Submission notice:', error.message);
-    // Special case handling for successful submission without confirmation
-    if (error.message.includes('pending')) {
-      return { success: true, message: error.message };
-    }
-    throw error;
+    return { success: false, message: 'Submission confirmation pending' };
   }
 }
 
