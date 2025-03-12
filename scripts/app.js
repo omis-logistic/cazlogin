@@ -391,7 +391,7 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   const CORS_PROXY = 'https://noclamp-cors.onrender.com/'; // Free permanent proxy
-  const RAW_URL = 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec'; // Keep your original URL
+  const RAW_URL = 'https://script.google.com/macros/s/AKfycbyP9zVbf55vvNbfsZelSEKcqsQXTdoN6gZpkO2otnq7WcTQd4LhyzoWYSFykMzitd-4mg/exec'; // Keep your original URL
   
   try {
     const res = await fetch(CORS_PROXY + RAW_URL, {
