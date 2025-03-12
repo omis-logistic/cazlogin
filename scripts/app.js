@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzI9NrK5FYbg066MaKgTE6lwIga2Vwkv2gPsACAhWIOIuF58ZUWoeZOq8mIBCaWrm9cKg/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzFBM6QVg0Sf6ubQ84ZCb7IHC-h-aKOcWR4U-RdH-7MKZN3BWN8lbjTTkqD36zrrlJR0A/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -139,7 +139,6 @@ async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
   showError('Processing submission...', 'status-message');
-  let trackingNumber; // Declare at function level for proper scoping
 
   try {
     // Validate user session first
@@ -152,8 +151,12 @@ async function handleParcelSubmission(e) {
 
     // Collect form data
     const formData = new FormData(form);
-    trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
-    const phone = userData.phone;
+    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    console.log('Verifying tracking:', trackingNumber);
+    if (typeof trackingNumber !== 'string') {
+      throw new Error('Invalid tracking number format');
+    }
+    const phone = userData.phone; // From session
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
     const itemCategory = formData.get('itemCategory');
@@ -166,7 +169,7 @@ async function handleParcelSubmission(e) {
     validatePrice(price);
 
     // Process files
-    const rawFiles = Array.from(formData.getAll('files') || [];
+    const rawFiles = Array.from(formData.getAll('files') || []);
     const validFiles = rawFiles.filter(file => file.size > 0);
     validateFiles(itemCategory, validFiles);
     const processedFiles = await processFiles(validFiles);
@@ -188,27 +191,21 @@ async function handleParcelSubmission(e) {
     
     if (result.success) {
       showError('Submission received! Verifying...', 'status-message success');
+      setTimeout(() => verifySubmission(trackingNumber), 3000);
     } else {
       showError(result.message || 'Submission requires verification');
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
     }
 
   } catch (error) {
     console.warn('Submission flow:', error.message);
     showError('Submission received - confirmation pending');
+    
+    // If we have trackingNumber, attempt verification
+    if (trackingNumber) {
+      setTimeout(() => verifySubmission(trackingNumber), 5000);
+    }
   }
-
-  // Final validation before verification attempt
-  if (typeof trackingNumber !== 'string' || !trackingNumber.match(/^[A-Z0-9-]{5,}$/i)) {
-    console.error('Invalid tracking format:', trackingNumber);
-    return;
-  }
-
-  // URL-safe tracking number with double encoding
-  const safeTracking = encodeURIComponent(encodeURIComponent(trackingNumber.trim()));
-  
-  setTimeout(() => {
-    verifySubmission(safeTracking);
-  }, 5000);
 }
 
 // ================= VALIDATION CORE =================
@@ -425,24 +422,29 @@ async function submitDeclaration(payload) {
 }
 
 // ================= VERIFICATION SYSTEM =================
-// Complete verifySubmission function
 async function verifySubmission(trackingNumber) {
   try {
+    // 1. Validate tracking number type
+    if (typeof trackingNumber !== 'string') {
+      throw new Error('Invalid tracking number format');
+    }
+
+    // 2. Encode for URL safety
     const encodedTracking = encodeURIComponent(trackingNumber);
     const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
 
+    // 3. Simplified GET request
     const response = await fetch(verificationURL, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'text/plain' // Simple header to avoid preflight
-      },
       cache: 'no-cache'
     });
 
-    // Handle empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
-
+    // 4. Handle empty responses
+    if (!response.ok) throw new Error('Verification service unavailable');
+    
+    // 5. Parse response
+    const result = await response.json();
+    
     if (result.exists) {
       showError('Parcel verification complete!', 'status-message success');
       setTimeout(() => safeRedirect('dashboard.html'), 1500);
@@ -454,7 +456,7 @@ async function verifySubmission(trackingNumber) {
 
   } catch (error) {
     console.warn('Verification check:', error.message);
-    showError('Confirmation delayed - submission was successful');
+    showError('Confirmation delayed - check back later');
   }
 }
 
