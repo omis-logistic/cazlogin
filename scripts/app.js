@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbyvyw7Jwm5mh9pFK4LZETxtYp9sqGd-zAaYUVmuPHbP1rmxhKbCZl6F0zBV7XebYGvXjA/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzObFajHHq3KTuAf7HAelek_-qkNf7GuxJr3HW-iZZQeEPL5v_VpJvfZzO6TDLjjEOo7g/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -237,8 +237,8 @@ function resetForm() {
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
-  const form = e.target;
   showLoading(true);
+  let trackingNumber; // Declare at top level
 
   try {
     // Validate user session
@@ -285,19 +285,20 @@ async function handleParcelSubmission(e) {
     // Submit declaration
     const result = await submitDeclaration(payload);
     
-    if (result.success) {
-      showSuccessMessage();
-      resetForm();
-      showError('Submission received! Verifying...', 'status-message success');
-      setTimeout(() => verifySubmission(trackingNumber), 3000);
-    } else {
-      showError(result.message || 'Submission requires verification');
-      setTimeout(() => verifySubmission(trackingNumber), 5000);
-    }
+    // Directly show success if submission worked
+    showSuccessMessage();
+    resetForm();
+    
+    // Initiate verification
+    trackingNumber = payload.trackingNumber;
+    setTimeout(() => verifySubmission(trackingNumber), 3000);
 
   } catch (error) {
     console.warn('Submission flow:', error.message);
-    showError('Submission received - confirmation pending');
+    showError(error.message.includes('pending') 
+      ? 'Submission received - confirmation pending'
+      : error.message
+    );
     
     if (trackingNumber) {
       setTimeout(() => verifySubmission(trackingNumber), 5000);
@@ -490,21 +491,24 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
-    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
-    
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest' // Add this header
       },
-      body: formBody
+      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`,
+      mode: 'cors' // Explicitly enable CORS
     });
 
-    // Handle potential empty response
-    const textResponse = await response.text();
-    const result = textResponse ? JSON.parse(textResponse) : {};
+    // Handle non-2xx responses
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
-    if (!response.ok || !result.success) {
+    const result = await response.json();
+    
+    if (!result.success) {
       throw new Error(result.error || 'Submission confirmation pending');
     }
 
@@ -512,10 +516,6 @@ async function submitDeclaration(payload) {
 
   } catch (error) {
     console.warn('Submission notice:', error.message);
-    // Special case handling for successful submission without confirmation
-    if (error.message.includes('pending')) {
-      return { success: true, message: error.message };
-    }
     throw error;
   }
 }
@@ -523,32 +523,29 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    // Add safety check
-    if (typeof trackingNumber !== 'string') {
-      throw new Error('Invalid tracking number');
-    }
-    
-    const encodedTracking = encodeURIComponent(trackingNumber);
-    const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
+    const verificationURL = new URL(CONFIG.PROXY_URL);
+    verificationURL.searchParams.append('tracking', trackingNumber);
 
     const response = await fetch(verificationURL, {
       method: 'GET',
-      cache: 'no-cache'
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      cache: 'no-cache',
+      mode: 'cors'
     });
 
-    // 4. Handle empty responses
-    if (!response.ok) throw new Error('Verification service unavailable');
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
-    // 5. Parse response
     const result = await response.json();
     
+    // Handle verification result
     if (result.exists) {
-      showError('Parcel verification complete!', 'status-message success');
+      showSuccessMessage();
+      resetForm();
       setTimeout(() => safeRedirect('dashboard.html'), 1500);
-    } else if (result.error) {
-      showError(result.error);
     } else {
-      showError('Verification pending - check back later');
+      showError(result.error || 'Verification pending');
     }
 
   } catch (error) {
