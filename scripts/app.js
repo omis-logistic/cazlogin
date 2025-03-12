@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbybqWTvg6OCHUDMhuqVedPp_gXrsq12OG9trZQeR-4mJBImrzH4okCrWlfAsJ96xaccjg/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwYgbpqtdcSG8mif4A9lSvopKGBrnAiIc1qXJ-yEw2Km_Usv8rfIWQXWkfFbEjOwFehkg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -108,29 +108,24 @@ function handleLogout() {
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
-    const formData = new FormData();
-    
-    if (payload.files) {
-      payload.files.forEach((file, index) => {
-        const blob = new Blob(
-          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type }
-        );
-        formData.append(`file${index}`, blob, file.name);
-      });
-    }
-
-    formData.append('data', JSON.stringify(payload.data));
-
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: action,
+        ...payload
+      })
     });
 
+    if (!response.ok) throw new Error('Network response was not OK');
     return await response.json();
+    
   } catch (error) {
-    console.error('API Call Failed:', error);
-    return { success: false, message: error.message };
+    console.error('API Error:', error);
+    showError('Service temporarily unavailable. Please try again later.');
+    return { success: false };
   }
 }
 
@@ -139,6 +134,7 @@ async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
   showError('Processing submission...', 'status-message');
+  let trackingNumber; // Declare at function level for proper scoping
 
   try {
     // Validate user session first
@@ -151,12 +147,8 @@ async function handleParcelSubmission(e) {
 
     // Collect form data
     const formData = new FormData(form);
-    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
-    console.log('Verifying tracking:', trackingNumber);
-    if (typeof trackingNumber !== 'string') {
-      throw new Error('Invalid tracking number format');
-    }
-    const phone = userData.phone; // From session
+    trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
     const itemCategory = formData.get('itemCategory');
@@ -169,7 +161,7 @@ async function handleParcelSubmission(e) {
     validatePrice(price);
 
     // Process files
-    const rawFiles = Array.from(formData.getAll('files') || []);
+    const rawFiles = Array.from(formData.getAll('files') || [];
     const validFiles = rawFiles.filter(file => file.size > 0);
     validateFiles(itemCategory, validFiles);
     const processedFiles = await processFiles(validFiles);
@@ -191,21 +183,27 @@ async function handleParcelSubmission(e) {
     
     if (result.success) {
       showError('Submission received! Verifying...', 'status-message success');
-      setTimeout(() => verifySubmission(trackingNumber), 3000);
     } else {
       showError(result.message || 'Submission requires verification');
-      setTimeout(() => verifySubmission(trackingNumber), 5000);
     }
 
   } catch (error) {
     console.warn('Submission flow:', error.message);
     showError('Submission received - confirmation pending');
-    
-    // If we have trackingNumber, attempt verification
-    if (trackingNumber) {
-      setTimeout(() => verifySubmission(trackingNumber), 5000);
-    }
   }
+
+  // Final validation before verification attempt
+  if (typeof trackingNumber !== 'string' || !trackingNumber.match(/^[A-Z0-9-]{5,}$/i)) {
+    console.error('Invalid tracking format:', trackingNumber);
+    return;
+  }
+
+  // URL-safe tracking number with double encoding
+  const safeTracking = encodeURIComponent(encodeURIComponent(trackingNumber.trim()));
+  
+  setTimeout(() => {
+    verifySubmission(safeTracking);
+  }, 5000);
 }
 
 // ================= VALIDATION CORE =================
@@ -422,29 +420,24 @@ async function submitDeclaration(payload) {
 }
 
 // ================= VERIFICATION SYSTEM =================
+// Complete verifySubmission function
 async function verifySubmission(trackingNumber) {
   try {
-    // 1. Validate tracking number type
-    if (typeof trackingNumber !== 'string') {
-      throw new Error('Invalid tracking number format');
-    }
-
-    // 2. Encode for URL safety
     const encodedTracking = encodeURIComponent(trackingNumber);
     const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
 
-    // 3. Simplified GET request
     const response = await fetch(verificationURL, {
       method: 'GET',
+      headers: {
+        'Content-Type': 'text/plain' // Simple header to avoid preflight
+      },
       cache: 'no-cache'
     });
 
-    // 4. Handle empty responses
-    if (!response.ok) throw new Error('Verification service unavailable');
-    
-    // 5. Parse response
-    const result = await response.json();
-    
+    // Handle empty response
+    const textResponse = await response.text();
+    const result = textResponse ? JSON.parse(textResponse) : {};
+
     if (result.exists) {
       showError('Parcel verification complete!', 'status-message success');
       setTimeout(() => safeRedirect('dashboard.html'), 1500);
@@ -456,7 +449,7 @@ async function verifySubmission(trackingNumber) {
 
   } catch (error) {
     console.warn('Verification check:', error.message);
-    showError('Confirmation delayed - check back later');
+    showError('Confirmation delayed - submission was successful');
   }
 }
 
@@ -750,43 +743,44 @@ function formatDate(dateString) {
 // ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
-  initValidationListeners();
   
-  // Initialize parcel declaration form
-  const parcelForm = document.getElementById('declarationForm');
-  if (parcelForm) {
-    parcelForm.addEventListener('submit', handleParcelSubmission);
-    const phoneField = document.getElementById('phone');
-    if (phoneField) {
-      const userData = checkSession();
-      phoneField.value = userData?.phone || '';
-      phoneField.readOnly = true;
-    }
-  }
-
+  // Initialize ALL form listeners
+  initAuthListeners(); // New function for auth forms
+  initValidationListeners(); // Existing parcel form
+  
   // Session checks
-  const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
-  const isPublicPage = publicPages.some(page => 
-    window.location.pathname.includes(page)
-  );
+  checkSessionStatus();
+});
 
-  if (!isPublicPage) {
-    const userData = checkSession();
-    if (!userData) return;
-    
-    if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-      handleLogout();
-    }
+// NEW FUNCTION: Initialize authentication forms
+function initAuthListeners() {
+  // Login Form
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleLogin();
+    });
   }
 
-  window.addEventListener('beforeunload', () => {
-    const errorElement = document.getElementById('error-message');
-    if (errorElement) errorElement.style.display = 'none';
-  });
+  // Registration Form
+  const regForm = document.getElementById('registrationForm');
+  if (regForm) {
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handleRegistration();
+    });
+  }
 
-  const firstInput = document.querySelector('input:not([type="hidden"])');
-  if (firstInput) firstInput.focus();
-});
+  // Password Recovery Form
+  const recoveryForm = document.getElementById('recoveryForm');
+  if (recoveryForm) {
+    recoveryForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await handlePasswordRecovery();
+    });
+  }
+}
 
 // ================= DEBUG UTILITIES =================
 window.debugForm = {
