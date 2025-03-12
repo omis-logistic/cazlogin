@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxVJsuaIyShm9gZ6yFwZLar7V4ugKDcB6zdzpQHitlDRtAvSyodwbeyP3UfIeVJd-LGNw/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzzKJb97pQCs_v3vpokQiPKKEfDNpBUUmpqryZ6PkRN6PqZ2ISLsD57M9Jd2yCOyQP6lw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -213,14 +213,14 @@ async function handleParcelSubmission(e) {
 function validateTrackingNumberInput(inputElement) {
   const value = inputElement.value.trim().toUpperCase();
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
-  showError(isValid ? '' : 'Invalid tracking number format (5+ alphanumeric characters, hyphens allowed)', 'trackingNumberError');
+  showError(isValid ? '' : 'Invalid tracking format (5+ alphanum/-)', 'trackingError');
   return isValid;
 }
 
-// Existing function for value validation (used in submission)
+// Keep existing submission validation
 function validateTrackingNumber(value) {
   if (!/^[A-Z0-9-]{5,}$/i.test(value)) {
-    throw new Error('Invalid tracking number format (5+ alphanumeric characters, hyphens allowed)');
+    throw new Error('Invalid tracking number format');
   }
 }
 
@@ -424,16 +424,14 @@ async function submitDeclaration(payload) {
 // ================= VERIFICATION SYSTEM =================
 async function verifySubmission(trackingNumber) {
   try {
-    // 1. Validate tracking number type
+    // Add safety check
     if (typeof trackingNumber !== 'string') {
-      throw new Error('Invalid tracking number format');
+      throw new Error('Invalid tracking number');
     }
-
-    // 2. Encode for URL safety
+    
     const encodedTracking = encodeURIComponent(trackingNumber);
     const verificationURL = `${CONFIG.PROXY_URL}?tracking=${encodedTracking}`;
 
-    // 3. Simplified GET request
     const response = await fetch(verificationURL, {
       method: 'GET',
       cache: 'no-cache'
@@ -497,7 +495,7 @@ function initValidationListeners() {
       input.addEventListener('input', () => {
         switch(input.id) {
           case 'trackingNumber':
-            validateTrackingNumberInput(input); // Changed to new function
+            validateTrackingNumberInput(input); // Use new input validation
             break;
           case 'nameOnParcel':
             validateName(input);
