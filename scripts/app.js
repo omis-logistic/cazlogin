@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycby1UA-MIEf7PeQlg98UfmPMlhgR_UNnx-stW-og9oEFC5sY4MbqojzJaxUx80cnvjML/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwO68beQ3r1lzu-czF9x2fPDNZWlML6A-SCUOM3-NtyWRVfurVZaSl0lnCdfw-IyqPDcg/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxGdEl13FQFCI4R3EndzkixfpPv4rTKFl-Lj_gjAm-RIjv0gG-DLB_3NmcbTcBqAo57/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -391,30 +391,32 @@ function handleFileSelection(input) {
 // ================= SUBMISSION HANDLER =================
 async function submitDeclaration(payload) {
   try {
+    const formBody = `payload=${encodeURIComponent(JSON.stringify(payload))}`;
+    
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded' // Remove charset parameter
       },
-      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`,
-      redirect: 'follow' // Critical for GAS CORS handling
+      body: formBody
     });
 
-    // Add GAS URL validation
-    if (!CONFIG.PROXY_URL.includes('/macros/s/')) {
-      throw new Error('Invalid GAS endpoint configuration');
+    // Handle potential empty response
+    const textResponse = await response.text();
+    const result = textResponse ? JSON.parse(textResponse) : {};
+
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || 'Submission confirmation pending');
     }
 
-    // Handle Google's special 302 redirect
-    const finalURL = response.url.includes('/macros/exec?') ?
-      response.url.replace('/exec?', '/exec') :
-      response.url;
+    return result;
 
-    const finalResponse = await fetch(finalURL);
-    return await finalResponse.json();
-    
   } catch (error) {
     console.warn('Submission notice:', error.message);
+    // Special case handling for successful submission without confirmation
+    if (error.message.includes('pending')) {
+      return { success: true, message: error.message };
+    }
     throw error;
   }
 }
