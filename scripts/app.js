@@ -1,6 +1,6 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwxkrALkUutlXhVuWULMG4Oa1MfJqcWBCtzpNVwBpniwz0Qhl-ks5EYAw1HfvHd9OIS/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwL4LZv9JmT2fmlFMp1U4sXPOm150BeP4EQhP76La36bfVlJO-p7hk01vQgbSELcZAu/exec',
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbyhy1T0tgI8UTfECzBmzt2Ilbq6wrlOrtRZVpI72CLOexlNdXzU63pQAHqW1aVOp2abwQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
