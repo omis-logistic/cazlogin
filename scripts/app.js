@@ -134,14 +134,114 @@ async function callAPI(action, payload) {
   }
 }
 
+function showLoading(show = true) {
+  const loader = document.getElementById('loadingOverlay') || createLoaderElement();
+  loader.style.display = show ? 'flex' : 'none';
+}
+
+function createLoaderElement() {
+  const overlay = document.createElement('div');
+  overlay.id = 'loadingOverlay';
+  overlay.innerHTML = `
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Processing Submission...</div>
+  `;
+  
+  // Add styles directly for reliability
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 1rem;
+  `;
+  
+  const text = overlay.querySelector('.loading-text');
+  if (text) {
+    text.style.color = 'var(--gold)';
+    text.style.fontSize = '1.2rem';
+  }
+  
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function showSuccessMessage() {
+  const messageElement = document.getElementById('message');
+  if (!messageElement) return;
+
+  messageElement.textContent = '✓ Submission Successful!';
+  messageElement.className = 'success';
+  messageElement.style.display = 'block';
+
+  // Add animation effects
+  messageElement.style.animation = 'slideIn 0.5s ease-out';
+  setTimeout(() => {
+    messageElement.style.animation = 'fadeOut 1s ease 2s forwards';
+  }, 2000);
+
+  // Add celebratory animation
+  const confetti = document.createElement('div');
+  confetti.className = 'confetti-effect';
+  document.body.appendChild(confetti);
+  setTimeout(() => confetti.remove(), 3000);
+}
+
+function resetForm() {
+  const form = document.getElementById('declarationForm');
+  if (!form) return;
+
+  // Clear all inputs except phone number
+  form.querySelectorAll('input:not(#phone), select, textarea').forEach(field => {
+    if (field.type === 'file') {
+      // Special handling for file inputs
+      field.value = null;
+      if (field.nextElementSibling?.classList.contains('file-preview')) {
+        field.nextElementSibling.remove();
+      }
+    } else if (field.tagName === 'SELECT') {
+      // Reset select to first option
+      field.selectedIndex = 0;
+      field.dispatchEvent(new Event('change'));
+    } else if (field.type === 'checkbox' || field.type === 'radio') {
+      field.checked = false;
+    } else {
+      field.value = '';
+    }
+  });
+
+  // Clear validation states
+  document.querySelectorAll('.error-message').forEach(el => {
+    el.textContent = '';
+    el.style.display = 'none';
+  });
+
+  // Reset UI states
+  const submitBtn = document.getElementById('submitBtn');
+  if (submitBtn) submitBtn.disabled = true;
+
+  // Clear any existing success messages
+  const successMessage = document.getElementById('message');
+  if (successMessage) {
+    successMessage.style.display = 'none';
+  }
+}
+
 // ================= PARCEL DECLARATION HANDLER =================
 async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
-  showError('Processing submission...', 'status-message');
+  showLoading(true);
 
   try {
-    // Validate user session first
+    // Validate user session
     const userData = checkSession();
     if (!userData?.phone) {
       showError('Session expired - please login again');
@@ -149,20 +249,16 @@ async function handleParcelSubmission(e) {
       return;
     }
 
-    // Collect form data
+    // Collect and validate form data
     const formData = new FormData(form);
     const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
-    console.log('Verifying tracking:', trackingNumber);
-    if (typeof trackingNumber !== 'string') {
-      throw new Error('Invalid tracking number format');
-    }
-    const phone = userData.phone; // From session
+    const phone = userData.phone;
     const quantity = parseInt(formData.get('quantity'));
     const price = parseFloat(formData.get('price'));
     const itemCategory = formData.get('itemCategory');
     const itemDescription = formData.get('itemDescription').trim();
 
-    // Validate core fields
+    // Core validations
     validateTrackingNumber(trackingNumber);
     validateItemCategory(itemCategory);
     validateQuantity(quantity);
@@ -190,6 +286,8 @@ async function handleParcelSubmission(e) {
     const result = await submitDeclaration(payload);
     
     if (result.success) {
+      showSuccessMessage();
+      resetForm();
       showError('Submission received! Verifying...', 'status-message success');
       setTimeout(() => verifySubmission(trackingNumber), 3000);
     } else {
@@ -201,10 +299,11 @@ async function handleParcelSubmission(e) {
     console.warn('Submission flow:', error.message);
     showError('Submission received - confirmation pending');
     
-    // If we have trackingNumber, attempt verification
     if (trackingNumber) {
       setTimeout(() => verifySubmission(trackingNumber), 5000);
     }
+  } finally {
+    showLoading(false);
   }
 }
 
@@ -749,7 +848,8 @@ function formatDate(dateString) {
 document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   initValidationListeners();
-  
+  createLoaderElement();
+
   // Initialize parcel declaration form
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
@@ -762,7 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Session checks
+  // Session management
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
@@ -777,11 +877,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
 
+  // Accessibility focus management
   const firstInput = document.querySelector('input:not([type="hidden"])');
   if (firstInput) firstInput.focus();
 });
