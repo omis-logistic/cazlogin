@@ -223,41 +223,38 @@ async function handleParcelSubmission(e) {
   const form = e.target;
   showLoading(true);
 
+  // Clear previous errors
+  const errorContainer = document.getElementById('error-container');
+  errorContainer.innerHTML = '';
+
   try {
     const formData = new FormData(form);
-    const itemCategory = formData.get('itemCategory');
+    const itemCategory = formData.get('itemCategory').trim();
     const files = Array.from(formData.getAll('files'));
-    
-    // 1. STRICT CATEGORY VALIDATION
+
+    // 1. Mandatory file check for starred categories
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
       '*Oil Ointment', '*Supplement'
-    ].map(cat => cat.toLowerCase()); // Normalize to lowercase
+    ].map(c => c.toLowerCase());
 
-    // 2. CASE-INSENSITIVE COMPARISON
     const isStarred = starredCategories.includes(itemCategory.toLowerCase());
-    
-    // 3. MANDATORY FILE CHECK
-    if (isStarred) {
-      if (files.length === 0) {
-        throw new Error('FILE_REQUIRED');
-      }
-      
-      // 4. FILE PROCESSING
-      const processedFiles = await Promise.all(
-        files.map(async file => ({
-          name: file.name,
-          type: file.type,
-          data: await readFileAsBase64(file)
-        }))
-      );
-      var filesPayload = processedFiles;
-    } else {
-      var filesPayload = [];
+
+    if (isStarred && files.length === 0) {
+      throw new Error('FILE_REQUIRED');
     }
 
-    // 5. PAYLOAD CONSTRUCTION
+    // 2. Process files only if needed
+    const processedFiles = isStarred ? await Promise.all(
+      files.map(async file => ({
+        name: file.name,
+        type: file.type,
+        data: await readFileAsBase64(file)
+      }))
+    ) : [];
+
+    // 3. Build payload
     const payload = {
       trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
       nameOnParcel: formData.get('nameOnParcel').trim(),
@@ -267,13 +264,10 @@ async function handleParcelSubmission(e) {
       price: formData.get('price'),
       collectionPoint: formData.get('collectionPoint'),
       itemCategory: itemCategory,
-      files: filesPayload
+      files: processedFiles
     };
 
-    // 6. SUBMISSION BLOCK IF INVALID
-    if (isStarred && files.length === 0) return;
-
-    // 7. FINAL SUBMISSION
+    // 4. Submit data
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -281,18 +275,25 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
+    // 5. Handle mandatory file error
     if (error.message === 'FILE_REQUIRED') {
-      showError('Please upload at least 1 file for this category');
+      errorContainer.innerHTML = `
+        <div class="error-message" style="
+          background: #ff4444dd;
+          color: white;
+          padding: 15px;
+          border-radius: 5px;
+          display: block;
+        ">
+          Please upload at least 1 file for this category
+        </div>
+      `;
       return;
     }
   } finally {
+    // 6. Only show success if no errors
     showLoading(false);
-    
-    // SAFE ERROR ELEMENT CHECK
-    const errorElement = document.getElementById('error-message');
-    const errorVisible = errorElement && errorElement.style.display === 'block';
-
-    if (!errorVisible) {
+    if (!errorContainer.innerHTML) {
       resetForm();
       showSuccessMessage();
     }
