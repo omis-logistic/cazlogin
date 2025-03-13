@@ -217,33 +217,35 @@ select {
   gap: 20px;
   grid-template-columns: 1fr 2fr;
   height: 70vh;
+  min-height: 500px;
 }
 
 .tracking-list-panel {
-  position: relative;
   display: flex;
   flex-direction: column;
   background: rgba(255,255,255,0.05);
   border-radius: 8px;
   padding: 15px;
   height: 100%;
+  overflow: hidden;
 }
 
 .tracking-items-container {
   flex: 1;
   overflow-y: auto;
   padding-right: 8px;
-  min-height: 200px;
+  max-height: calc(100% - 40px);
 }
 
 .tracking-items-container::-webkit-scrollbar {
-  width: 8px;
-  background-color: rgba(0,0,0,0.2);
+  width: 10px;
+  background-color: rgba(0,0,0,0.1);
 }
 
 .tracking-items-container::-webkit-scrollbar-thumb {
   background-color: var(--gold);
-  border-radius: 4px;
+  border-radius: 5px;
+  border: 2px solid rgba(0,0,0,0.1);
 }
 
 .tracking-items-container::-webkit-scrollbar-thumb:hover {
@@ -257,6 +259,10 @@ select {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .tracking-item.active {
@@ -307,15 +313,16 @@ select {
   .tracking-layout {
     grid-template-columns: 1fr;
     height: auto;
-    min-height: 70vh;
+    min-height: unset;
   }
-  
-  .tracking-list-panel, .details-panel {
-    height: 50vh;
+
+  .tracking-list-panel {
+    height: 60vh;
+    min-height: 300px;
   }
-  
+
   .tracking-items-container {
-    min-height: 150px;
+    max-height: calc(100% - 30px);
   }
 }
 
