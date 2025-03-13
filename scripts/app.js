@@ -228,38 +228,43 @@ async function handleParcelSubmission(e) {
     const itemCategory = formData.get('itemCategory');
     const files = Array.from(formData.getAll('files'));
     
-    // Process files
-    const processedFiles = await Promise.all(
-      files.map(async file => ({
-        name: file.name,
-        type: file.type,
-        data: await readFileAsBase64(file)
-      }))
-    );
-
-    // Build complete payload
-    const payload = {
-      trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
-      nameOnParcel: formData.get('nameOnParcel').trim(), // New field
-      phone: document.getElementById('phone').value,
-      itemDescription: formData.get('itemDescription').trim(),
-      quantity: formData.get('quantity'),
-      price: formData.get('price'),
-      collectionPoint: formData.get('collectionPoint'),
-      itemCategory: itemCategory,
-      files: processedFiles
-    };
-
-    // Mandatory file check for starred categories
+    // Mandatory file check - BLOCKS SUBMISSION IF FAILED
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
       '*Oil Ointment', '*Supplement'
     ];
     
-    if (starredCategories.includes(itemCategory) && files.length === 0) {
-      throw new Error('Files required for this category');
+    if (starredCategories.includes(itemCategory)) {
+      if (files.length === 0) {
+        throw new Error('Files required for starred categories');
+      }
+      
+      // Process files ONLY if required
+      const processedFiles = await Promise.all(
+        files.map(async file => ({
+          name: file.name,
+          type: file.type,
+          data: await readFileAsBase64(file)
+        }))
+      );
+      var filesPayload = processedFiles;
+    } else {
+      var filesPayload = [];
     }
+
+    // Build payload with new nameOnParcel field
+    const payload = {
+      trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
+      nameOnParcel: formData.get('nameOnParcel').trim(),
+      phone: document.getElementById('phone').value,
+      itemDescription: formData.get('itemDescription').trim(),
+      quantity: formData.get('quantity'),
+      price: formData.get('price'),
+      collectionPoint: formData.get('collectionPoint'),
+      itemCategory: itemCategory,
+      files: filesPayload
+    };
 
     // Submit data
     await fetch(CONFIG.PROXY_URL, {
@@ -269,13 +274,18 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // Errors will be ignored but logged
-    console.warn('Submission error:', error);
+    // SPECIAL HANDLING FOR MANDATORY FILES
+    if (error.message.includes('starred categories')) {
+      showError('Please upload at least 1 file for this category');
+      return; // Prevent form reset and success message
+    }
   } finally {
-    // Always clear form and show success
     showLoading(false);
-    resetForm();
-    showSuccessMessage();
+    // Only clear form if no mandatory file error
+    if (!document.getElementById('error-message').style.display) {
+      resetForm();
+      showSuccessMessage();
+    }
   }
 }
 
