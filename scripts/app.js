@@ -281,16 +281,17 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // 8. SPECIFIC ERROR HANDLING
     if (error.message === 'FILE_REQUIRED') {
       showError('Please upload at least 1 file for this category');
       return;
     }
   } finally {
-    // 9. CONDITIONAL UI UPDATE
     showLoading(false);
-    const errorVisible = document.getElementById('error-message').style.display === 'block';
     
+    // SAFE ERROR ELEMENT CHECK
+    const errorElement = document.getElementById('error-message');
+    const errorVisible = errorElement && errorElement.style.display === 'block';
+
     if (!errorVisible) {
       resetForm();
       showSuccessMessage();
