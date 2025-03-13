@@ -228,19 +228,23 @@ async function handleParcelSubmission(e) {
     const itemCategory = formData.get('itemCategory');
     const files = Array.from(formData.getAll('files'));
     
-    // Mandatory file check - BLOCKS SUBMISSION IF FAILED
+    // 1. STRICT CATEGORY VALIDATION
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
       '*Oil Ointment', '*Supplement'
-    ];
+    ].map(cat => cat.toLowerCase()); // Normalize to lowercase
+
+    // 2. CASE-INSENSITIVE COMPARISON
+    const isStarred = starredCategories.includes(itemCategory.toLowerCase());
     
-    if (starredCategories.includes(itemCategory)) {
+    // 3. MANDATORY FILE CHECK
+    if (isStarred) {
       if (files.length === 0) {
-        throw new Error('Files required for starred categories');
+        throw new Error('FILE_REQUIRED');
       }
       
-      // Process files ONLY if required
+      // 4. FILE PROCESSING
       const processedFiles = await Promise.all(
         files.map(async file => ({
           name: file.name,
@@ -253,7 +257,7 @@ async function handleParcelSubmission(e) {
       var filesPayload = [];
     }
 
-    // Build payload with new nameOnParcel field
+    // 5. PAYLOAD CONSTRUCTION
     const payload = {
       trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
       nameOnParcel: formData.get('nameOnParcel').trim(),
@@ -266,7 +270,10 @@ async function handleParcelSubmission(e) {
       files: filesPayload
     };
 
-    // Submit data
+    // 6. SUBMISSION BLOCK IF INVALID
+    if (isStarred && files.length === 0) return;
+
+    // 7. FINAL SUBMISSION
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -274,15 +281,17 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // SPECIAL HANDLING FOR MANDATORY FILES
-    if (error.message.includes('starred categories')) {
+    // 8. SPECIFIC ERROR HANDLING
+    if (error.message === 'FILE_REQUIRED') {
       showError('Please upload at least 1 file for this category');
-      return; // Prevent form reset and success message
+      return;
     }
   } finally {
+    // 9. CONDITIONAL UI UPDATE
     showLoading(false);
-    // Only clear form if no mandatory file error
-    if (!document.getElementById('error-message').style.display) {
+    const errorVisible = document.getElementById('error-message').style.display === 'block';
+    
+    if (!errorVisible) {
       resetForm();
       showSuccessMessage();
     }
