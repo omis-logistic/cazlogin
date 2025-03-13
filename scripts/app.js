@@ -241,18 +241,24 @@ async function handleParcelSubmission(e) {
 
     const isStarred = starredCategories.includes(itemCategory.toLowerCase());
 
-    if (isStarred && files.length === 0) {
-      throw new Error('FILE_REQUIRED');
+    // 2. BLOCK SUBMISSION if starred category has no files
+    if (isStarred) {
+      if (files.length === 0) {
+        throw new Error('FILE_REQUIRED');
+      }
+      
+      // Process files
+      const processedFiles = await Promise.all(
+        files.map(async file => ({
+          name: file.name,
+          type: file.type,
+          data: await readFileAsBase64(file)
+        }))
+      );
+      var filesPayload = processedFiles;
+    } else {
+      var filesPayload = [];
     }
-
-    // 2. Process files only if needed
-    const processedFiles = isStarred ? await Promise.all(
-      files.map(async file => ({
-        name: file.name,
-        type: file.type,
-        data: await readFileAsBase64(file)
-      }))
-    ) : [];
 
     // 3. Build payload
     const payload = {
@@ -264,10 +270,10 @@ async function handleParcelSubmission(e) {
       price: formData.get('price'),
       collectionPoint: formData.get('collectionPoint'),
       itemCategory: itemCategory,
-      files: processedFiles
+      files: filesPayload
     };
 
-    // 4. Submit data
+    // 4. Submit only if validation passed
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -275,7 +281,7 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // 5. Handle mandatory file error
+    // 5. Handle file requirement error
     if (error.message === 'FILE_REQUIRED') {
       errorContainer.innerHTML = `
         <div class="error-message" style="
@@ -285,15 +291,15 @@ async function handleParcelSubmission(e) {
           border-radius: 5px;
           display: block;
         ">
-          Please upload at least 1 file for this category
+          ⚠️ Required: Please upload at least 1 file for starred categories
         </div>
       `;
       return;
     }
   } finally {
-    // 6. Only show success if no errors
+    // 6. Only clear form if no errors
     showLoading(false);
-    if (!errorContainer.innerHTML) {
+    if (errorContainer.innerHTML === '') {
       resetForm();
       showSuccessMessage();
     }
