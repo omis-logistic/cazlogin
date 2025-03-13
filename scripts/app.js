@@ -29,7 +29,7 @@ function detectViewMode() {
 }
 
 // ================= ERROR HANDLING =================
-function showError(message, targetId = 'error-message') {
+function showError(message, targetId = 'connectionError') {
   const errorElement = document.getElementById(targetId) || createErrorElement();
   
   // Special handling for success-like messages
