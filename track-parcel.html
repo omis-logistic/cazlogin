@@ -91,49 +91,61 @@ function showInfoMessage(message) {
   `;
 }
   
-function loadParcelData() {
-  return new Promise((resolve, reject) => {
-    const userData = JSON.parse(sessionStorage.getItem('userData'));
+  // Enhanced loadParcelData function
+async function loadParcelData() {
+  try {
+    showLoading(true);
+    document.getElementById('connectionError').style.display = 'none';
+    
+    const userData = checkSession();
     if (!userData?.phone) return safeRedirect('login.html');
 
-    const callbackName = `jsonp_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-    const script = document.createElement('script');
-    
-    window[callbackName] = (response) => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      
-      if (response?.success) {
-        allParcels = response.data.map(p => ({
-          ...p,
-          searchKey: `${p.trackingNumber} ${p.status} ${p.location}`.toLowerCase()
-        }));
-        renderTrackingList(allParcels);
-        initializeSearch();
-        if (allParcels.length > 0) document.querySelector('.tracking-item')?.click();
-        resolve();
-      } else {
-        showError(response?.message || 'Failed to load parcels');
-        reject();
-      }
-    };
+    const response = await callAPI('getParcelData', {
+      phone: userData.phone
+    });
 
-    const url = new URL(CONFIG.GAS_URL);
-    url.searchParams.append('action', 'getParcelData');
-    url.searchParams.append('phone', userData.phone);
-    url.searchParams.append('callback', callbackName);
+    if (!response.success) {
+      document.getElementById('connectionError').style.display = 'block';
+      document.getElementById('connectionError').textContent = response.message;
+      return;
+    }
+
+    // Process successful response
+    allParcels = response.data || [];
     
-    script.src = url.toString();
-    script.onerror = () => {
-      delete window[callbackName];
-      document.body.removeChild(script);
-      showError('Connection failed. Please try again.');
-      reject();
-    };
+    if (allParcels.length === 0) {
+      document.getElementById('trackingList').innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-box-open"></i>
+          No parcels found for your account
+        </div>
+      `;
+      document.getElementById('parcelDetails').style.display = 'none';
+      return;
+    }
+
+    // Initialize tracking list
+    renderTrackingList(allParcels);
     
-    document.body.appendChild(script);
-    showLoading(true);
-  });
+    // Set up search functionality
+    initSearch();
+    
+    // Auto-select first item
+    if (allParcels.length > 0) {
+      const firstItem = document.querySelector('.tracking-item');
+      if (firstItem) {
+        firstItem.click();
+      }
+    }
+
+  } catch (error) {
+    console.error('Data Processing Error:', error);
+    document.getElementById('connectionError').style.display = 'block';
+    document.getElementById('connectionError').textContent = 
+      'Failed to process parcel data. Please try again.';
+  } finally {
+    showLoading(false);
+  }
 }
 
 // Real-time search with debounce
@@ -271,17 +283,15 @@ function initSearch() {
 
   // Initialize when page loads
   document.addEventListener('DOMContentLoaded', () => {
-  detectViewMode();
-  checkSession();
-  
-  // Load data with error handling
-  loadParcelData().catch(() => {}).finally(() => {
-    showLoading(false);
+    // Setup search input listener
+    document.getElementById('searchInput').addEventListener('input', filterTracking);
+    
+    // Load initial data
+    loadParcelData();
+    
+    // Add view mode detection
+    detectViewMode();
   });
-  
-  // Initialize search after short delay
-  setTimeout(initializeSearch, 500);
-});
 </script>
 </body>
 </html>
