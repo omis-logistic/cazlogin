@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbxVJCo9gwRy1XGPKklwPyqAqTMLzHIqI8CDndIN5lwLkzCcjNx58tBBuXMWSQSVDX5l/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycby7-Yu20GztX3IiUYby3_a_w9ioTY2JWkBPOlB-eQkL7kUWa700_BtcMlsrFavVHdVjPw/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzd1uZqMS8Nu0YaUHUFR3-4WTlVxoqvscaoalgXhyNmRh-fMBGBL4SHrGXuksxzxxdmdg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -493,26 +493,31 @@ async function submitDeclaration(payload) {
     const formBody = new URLSearchParams();
     formBody.append('payload', JSON.stringify(payload));
 
-    const response = await fetch(CONFIG.PROXY_URL, {
+    // First fetch to trigger GAS execution
+    const initialResponse = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: formBody,
-      redirect: 'follow' // Add this for GAS redirect handling
+      redirect: 'manual' // Handle redirect manually
     });
 
-    // Handle Google's URL redirection
-    const finalUrl = response.url.includes('/exec') 
-      ? response.url 
-      : `${CONFIG.PROXY_URL}?${new URL(response.url).searchParams}`;
-
-    const finalResponse = await fetch(finalUrl);
-    return await finalResponse.json();
+    // Handle Google's redirect pattern
+    if (initialResponse.status === 302 || initialResponse.redirected) {
+      const redirectUrl = initialResponse.headers.get('location');
+      const finalResponse = await fetch(
+        redirectUrl || `${CONFIG.PROXY_URL}?authuser=0`,
+        { credentials: 'include' }
+      );
+      return await finalResponse.json();
+    }
+    
+    return await initialResponse.json();
 
   } catch (error) {
-    console.warn('Submission notice:', error);
-    throw error;
+    console.error('Submission error:', error);
+    throw new Error('Failed to complete submission');
   }
 }
 
