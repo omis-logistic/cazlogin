@@ -105,29 +105,70 @@ function handleLogout() {
   }
 }
 
+// ================= TRACKING PAGE FUNCTIONALITY =================
+async function loadParcelData() {
+  try {
+    showLoading(true);
+    const userData = checkSession();
+    
+    if (!userData?.phone) {
+      safeRedirect('login.html');
+      return;
+    }
+
+    // Call API with proper error handling
+    const response = await callAPI('getParcelData', { 
+      phone: userData.phone 
+    });
+
+    if (!response?.success) {
+      showError(response?.message || 'Failed to load parcels');
+      return;
+    }
+
+    allParcels = response.data || [];
+    
+    // Add searchKey for filtering
+    allParcels = allParcels.map(p => ({
+      ...p,
+      searchKey: `${p.trackingNumber} ${p.status} ${p.location}`.toLowerCase()
+    }));
+
+    if (allParcels.length === 0) {
+      showInfoMessage('No parcels found for your account');
+      return;
+    }
+
+    renderTrackingList(allParcels);
+    initializeSearch();
+
+  } catch (error) {
+    console.error('Parcel Load Error:', error);
+    showError('Failed to load tracking data. Please try again.');
+  } finally {
+    showLoading(false);
+  }
+}
+
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
-    const formData = new FormData();
-    
-    if (payload.files) {
-      payload.files.forEach((file, index) => {
-        const blob = new Blob(
-          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
-          { type: file.type }
-        );
-        formData.append(`file${index}`, blob, file.name);
-      });
-    }
-
-    formData.append('data', JSON.stringify(payload.data));
-
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: formData
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action, ...payload })
     });
 
-    return await response.json();
+    // Handle empty responses
+    if (!response.ok) return { success: false, message: 'Network error' };
+    
+    // Handle Google's redirect pattern
+    const finalResponse = response.url.includes('/exec') 
+      ? await response.json()
+      : await (await fetch(response.url)).json();
+
+    return finalResponse;
+
   } catch (error) {
     console.error('API Call Failed:', error);
     return { success: false, message: error.message };
