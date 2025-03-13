@@ -7,11 +7,17 @@
   <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
-  <div class="container">
-  <div id="error-container" 
-       style="position: sticky; top: 20px; margin-bottom: 20px; z-index: 1000;">
-  </div>
+  <div id="error-container" style="
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: 80%;
+    max-width: 600px;
+  "></div>
 
+  <div class="container">
     <h1>Parcel Declaration Form</h1>
     <form id="declarationForm">
       <!-- Tracking Number -->
@@ -126,15 +132,15 @@
       </div>
 
       <!-- File Upload -->
-      <div class="input-group">
-  <label for="fileUpload">Upload Documents:</label>
-  <input type="file" 
-         id="fileUpload" 
-         name="files"
-         multiple
-         accept="image/jpeg, image/png, application/pdf"
-         onchange="handleFileSelection(this)"
-         style="border: 2px solid var(--gold)">
+  <div class="input-group">
+        <label for="fileUpload">Upload Documents:</label>
+        <input type="file" 
+               id="fileUpload" 
+               name="files"
+               multiple
+               accept="image/jpeg, image/png, application/pdf"
+               required
+               onchange="handleFileSelection(this)">
       </div>
 
       <!-- Form Buttons -->
