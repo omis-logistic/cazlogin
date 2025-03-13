@@ -222,27 +222,30 @@ async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
   showLoading(true);
-
+  
   // Clear previous errors
   const errorContainer = document.getElementById('error-container');
   errorContainer.innerHTML = '';
 
   try {
     const formData = new FormData(form);
-    const itemCategory = formData.get('itemCategory').trim();
+    const itemCategory = formData.get('itemCategory');
     const files = Array.from(formData.getAll('files'));
 
-    // 1. Mandatory file check for starred categories
+    // 1. Validate tracking number format
+    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
+    if (!/^[A-Z0-9-]{5,}$/.test(trackingNumber)) {
+      throw new Error('INVALID_TRACKING');
+    }
+
+    // 2. Mandatory file check for starred categories
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
       '*Oil Ointment', '*Supplement'
-    ].map(c => c.toLowerCase());
+    ];
 
-    const isStarred = starredCategories.includes(itemCategory.toLowerCase());
-
-    // 2. BLOCK SUBMISSION if starred category has no files
-    if (isStarred) {
+    if (starredCategories.includes(itemCategory)) {
       if (files.length === 0) {
         throw new Error('FILE_REQUIRED');
       }
@@ -262,7 +265,7 @@ async function handleParcelSubmission(e) {
 
     // 3. Build payload
     const payload = {
-      trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
+      trackingNumber: trackingNumber,
       nameOnParcel: formData.get('nameOnParcel').trim(),
       phone: document.getElementById('phone').value,
       itemDescription: formData.get('itemDescription').trim(),
@@ -273,7 +276,7 @@ async function handleParcelSubmission(e) {
       files: filesPayload
     };
 
-    // 4. Submit only if validation passed
+    // 4. Submit data
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -281,23 +284,34 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // 5. Handle file requirement error
-    if (error.message === 'FILE_REQUIRED') {
-      errorContainer.innerHTML = `
-        <div class="error-message" style="
-          background: #ff4444dd;
-          color: white;
-          padding: 15px;
-          border-radius: 5px;
-          display: block;
-        ">
-          ⚠️ Required: Please upload at least 1 file for starred categories
-        </div>
-      `;
-      return;
+    // 5. Handle specific errors
+    let errorMessage = '';
+    switch(error.message) {
+      case 'FILE_REQUIRED':
+        errorMessage = '⚠️ Required: Please upload at least 1 file for this category';
+        break;
+      case 'INVALID_TRACKING':
+        errorMessage = 'Invalid tracking number format (5+ alphanumeric/hyphens)';
+        break;
+      default:
+        errorMessage = 'Submission failed - please try again';
     }
+    
+    errorContainer.innerHTML = `
+      <div class="error-message" style="
+        background: #ff4444dd;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        display: block;
+        animation: fadeIn 0.3s ease-in;
+      ">
+        ${errorMessage}
+      </div>
+    `;
+
   } finally {
-    // 6. Only clear form if no errors
+    // 6. Only show success if no errors
     showLoading(false);
     if (errorContainer.innerHTML === '') {
       resetForm();
