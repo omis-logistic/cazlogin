@@ -1,6 +1,7 @@
+//scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwHJ9T6IBksgty4tfgXXW_7mdE9eR3qAxeZC13Yl4WUky9ebfK7qjTkjLOESCDVkW6i/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzNvWS1Qypl3jMwW5Vea-UzddiVvJ3Vc_mnOBxqXMGP4vN0d-UXbJSGINeZDRyQ1Gj0/exec',
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbxG3-FL6BzDOejgRcYyHULvQxPujv2qtqKfFX3qBwJNtvUY8V70bi5EERdu4ci9AG8IPw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
@@ -29,7 +30,7 @@ function detectViewMode() {
 }
 
 // ================= ERROR HANDLING =================
-function showError(message, targetId = 'connectionError') {
+function showError(message, targetId = 'error-message') {
   const errorElement = document.getElementById(targetId) || createErrorElement();
   
   // Special handling for success-like messages
@@ -105,70 +106,29 @@ function handleLogout() {
   }
 }
 
-// ================= TRACKING PAGE FUNCTIONALITY =================
-async function loadParcelData() {
-  try {
-    showLoading(true);
-    const userData = checkSession();
-    
-    if (!userData?.phone) {
-      safeRedirect('login.html');
-      return;
-    }
-
-    // Call API with proper error handling
-    const response = await callAPI('getParcelData', { 
-      phone: userData.phone 
-    });
-
-    if (!response?.success) {
-      showError(response?.message || 'Failed to load parcels');
-      return;
-    }
-
-    allParcels = response.data || [];
-    
-    // Add searchKey for filtering
-    allParcels = allParcels.map(p => ({
-      ...p,
-      searchKey: `${p.trackingNumber} ${p.status} ${p.location}`.toLowerCase()
-    }));
-
-    if (allParcels.length === 0) {
-      showInfoMessage('No parcels found for your account');
-      return;
-    }
-
-    renderTrackingList(allParcels);
-    initializeSearch();
-
-  } catch (error) {
-    console.error('Parcel Load Error:', error);
-    showError('Failed to load tracking data. Please try again.');
-  } finally {
-    showLoading(false);
-  }
-}
-
 // ================= API HANDLER =================
 async function callAPI(action, payload) {
   try {
+    const formData = new FormData();
+    
+    if (payload.files) {
+      payload.files.forEach((file, index) => {
+        const blob = new Blob(
+          [Uint8Array.from(atob(file.base64), c => c.charCodeAt(0))],
+          { type: file.type }
+        );
+        formData.append(`file${index}`, blob, file.name);
+      });
+    }
+
+    formData.append('data', JSON.stringify(payload.data));
+
     const response = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ action, ...payload })
+      body: formData
     });
 
-    // Handle empty responses
-    if (!response.ok) return { success: false, message: 'Network error' };
-    
-    // Handle Google's redirect pattern
-    const finalResponse = response.url.includes('/exec') 
-      ? await response.json()
-      : await (await fetch(response.url)).json();
-
-    return finalResponse;
-
+    return await response.json();
   } catch (error) {
     console.error('API Call Failed:', error);
     return { success: false, message: error.message };
@@ -944,20 +904,3 @@ function setupCategoryChangeListener() {
     categorySelect.addEventListener('change', checkCategoryRequirements);
   }
 }
-
-// ================= DEBUG UTILITIES =================
-window.debugForm = {
-  testSubmission: () => {
-    const testPayload = {
-      trackingNumber: 'TEST-123',
-      phone: '1234567890',
-      itemDescription: 'Test Item',
-      quantity: '2',
-      price: '19.99',
-      collectionPoint: 'Rimba',
-      itemCategory: 'Clothing',
-      files: []
-    };
-    submitDeclaration(testPayload);
-  }
-};
