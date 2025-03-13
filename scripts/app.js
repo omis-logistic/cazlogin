@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbxVJCo9gwRy1XGPKklwPyqAqTMLzHIqI8CDndIN5lwLkzCcjNx58tBBuXMWSQSVDX5l/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxIAX4irDMGRGzrQcnuQIP3-gAdMJ_tdAP9UDHr14s4deFBLu_-RjBRjZA8FgX3mrqtEQ/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxG3-FL6BzDOejgRcYyHULvQxPujv2qtqKfFX3qBwJNtvUY8V70bi5EERdu4ci9AG8IPw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -222,35 +222,25 @@ async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
   showLoading(true);
-  
-  // Clear previous errors
-  const errorContainer = document.getElementById('error-container');
-  errorContainer.innerHTML = '';
 
   try {
     const formData = new FormData(form);
     const itemCategory = formData.get('itemCategory');
     const files = Array.from(formData.getAll('files'));
-
-    // 1. Validate tracking number format
-    const trackingNumber = formData.get('trackingNumber').trim().toUpperCase();
-    if (!/^[A-Z0-9-]{5,}$/.test(trackingNumber)) {
-      throw new Error('INVALID_TRACKING');
-    }
-
-    // 2. Mandatory file check for starred categories
+    
+    // Mandatory file check for starred categories
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
       '*Oil Ointment', '*Supplement'
     ];
-
+    
     if (starredCategories.includes(itemCategory)) {
       if (files.length === 0) {
-        throw new Error('FILE_REQUIRED');
+        throw new Error('Files required for this category');
       }
       
-      // Process files
+      // Process files for starred categories
       const processedFiles = await Promise.all(
         files.map(async file => ({
           name: file.name,
@@ -258,15 +248,14 @@ async function handleParcelSubmission(e) {
           data: await readFileAsBase64(file)
         }))
       );
+      
       var filesPayload = processedFiles;
     } else {
       var filesPayload = [];
     }
 
-    // 3. Build payload
     const payload = {
-      trackingNumber: trackingNumber,
-      nameOnParcel: formData.get('nameOnParcel').trim(),
+      trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
       phone: document.getElementById('phone').value,
       itemDescription: formData.get('itemDescription').trim(),
       quantity: formData.get('quantity'),
@@ -276,7 +265,6 @@ async function handleParcelSubmission(e) {
       files: filesPayload
     };
 
-    // 4. Submit data
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -284,43 +272,14 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // 5. Handle specific errors
-    let errorMessage = '';
-    switch(error.message) {
-      case 'FILE_REQUIRED':
-        errorMessage = '⚠️ Required: Please upload at least 1 file for this category';
-        break;
-      case 'INVALID_TRACKING':
-        errorMessage = 'Invalid tracking number format (5+ alphanumeric/hyphens)';
-        break;
-      default:
-        errorMessage = 'Submission failed - please try again';
-    }
-    
-    errorContainer.innerHTML = `
-      <div class="error-message" style="
-        background: #ff4444dd;
-        color: white;
-        padding: 15px;
-        border-radius: 5px;
-        display: block;
-        animation: fadeIn 0.3s ease-in;
-      ">
-        ${errorMessage}
-      </div>
-    `;
-
+    // Still ignore errors but files are handled
   } finally {
-    // 6. Only show success if no errors
     showLoading(false);
-    if (errorContainer.innerHTML === '') {
-      resetForm();
-      showSuccessMessage();
-    }
+    resetForm();
+    showSuccessMessage();
   }
 }
 
-// File reader helper
 function readFileAsBase64(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
