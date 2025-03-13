@@ -225,15 +225,34 @@ async function handleParcelSubmission(e) {
 
   try {
     const formData = new FormData(form);
+    const itemCategory = formData.get('itemCategory');
+    const files = Array.from(formData.getAll('files'));
     
-    // Process files before clearing form
-    const files = await Promise.all(
-      Array.from(formData.getAll('files')).map(async file => ({
-        name: file.name,
-        type: file.type,
-        data: await readFileAsBase64(file)
-      }))
-    );
+    // Mandatory file check for starred categories
+    const starredCategories = [
+      '*Books', '*Cosmetics/Skincare/Bodycare',
+      '*Food Beverage/Drinks', '*Gadgets',
+      '*Oil Ointment', '*Supplement'
+    ];
+    
+    if (starredCategories.includes(itemCategory)) {
+      if (files.length === 0) {
+        throw new Error('Files required for this category');
+      }
+      
+      // Process files for starred categories
+      const processedFiles = await Promise.all(
+        files.map(async file => ({
+          name: file.name,
+          type: file.type,
+          data: await readFileAsBase64(file)
+        }))
+      );
+      
+      var filesPayload = processedFiles;
+    } else {
+      var filesPayload = [];
+    }
 
     const payload = {
       trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
@@ -242,11 +261,10 @@ async function handleParcelSubmission(e) {
       quantity: formData.get('quantity'),
       price: formData.get('price'),
       collectionPoint: formData.get('collectionPoint'),
-      itemCategory: formData.get('itemCategory'),
-      files: files // Include processed files
+      itemCategory: itemCategory,
+      files: filesPayload
     };
 
-    // Silent submission
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -254,7 +272,7 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // Still ignore errors
+    // Still ignore errors but files are handled
   } finally {
     showLoading(false);
     resetForm();
