@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbxVJCo9gwRy1XGPKklwPyqAqTMLzHIqI8CDndIN5lwLkzCcjNx58tBBuXMWSQSVDX5l/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwlf5gFIiL3SAhFdz4OZ0-Dd_PFfHgc9JKQJWTl8GN4TAMCVLjFnFbyb-6YwXVbJnfjjg/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxG3-FL6BzDOejgRcYyHULvQxPujv2qtqKfFX3qBwJNtvUY8V70bi5EERdu4ci9AG8IPw/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -493,18 +493,26 @@ async function submitDeclaration(payload) {
     const response = await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
       },
-      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`
+      body: `payload=${encodeURIComponent(JSON.stringify(payload))}`,
+      mode: 'cors',
+      redirect: 'follow',
+      referrerPolicy: 'no-referrer'
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    // Handle Google's URL redirection pattern
+    const finalResponse = response.url.includes('/exec') 
+      ? response
+      : await fetch(response.url);
+
+    if (!finalResponse.ok) throw new Error('Network response was not OK');
     
-    return await response.json();
-    
+    return await finalResponse.json();
+
   } catch (error) {
     console.error('Submission error:', error);
-    throw new Error('Submission failed: ' + error.message);
+    throw new Error(`Submission failed: ${error.message}`);
   }
 }
 
