@@ -827,10 +827,21 @@ document.addEventListener('DOMContentLoaded', () => {
   initValidationListeners();
   createLoaderElement();
 
+  // Initialize category requirements on page load
+  checkCategoryRequirements();
+
   // Initialize parcel declaration form
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
     parcelForm.addEventListener('submit', handleParcelSubmission);
+    
+    // Set up category change listener
+    const categorySelect = document.getElementById('itemCategory');
+    if (categorySelect) {
+      categorySelect.addEventListener('change', checkCategoryRequirements);
+    }
+
+    // Phone field setup
     const phoneField = document.getElementById('phone');
     if (phoneField) {
       const userData = checkSession();
@@ -854,16 +865,44 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Cleanup on page unload
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
 
-  // Accessibility focus management
   const firstInput = document.querySelector('input:not([type="hidden"])');
   if (firstInput) firstInput.focus();
 });
+
+// New functions for category requirements =================
+function checkCategoryRequirements() {
+  const category = document.getElementById('itemCategory')?.value || '';
+  const fileInput = document.getElementById('fileUpload');
+  const fileHelp = document.getElementById('fileHelp');
+  
+  const starredCategories = [
+    '*Books', '*Cosmetics/Skincare/Bodycare',
+    '*Food Beverage/Drinks', '*Gadgets',
+    '*Oil Ointment', '*Supplement'
+  ];
+
+  if (starredCategories.includes(category)) {
+    fileInput.required = true;
+    fileHelp.innerHTML = 'Required: JPEG, PNG, PDF (Max 5MB each)';
+    fileHelp.style.color = '#ff4444';
+  } else {
+    fileInput.required = false;
+    fileHelp.innerHTML = 'Optional: JPEG, PNG, PDF (Max 5MB each)';
+    fileHelp.style.color = '#888';
+  }
+}
+
+function setupCategoryChangeListener() {
+  const categorySelect = document.getElementById('itemCategory');
+  if (categorySelect) {
+    categorySelect.addEventListener('change', checkCategoryRequirements);
+  }
+}
 
 // ================= DEBUG UTILITIES =================
 window.debugForm = {
