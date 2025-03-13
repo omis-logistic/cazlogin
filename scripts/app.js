@@ -198,39 +198,22 @@ function resetForm() {
   const form = document.getElementById('declarationForm');
   if (!form) return;
 
-  // Clear all inputs except phone number
+  // Clear all fields except phone
   form.querySelectorAll('input:not(#phone), select, textarea').forEach(field => {
     if (field.type === 'file') {
-      // Special handling for file inputs
       field.value = null;
-      if (field.nextElementSibling?.classList.contains('file-preview')) {
-        field.nextElementSibling.remove();
-      }
     } else if (field.tagName === 'SELECT') {
-      // Reset select to first option
       field.selectedIndex = 0;
-      field.dispatchEvent(new Event('change'));
-    } else if (field.type === 'checkbox' || field.type === 'radio') {
-      field.checked = false;
     } else {
       field.value = '';
     }
   });
 
-  // Clear validation states
-  document.querySelectorAll('.error-message').forEach(el => {
-    el.textContent = '';
-    el.style.display = 'none';
-  });
-
-  // Reset UI states
-  const submitBtn = document.getElementById('submitBtn');
-  if (submitBtn) submitBtn.disabled = true;
-
-  // Clear any existing success messages
-  const successMessage = document.getElementById('message');
-  if (successMessage) {
-    successMessage.style.display = 'none';
+  // Preserve phone number styling
+  const phoneField = document.getElementById('phone');
+  if (phoneField) {
+    phoneField.style.backgroundColor = '#2a2a2a';
+    phoneField.style.color = '#ffffff';
   }
 }
 
@@ -241,7 +224,7 @@ async function handleParcelSubmission(e) {
   showLoading(true);
 
   try {
-    // Minimal payload construction
+    // Preserve existing data collection
     const formData = new FormData(form);
     const payload = {
       trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
@@ -251,22 +234,29 @@ async function handleParcelSubmission(e) {
       price: formData.get('price'),
       collectionPoint: formData.get('collectionPoint'),
       itemCategory: formData.get('itemCategory'),
-      files: [] // Remove file handling if not needed
+      files: Array.from(formData.getAll('files'))
     };
 
-    // Fire submission without waiting for response
-    fetch(CONFIG.PROXY_URL, {
+    // Force submission without error checking
+    await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: `payload=${encodeURIComponent(JSON.stringify(payload))}`
-    }).catch(() => {/* Ignore all errors */});
+    });
 
+  } catch (error) {
+    // Intentionally ignore all errors
   } finally {
-    // Immediate UI cleanup
+    // Always show success UI
     showLoading(false);
-    showSuccessMessage();
     resetForm();
-    setTimeout(() => safeRedirect('dashboard.html'), 3000);
+    showSuccessMessage();
+    
+    // Remove any existing redirects
+    const messageElement = document.getElementById('message');
+    if (messageElement) {
+      messageElement.style.animation = 'none'; // Remove fade-out
+    }
   }
 }
 
