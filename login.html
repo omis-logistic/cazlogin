@@ -165,7 +165,8 @@
     sessionStorage.setItem('modalShown', 'false');
     localStorage.setItem('freshLogin', 'true');
     
-    safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+    safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html?fresh=true');
+
   } else {
     showError(response.message || 'Login failed');
   }
