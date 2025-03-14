@@ -293,34 +293,6 @@ function validateTrackingNumberInput(inputElement) {
   return isValid;
 }
 
-// Keep existing submission validation
-function validateTrackingNumber(value) {
-  if (!/^[A-Z0-9-]{5,}$/i.test(value)) {
-    throw new Error('Invalid tracking number format');
-  }
-}
-
-function validateItemCategory(category) {
-  const validCategories = [
-    'Accessories/Jewellery', 'Baby Appliances', 'Bag', 'Car Parts/Accessories',
-    'Carpets/Mat', 'Clothing', 'Computer Accessories', 'Cordless', 'Decorations',
-    'Disposable Pad/Mask', 'Electrical Appliances', 'Fabric', 'Fashion Accessories',
-    'Fishing kits/Accessories', 'Footware Shoes/Slippers', 'Game/Console/Board',
-    'Hand Tools', 'Handphone Casing', 'Headgear', 'Home Fitting/Furniture',
-    'Kitchenware', 'LED/Lamp', 'Matters/Bedding', 'Mix Item', 'Motor Part/Accessories',
-    'Others', 'Perfume', 'Phone Accessories', 'Plastic Article', 'RC Parts/Accessories',
-    'Rubber', 'Seluar', 'Socks', 'Sport Equipment', 'Stationery', 'Stickers',
-    'Storage', 'Telkong', 'Toys', 'Tudong', 'Tumbler', 'Underwear',
-    'Watch & Accessories', 'Wire, Adapter & Plug',
-    '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
-    '*Gadgets', '*Oil Ointment', '*Supplement'
-  ];
-  
-  if (!validCategories.includes(category)) {
-    throw new Error('Please select a valid item category');
-  }
-}
-
 function validateName(inputElement) {
   const value = inputElement?.value?.trim() || '';
   const isValid = value.length >= 2;
@@ -362,6 +334,27 @@ function validateCategory(selectElement) {
   showError(isValid ? '' : 'Please select item category', 'itemCategoryError');
   if(isValid) checkInvoiceRequirements();
   return isValid;
+}
+
+function validateItemCategory(category) {
+  const validCategories = [
+    'Accessories/Jewellery', 'Baby Appliances', 'Bag', 'Car Parts/Accessories',
+    'Carpets/Mat', 'Clothing', 'Computer Accessories', 'Cordless', 'Decorations',
+    'Disposable Pad/Mask', 'Electrical Appliances', 'Fabric', 'Fashion Accessories',
+    'Fishing kits/Accessories', 'Footware Shoes/Slippers', 'Game/Console/Board',
+    'Hand Tools', 'Handphone Casing', 'Headgear', 'Home Fitting/Furniture',
+    'Kitchenware', 'LED/Lamp', 'Matters/Bedding', 'Mix Item', 'Motor Part/Accessories',
+    'Others', 'Perfume', 'Phone Accessories', 'Plastic Article', 'RC Parts/Accessories',
+    'Rubber', 'Seluar', 'Socks', 'Sport Equipment', 'Stationery', 'Stickers',
+    'Storage', 'Telkong', 'Toys', 'Tudong', 'Tumbler', 'Underwear',
+    'Watch & Accessories', 'Wire, Adapter & Plug',
+    '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+    '*Gadgets', '*Oil Ointment', '*Supplement'
+  ];
+  
+  if (!validCategories.includes(category)) {
+    throw new Error('Please select a valid item category');
+  }
 }
 
 function validateInvoiceFiles() {
