@@ -154,21 +154,21 @@
   script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
   window[callbackName] = (response) => {
-    // Restore button
-    btn.disabled = false;
-    btn.innerHTML = originalText;
+  delete window[callbackName];
+  document.body.removeChild(script);
+  
+  if (response.success) {
+    sessionStorage.setItem('userData', JSON.stringify(response));
+    localStorage.setItem('lastActivity', Date.now());
     
-    // Existing response handling
-    delete window[callbackName];
-    document.body.removeChild(script);
+    // Reset welcome shown timestamp
+    localStorage.removeItem('welcomeShown');
     
-    if (response.success) {
-      sessionStorage.setItem('userData', JSON.stringify(response));
-      safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
-    } else {
-      showError(response.message || 'Login failed');
-    }
-  };
+    safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+  } else {
+    showError(response.message || 'Login failed');
+  }
+};
 
   document.body.appendChild(script);
 }
