@@ -279,16 +279,15 @@
   if (userData.tempPassword) return safeRedirect('password-reset.html');
 
   const modal = document.getElementById('welcomeModal');
-  const isFreshLogin = sessionStorage.getItem('freshLogin') === 'true';
 
-  // Show modal only on fresh login
-  if (isFreshLogin) {
+  // Check if we should show modal (only after login)
+  if (sessionStorage.getItem('showWelcomeModal') === 'true') {
     document.body.style.overflow = 'hidden';
     modal.style.display = 'block';
-    sessionStorage.removeItem('freshLogin'); // Clear the flag
+    sessionStorage.removeItem('showWelcomeModal'); // Remove the flag
   }
 
-  // Existing click handler
+  // Keep existing click handler
   window.onclick = (event) => {
     if(event.target === modal) {
       closeWelcomeModal();
