@@ -273,29 +273,22 @@
       document.body.style.overflow = 'auto';
     }
 
-    (function initDashboard() {
+(function initDashboard() {
   const userData = JSON.parse(sessionStorage.getItem('userData'));
   if (!userData) return safeRedirect('login.html');
   if (userData.tempPassword) return safeRedirect('password-reset.html');
 
   const modal = document.getElementById('welcomeModal');
-  
-  // Check if we need to show modal after login
-  const lastLogin = localStorage.getItem('lastLogin');
-  const welcomeShown = localStorage.getItem('welcomeShown');
-  
-  if (!lastLogin || (Date.now() - lastLogin > 1000)) { // 1 second threshold
-    if (!welcomeShown || (welcomeShown < lastLogin)) {
-      document.body.style.overflow = 'hidden';
-      modal.style.display = 'block';
-      localStorage.setItem('welcomeShown', Date.now());
-    }
+  const isFreshLogin = sessionStorage.getItem('freshLogin') === 'true';
+
+  // Show modal only on fresh login
+  if (isFreshLogin) {
+    document.body.style.overflow = 'hidden';
+    modal.style.display = 'block';
+    sessionStorage.removeItem('freshLogin'); // Clear the flag
   }
 
-  // Update last login time
-  localStorage.setItem('lastLogin', Date.now());
-
-  // Existing code
+  // Existing click handler
   window.onclick = (event) => {
     if(event.target === modal) {
       closeWelcomeModal();
