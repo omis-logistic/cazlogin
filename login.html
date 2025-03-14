@@ -154,24 +154,46 @@
   script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
   window[callbackName] = (response) => {
+  // Cleanup
   delete window[callbackName];
   document.body.removeChild(script);
   
+  // Restore button state
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+
+  // Handle response
   if (response.success) {
+    // Store user data
     sessionStorage.setItem('userData', JSON.stringify(response));
     localStorage.setItem('lastActivity', Date.now());
     
-    // Reset welcome shown timestamp
-    localStorage.removeItem('welcomeShown');
-    
-    safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
+    // Set fresh login flag
+    sessionStorage.setItem('freshLogin', 'true');
+
+    // Handle temp password state
+    if (response.tempPassword) {
+      safeRedirect('password-reset.html');
+    } else {
+      safeRedirect('dashboard.html');
+    }
   } else {
-    showError(response.message || 'Login failed');
+    // Show error message
+    const errorMessage = response.message || 'Authentication failed';
+    showError(errorMessage);
+    
+    // Highlight specific field errors
+    if (response.errors) {
+      response.errors.forEach(error => {
+        const errorField = document.getElementById(`${error.field}Error`);
+        if (errorField) errorField.textContent = error.message;
+      });
+    }
+    
+    // Clear sensitive fields
+    document.getElementById('password').value = '';
   }
 };
-
-  document.body.appendChild(script);
-}
 
     function showRegistration() {
       safeRedirect('register.html');
