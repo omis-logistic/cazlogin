@@ -82,6 +82,18 @@ button:hover {
   margin-top: 0.3rem;
 }
 
+.inline-error {
+  color: #ff4444;
+  background: #ff444422;
+  padding: 12px;
+  border-radius: 4px;
+  margin: 15px 0;
+  text-align: center;
+  display: none;
+  border: 1px solid #ff444466;
+  font-size: 0.9em;
+}
+
 /* ======== FORM STYLES ======== */
 .form-group {
   margin-bottom: 1.5rem;
