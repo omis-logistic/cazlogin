@@ -118,37 +118,62 @@
   <script src="scripts/app.js"></script>
   <script>
     function handleRegistration() {
-      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-      const statusElement = document.getElementById('registrationStatus');
-      statusElement.className = '';
-      statusElement.textContent = '';
+  const btn = document.querySelector('.registration-page button');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="button-loader"></div> Registering...';
 
-      if (!validateRegistrationForm()) return;
+  // Clear previous errors
+  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+  const statusElement = document.getElementById('registrationStatus');
+  statusElement.className = '';
+  statusElement.textContent = '';
 
-      const phone = document.getElementById('regPhone').value;
-      const password = document.getElementById('regPassword').value;
-      const email = document.getElementById('regEmail').value;
+  // Validate form first
+  if (!validateRegistrationForm()) {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
 
-      const callbackName = `jsonp_${Date.now()}`;
-      const script = document.createElement('script');
-      script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
+  // Get form values
+  const phone = document.getElementById('regPhone').value;
+  const password = document.getElementById('regPassword').value;
+  const email = document.getElementById('regEmail').value;
 
-      window[callbackName] = (response) => {
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response.success) {
-          statusElement.className = 'status-message success';
-          statusElement.textContent = 'Registration successful! Redirecting...';
-          setTimeout(() => safeRedirect('login.html'), 1500);
-        } else {
-          statusElement.className = 'status-message error';
-          statusElement.textContent = response.message || 'Registration failed';
-        }
-      };
+  // Create JSONP request
+  const callbackName = `jsonp_${Date.now()}`;
+  const script = document.createElement('script');
+  script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
 
-      document.body.appendChild(script);
+  window[callbackName] = (response) => {
+    // Cleanup and restore button
+    delete window[callbackName];
+    document.body.removeChild(script);
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+
+    // Handle response
+    if (response.success) {
+      statusElement.className = 'status-message success';
+      statusElement.textContent = 'Registration successful! Redirecting...';
+      setTimeout(() => safeRedirect('login.html'), 1500);
+    } else {
+      statusElement.className = 'status-message error';
+      statusElement.textContent = response.message || 'Registration failed';
+      
+      // Highlight specific errors if available
+      if (response.errors) {
+        response.errors.forEach(error => {
+          const errorField = document.getElementById(`${error.field}Error`);
+          if (errorField) errorField.textContent = error.message;
+        });
+      }
     }
+  };
+
+  document.body.appendChild(script);
+}
 
     document.getElementById('regPhone').addEventListener('input', function() {
       document.getElementById('phoneError').textContent = 
