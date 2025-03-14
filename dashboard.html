@@ -280,29 +280,29 @@
 
   const modal = document.getElementById('welcomeModal');
 
-  // Check if we should show modal (only after login)
-  if (sessionStorage.getItem('showWelcomeModal') === 'true') {
+  // ONLY MODIFY THIS SECTION
+  if (sessionStorage.getItem('freshLogin') === 'true') {
     document.body.style.overflow = 'hidden';
     modal.style.display = 'block';
-    sessionStorage.removeItem('showWelcomeModal'); // Remove the flag
+    sessionStorage.removeItem('freshLogin'); // Clear the flag
   }
 
-  // Keep existing click handler
+  // KEEP EVERYTHING ELSE BELOW EXACTLY AS IS
   window.onclick = (event) => {
     if(event.target === modal) {
       closeWelcomeModal();
     }
   }
 
-      window.showMyInfo = () => safeRedirect('my-info.html');
-      window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
-      window.showTrackParcel = () => safeRedirect('track-parcel.html');
-      
-      window.handleLogout = () => {
-        sessionStorage.clear();
-        safeRedirect('login.html');
-      }
-    })();
+  window.showMyInfo = () => safeRedirect('my-info.html');
+  window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
+  window.showTrackParcel = () => safeRedirect('track-parcel.html');
+  
+  window.handleLogout = () => {
+    sessionStorage.clear();
+    safeRedirect('login.html');
+  }
+})();
   </script>
 </body>
 </html>
