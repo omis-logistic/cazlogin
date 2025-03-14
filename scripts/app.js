@@ -96,14 +96,9 @@ const checkSession = () => {
 };
 
 function handleLogout() {
-  try {
-    sessionStorage.removeItem('userData');
-    localStorage.removeItem('lastActivity');
-    safeRedirect('login.html');
-  } catch (error) {
-    console.error('Logout error:', error);
-    showError('Failed to logout properly');
-  }
+  sessionStorage.clear(); // This clears the freshLogin flag
+  localStorage.removeItem('lastActivity');
+  safeRedirect('login.html');
 }
 
 // ================= API HANDLER =================
