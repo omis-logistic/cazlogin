@@ -161,8 +161,8 @@
     sessionStorage.setItem('userData', JSON.stringify(response));
     localStorage.setItem('lastActivity', Date.now());
     
-    // Reset welcome shown timestamp
-    localStorage.removeItem('welcomeShown');
+    // Set session flag for fresh login
+    sessionStorage.setItem('showWelcomeModal', 'true'); // Add this line
     
     safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html');
   } else {
