@@ -278,11 +278,12 @@
   if (!userData) return safeRedirect('login.html');
   if (userData.tempPassword) return safeRedirect('password-reset.html');
 
-  // ======== ADD THIS CODE BLOCK ========
+  // New URL parameter check
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('fresh')) {
+    // Show modal and clean URL
     document.getElementById('welcomeModal').style.display = 'block';
-    window.history.replaceState({}, '', window.location.pathname);
+    window.history.replaceState({}, '', 'dashboard.html');
   }
 
   const modal = document.getElementById('welcomeModal');
@@ -296,10 +297,9 @@
     localStorage.removeItem('freshLogin');
   }
 
-  // Keep all existing code below exactly as is
   window.onclick = (event) => {
-    if(event.target === modal) {
-      closeWelcomeModal();
+    if(event.target === document.getElementById('welcomeModal')) {
+      document.getElementById('welcomeModal').style.display = 'none';
     }
   }
 
