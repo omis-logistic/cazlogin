@@ -280,14 +280,16 @@
 
   const modal = document.getElementById('welcomeModal');
 
-  // ONLY MODIFY THIS SECTION
-  if (sessionStorage.getItem('freshLogin') === 'true') {
+  // Dual verification check
+  if (localStorage.getItem('freshLogin') === 'true' && 
+      sessionStorage.getItem('modalShown') === 'false') {
     document.body.style.overflow = 'hidden';
     modal.style.display = 'block';
-    sessionStorage.removeItem('freshLogin'); // Clear the flag
+    sessionStorage.setItem('modalShown', 'true');
+    localStorage.removeItem('freshLogin');
   }
 
-  // KEEP EVERYTHING ELSE BELOW EXACTLY AS IS
+  // Keep all existing code below exactly as is
   window.onclick = (event) => {
     if(event.target === modal) {
       closeWelcomeModal();
