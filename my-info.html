@@ -19,6 +19,11 @@
       transition: all 0.3s ease-out;
     }
 
+    #changePasswordSection button,
+#changeEmailSection button {
+  position: relative;
+}
+
     .password-rules {
       font-size: 0.9em;
       color: var(--gold);
@@ -149,60 +154,123 @@
     });
 
     function handleChangePassword() {
-      clearErrors();
-      const currentPass = document.getElementById('currentPassword').value;
-      const newPass = document.getElementById('newPassword').value;
-      const repeatPass = document.getElementById('repeatNewPassword').value;
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
+  const btn = document.querySelector('#changePasswordSection button');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="button-loader"></div> Updating...';
 
-      // Validation
-      if (!currentPass) return showError('Current password required', 'currentPasswordError');
-      if (!validatePassword(newPass)) return showError('Invalid password format', 'newPasswordError');
-      if (newPass !== repeatPass) return showError('Passwords do not match', 'repeatNewPasswordError');
+  clearErrors();
+  const currentPass = document.getElementById('currentPassword').value;
+  const newPass = document.getElementById('newPassword').value;
+  const repeatPass = document.getElementById('repeatNewPassword').value;
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
 
-      createJsonpRequest('updatePassword', {
-        phone: userData.phone,
-        currentPassword: currentPass,
-        newPassword: newPass,
-        confirmPassword: repeatPass
-      }, (response) => {
-        if (response.success) {
-          alert('Password updated! Please login again.');
-          handleLogout();
-        } else {
-          showError(response.message || 'Password update failed');
-        }
-      });
+  // Validation
+  if (!currentPass) {
+    showError('Current password required', 'currentPasswordError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  if (!validatePassword(newPass)) {
+    showError('Invalid password format', 'newPasswordError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  if (newPass !== repeatPass) {
+    showError('Passwords do not match', 'repeatNewPasswordError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+
+  createJsonpRequest('updatePassword', {
+    phone: userData.phone,
+    currentPassword: currentPass,
+    newPassword: newPass,
+    confirmPassword: repeatPass
+  }, (response) => {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    
+    if (response.success) {
+      alert('Password updated! Please login again.');
+      handleLogout();
+    } else {
+      showError(response.message || 'Password update failed');
+      
+      // Handle specific field errors
+      if (response.errors) {
+        response.errors.forEach(error => {
+          const errorField = document.getElementById(`${error.field}Error`);
+          if (errorField) errorField.textContent = error.message;
+        });
+      }
     }
+  });
+}
 
-    function handleChangeEmail() {
-      clearErrors();
-      const currentPass = document.getElementById('verifyPassword').value;
-      const newEmail = document.getElementById('newEmail').value;
-      const repeatEmail = document.getElementById('repeatNewEmail').value;
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
+function handleChangeEmail() {
+  const btn = document.querySelector('#changeEmailSection button');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<div class="button-loader"></div> Updating...';
 
-      // Validation
-      if (!currentPass) return showError('Current password required', 'verifyPasswordError');
-      if (!validateEmail(newEmail)) return showError('Invalid email format', 'newEmailError');
-      if (newEmail !== repeatEmail) return showError('Emails do not match', 'repeatNewEmailError');
+  clearErrors();
+  const currentPass = document.getElementById('verifyPassword').value;
+  const newEmail = document.getElementById('newEmail').value;
+  const repeatEmail = document.getElementById('repeatNewEmail').value;
+  const userData = JSON.parse(sessionStorage.getItem('userData'));
 
-      createJsonpRequest('updateEmail', {
-        phone: userData.phone,
-        currentPassword: currentPass,
-        newEmail: newEmail,
-        confirmEmail: repeatEmail
-      }, (response) => {
-        if (response.success) {
-          userData.email = newEmail;
-          sessionStorage.setItem('userData', JSON.stringify(userData));
-          alert('Email updated successfully!');
-          safeRedirect('dashboard.html');
-        } else {
-          showError(response.message || 'Email update failed');
-        }
-      });
+  // Validation
+  if (!currentPass) {
+    showError('Current password required', 'verifyPasswordError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  if (!validateEmail(newEmail)) {
+    showError('Invalid email format', 'newEmailError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+  if (newEmail !== repeatEmail) {
+    showError('Emails do not match', 'repeatNewEmailError');
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    return;
+  }
+
+  createJsonpRequest('updateEmail', {
+    phone: userData.phone,
+    currentPassword: currentPass,
+    newEmail: newEmail,
+    confirmEmail: repeatEmail
+  }, (response) => {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    
+    if (response.success) {
+      // Update local session data
+      userData.email = newEmail;
+      sessionStorage.setItem('userData', JSON.stringify(userData));
+      document.getElementById('currentEmail').textContent = newEmail;
+      alert('Email updated successfully!');
+      safeRedirect('dashboard.html');
+    } else {
+      showError(response.message || 'Email update failed');
+      
+      if (response.errors) {
+        response.errors.forEach(error => {
+          const errorField = document.getElementById(`${error.field}Error`);
+          if (errorField) errorField.textContent = error.message;
+        });
+      }
     }
+  });
+}
 
     function clearErrors() {
       document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
