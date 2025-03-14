@@ -152,24 +152,25 @@
   const script = document.createElement('script');
   script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
-  window[callbackName] = (response) => {
-    // Always restore button state first
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-    
-    delete window[callbackName];
-    document.body.removeChild(script);
-    
-    if (response.success) {
+window[callbackName] = (response) => {
+  // Always restore button state first
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+  
+  delete window[callbackName];
+  document.body.removeChild(script);
+  
+  if (response.success) {
       sessionStorage.setItem('userData', JSON.stringify(response));
       localStorage.setItem('lastActivity', Date.now());
       safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html?fresh=1');
-    } else {
-      // Clear password field and show specific error
-      document.getElementById('password').value = '';
-      showError('Invalid Credentials');
-    }
-  };
+  } else {
+    const errorContainer = document.getElementById('loginError');
+    errorContainer.textContent = 'Invalid Credentials';
+    errorContainer.style.display = 'block';
+    document.getElementById('password').value = '';
+  }
+};
 
   document.body.appendChild(script);
 }
