@@ -776,13 +776,16 @@ function validateRegistrationForm() {
 // ================= UTILITIES =================
 function safeRedirect(path) {
   try {
+    // Extract base path without query parameters
+    const basePath = path.split('?')[0].split('#')[0];
+    
     const allowedPaths = [
       'login.html', 'register.html', 'dashboard.html',
       'forgot-password.html', 'password-reset.html',
       'my-info.html', 'parcel-declaration.html', 'track-parcel.html'
     ];
     
-    if (!allowedPaths.includes(path)) {
+    if (!allowedPaths.includes(basePath)) {
       throw new Error('Unauthorized path');
     }
     
