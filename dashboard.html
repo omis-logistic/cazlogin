@@ -278,6 +278,13 @@
   if (!userData) return safeRedirect('login.html');
   if (userData.tempPassword) return safeRedirect('password-reset.html');
 
+  // ======== ADD THIS CODE BLOCK ========
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('fresh')) {
+    document.getElementById('welcomeModal').style.display = 'block';
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+
   const modal = document.getElementById('welcomeModal');
 
   // Dual verification check
