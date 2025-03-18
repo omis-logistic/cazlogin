@@ -176,7 +176,7 @@ window[callbackName] = (response) => {
       safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html?fresh=1');
   } else {
     const errorContainer = document.getElementById('loginError');
-    errorContainer.textContent = 'Incorrect Password. Try again';
+    errorContainer.textContent = 'Incorrect Phone Number or Password. Try again';
     errorContainer.style.display = 'block';
     document.getElementById('password').value = '';
   }
