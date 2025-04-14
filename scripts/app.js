@@ -228,7 +228,7 @@ async function handleParcelSubmission(e) {
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare',
       '*Food Beverage/Drinks', '*Gadgets',
-      '*Oil Ointment', '*Supplement'
+      '*Oil Ointment', '*Supplement', '*Others'
     ];
     
     if (starredCategories.includes(itemCategory)) {
@@ -369,7 +369,7 @@ function validateInvoiceFiles() {
   const mandatoryCategories = [
     '* Books', '* Cosmetics/Skincare/Bodycare',
     '* Food Beverage/Drinks', '* Gadgets',
-    '* Oil Ointment', '* Supplement'
+    '* Oil Ointment', '* Supplement', '*Others'
   ];
   
   const category = document.getElementById('itemCategory')?.value || '';
@@ -419,7 +419,7 @@ function toBase64(file) {
 function validateFiles(category, files) {
   const starredCategories = [
     '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
-    '*Gadgets', '*Oil Ointment', '*Supplement'
+    '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
   ];
 
   if (starredCategories.includes(category)) {
@@ -442,7 +442,7 @@ function handleFileSelection(input) {
     // Validate against starred categories
     const starredCategories = [
       '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
-      '*Gadgets', '*Oil Ointment', '*Supplement'
+      '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
     ];
     
     if (starredCategories.includes(category)) {
@@ -883,7 +883,7 @@ function checkCategoryRequirements() {
   const starredCategories = [
     '*Books', '*Cosmetics/Skincare/Bodycare',
     '*Food Beverage/Drinks', '*Gadgets',
-    '*Oil Ointment', '*Supplement'
+    '*Oil Ointment', '*Supplement', '*Others'
   ];
 
   if (starredCategories.includes(category)) {
