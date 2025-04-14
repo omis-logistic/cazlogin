@@ -309,7 +309,7 @@ function validateItemCategory(category) {
     'Fishing kits/Accessories', 'Footware Shoes/Slippers', 'Game/Console/Board',
     'Hand Tools', 'Handphone Casing', 'Headgear', 'Home Fitting/Furniture',
     'Kitchenware', 'LED/Lamp', 'Matters/Bedding', 'Mix Item', 'Motor Part/Accessories',
-    'Others', 'Perfume', 'Phone Accessories', 'Plastic Article', 'RC Parts/Accessories',
+    '*Others', 'Perfume', 'Phone Accessories', 'Plastic Article', 'RC Parts/Accessories',
     'Rubber', 'Seluar', 'Socks', 'Sport Equipment', 'Stationery', 'Stickers',
     'Storage', 'Telkong', 'Toys', 'Tudong', 'Tumbler', 'Underwear',
     'Watch & Accessories', 'Wire, Adapter & Plug',
