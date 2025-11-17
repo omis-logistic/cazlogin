@@ -170,6 +170,9 @@
 
     container.innerHTML = `
       <div class="detail-item">
+        <span class="detail-value"><strong>Submitted:</strong> ${parcel.submittedTimestamp || 'N/A'}</span>
+      </div>
+      <div class="detail-item">
         <span class="detail-value"><strong>Status:</strong> ${parcel.status || 'N/A'}</span>
       </div>
       <div class="detail-item">
