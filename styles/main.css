@@ -315,6 +315,26 @@ select {
 .status-delivered { background: #28a745; }
 .status-hold { background: #dc3545; }
 
+.uncollected-indicator {
+  background: #ff4444;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  margin-left: 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
 /* ======== MOBILE STYLES ======== */
 @media screen and (max-width: 768px) {
   body {
