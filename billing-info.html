@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <title>Billing Info - Cahaya Az Zahra Enterprise</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    .billing-page { 
+      max-width: 1200px; 
+      margin: 20px auto;
+      animation: fadeIn 0.3s ease-in;
+    }
+    
+    .search-container {
+      margin: 20px 0;
+    }
+    
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      background: #2a2a2a;
+      border: 1px solid var(--gold);
+      color: var(--text-light);
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    .billing-sections {
+      display: grid;
+      gap: 30px;
+      margin-top: 20px;
+    }
+    
+    .billing-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid var(--gold);
+    }
+    
+    .section-title {
+      color: var(--gold);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(197, 160, 71, 0.3);
+    }
+    
+    .billing-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    .billing-table th {
+      background: rgba(197, 160, 71, 0.2);
+      color: var(--gold);
+      padding: 12px 8px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid var(--gold);
+    }
+    
+    .billing-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      vertical-align: top;
+    }
+    
+    .billing-table tr:hover {
+      background: rgba(255,255,255,0.03);
+    }
+    
+    .pay-now-btn {
+      background: var(--gold);
+      color: var(--dark-bg);
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: bold;
+      display: inline-block;
+      transition: opacity 0.3s;
+    }
+    
+    .pay-now-btn:hover {
+      opacity: 0.9;
+      color: var(--dark-bg);
+    }
+    
+    .tracking-details {
+      white-space: pre-line;
+      font-family: monospace;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #888;
+    }
+    
+    .amount {
+      text-align: right;
+      font-weight: 500;
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.8em;
+      font-weight: 500;
+    }
+    
+    .status-pending {
+      background: rgba(255, 193, 7, 0.2);
+      color: #ffc107;
+    }
+    
+    .status-completed {
+      background: rgba(40, 167, 69, 0.2);
+      color: #28a745;
+    }
+    
+    .uncollected-indicator {
+      background: #ff4444;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8em;
+      margin-left: 8px;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @media (max-width: 768px) {
+      .billing-table {
+        display: block;
+        overflow-x: auto;
+      }
+      
+      .billing-table th,
+      .billing-table td {
+        padding: 8px 4px;
+        font-size: 0.9em;
+      }
+      
+      .pay-now-btn {
+        padding: 6px 12px;
+        font-size: 0.9em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container billing-page">
+    <h1>Billing Information</h1>
+    
+    <div id="connectionError" class="error-message" style="display: none;"></div>
+    
+    <div class="search-container">
+      <input type="text" 
+             id="searchInput" 
+             placeholder="Search by Tracking Number or Code..."
+             class="search-box">
+    </div>
+    
+    <div class="billing-sections">
+      <!-- Uncollected Section -->
+      <div class="billing-section">
+        <h2 class="section-title">
+          📦 Uncollected Parcels 
+          <span id="uncollectedCount" class="uncollected-indicator">0</span>
+        </h2>
+        <div id="uncollectedSection">
+          <div class="empty-state">Loading uncollected parcels...</div>
+        </div>
+      </div>
+      
+      <!-- Collected Section -->
+      <div class="billing-section">
+        <h2 class="section-title">✅ Collected & Completed</h2>
+        <div id="collectedSection">
+          <div class="empty-state">Loading completed parcels...</div>
+        </div>
+      </div>
+    </div>
+    
+    <button class="back-btn" onclick="safeRedirect('dashboard.html')" style="margin-top: 30px;">
+      Back to Dashboard
+    </button>
+    
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading Billing Information...</div>
+    </div>
+  </div>
+
+  <script src="scripts/app.js"></script>
+  <script>
+    let allBillingData = [];
+    let uncollectedCount = 0;
+
+    async function loadBillingData() {
+      try {
+        showLoading(true);
+        const userData = checkSession();
+        if (!userData?.phone) return safeRedirect('login.html');
+
+        const callbackName = `billingCallback_${Date.now()}`;
+        const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getBillingInfo&phone=${encodeURIComponent(userData.phone)}`;
+
+        const response = await new Promise((resolve, reject) => {
+          window[callbackName] = (data) => {
+            delete window[callbackName];
+            document.getElementById(callbackName)?.remove();
+            resolve(data);
+          };
+
+          const script = document.createElement('script');
+          script.id = callbackName;
+          script.src = url;
+          script.onerror = () => {
+            delete window[callbackName];
+            reject(new Error('Failed to load billing data'));
+          };
+          document.head.appendChild(script);
+        });
+
+        if (!response.success) {
+          showError(response.message || 'Failed to load billing information', 'connectionError');
+          return;
+        }
+
+        allBillingData = response.data || [];
+        renderBillingSections(allBillingData);
+
+      } catch (error) {
+        console.error('Billing load error:', error);
+        showError('Connection failed. Please try again.', 'connectionError');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function renderBillingSections(data) {
+      // Split data into uncollected and collected
+      const uncollected = data.filter(item => !item.status || item.status.toString().trim() === '');
+      const collected = data.filter(item => item.status && item.status.toString().trim() !== '');
+      
+      uncollectedCount = uncollected.length;
+      document.getElementById('uncollectedCount').textContent = uncollectedCount;
+      
+      renderSection('uncollectedSection', uncollected, true);
+      renderSection('collectedSection', collected, false);
+    }
+
+    function renderSection(sectionId, data, isUncollected) {
+      const section = document.getElementById(sectionId);
+      
+      if (!data.length) {
+        section.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-box-open"></i>
+            No ${isUncollected ? 'uncollected' : 'completed'} parcels found
+          </div>
+        `;
+        return;
+      }
+
+      section.innerHTML = `
+        <table class="billing-table">
+          <thead>
+            <tr>
+              <th>Receipt No.</th>
+              <th>Date</th>
+              <th>Tracking/Code</th>
+              <th>Details</th>
+              <th>Total</th>
+              ${isUncollected ? '<th>Action</th>' : '<th>Status</th>'}
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map(item => `
+              <tr>
+                <td>${item.receipt || 'N/A'}</td>
+                <td>${formatDate(item.date) || 'N/A'}</td>
+                <td>
+                  <div><strong>${item.trackingDetails.split('\n')[0] || 'N/A'}</strong></div>
+                  ${item.code ? `<div style="font-size: 0.9em; color: var(--gold);">Code: ${item.code}</div>` : ''}
+                </td>
+                <td class="tracking-details">${item.trackingDetails || 'N/A'}</td>
+                <td class="amount">${formatCurrency(item.total)}</td>
+                <td>
+                  ${isUncollected ? 
+                    `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${item.receipt || ''}" 
+                       class="pay-now-btn" target="_blank">Pay Now</a>` :
+                    `<span class="status-badge status-completed">${item.status}</span>`
+                  }
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function filterBillingData(searchTerm) {
+      const filtered = allBillingData.filter(item => {
+        const searchLower = searchTerm.toLowerCase();
+        return (item.trackingDetails && item.trackingDetails.toLowerCase().includes(searchLower)) ||
+               (item.code && item.code.toLowerCase().includes(searchLower));
+      });
+      renderBillingSections(filtered);
+    }
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+      detectViewMode();
+      
+      // Setup search functionality
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        filterBillingData(e.target.value.trim());
+      });
+
+      // Load billing data
+      loadBillingData();
+    });
+
+    // Helper function to format date
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-MY', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      } catch {
+        return dateString;
+      }
+    }
+  </script>
+</body>
+</html>
