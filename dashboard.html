@@ -205,6 +205,12 @@
         <p>Check your parcel status</p>
       </div>
     </div>
+
+      <div class="thumbnail" onclick="showBillingInfo()" id="billingThumbnail">
+    <h2>💰 Billing Info</h2>
+    <p>View parcel billing details and make payments</p>
+    <span id="billingIndicator" class="uncollected-indicator" style="display: none;"></span>
+  </div>
     
     <button class="logout-btn" onclick="handleLogout()">Log Out</button>
   </div>
@@ -283,10 +289,51 @@
       document.body.style.overflow = 'auto';
     }
 
+  async function checkUncollectedParcels() {
+    try {
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      if (!userData?.phone) return;
+
+      const callbackName = `uncollectedCallback_${Date.now()}`;
+      const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getUncollectedCount&phone=${encodeURIComponent(userData.phone)}`;
+
+      const response = await new Promise((resolve, reject) => {
+        window[callbackName] = (data) => {
+          delete window[callbackName];
+          document.getElementById(callbackName)?.remove();
+          resolve(data);
+        };
+
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.src = url;
+        script.onerror = () => {
+          delete window[callbackName];
+          reject(new Error('Failed to load uncollected count'));
+        };
+        document.head.appendChild(script);
+      });
+
+      const count = response.count || 0;
+      const indicator = document.getElementById('billingIndicator');
+      
+      if (count > 0) {
+        indicator.textContent = count;
+        indicator.style.display = 'inline-flex';
+      } else {
+        indicator.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Uncollected count check failed:', error);
+    }
+  }
+    
 (function initDashboard() {
   const userData = JSON.parse(sessionStorage.getItem('userData'));
   if (!userData) return safeRedirect('login.html');
   if (userData.tempPassword) return safeRedirect('password-reset.html');
+
+  checkUncollectedParcels(); // This checks for uncollected parcels and updates the indicator
 
   // New URL parameter check
   const urlParams = new URLSearchParams(window.location.search);
@@ -313,6 +360,7 @@
     }
   }
 
+  window.showBillingInfo = () => safeRedirect('billing-info.html');
   window.showMyInfo = () => safeRedirect('my-info.html');
   window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
   window.showTrackParcel = () => safeRedirect('track-parcel.html');
