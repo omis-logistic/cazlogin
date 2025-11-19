@@ -214,23 +214,64 @@
   <script>
     let allBillingData = [];
     let uncollectedCount = 0;
-
+  
+    // BND Currency formatter for billing page only
+    function formatCurrencyBND(amount) {
+      if (!amount && amount !== 0) return 'N/A';
+      const num = typeof amount === 'string' ? parseFloat(amount.replace(/[^\d.-]/g, '')) : amount;
+      return 'B$' + (num || 0).toFixed(2);
+    }
+  
+    // Better date formatting for billing page
+    function formatBillingDate(dateString) {
+      if (!dateString) return 'N/A';
+      try {
+        // Handle Google Sheets date format and various date string formats
+        if (typeof dateString === 'string') {
+          // Try to parse different date formats
+          const date = new Date(dateString);
+          if (!isNaN(date.getTime())) {
+            return date.toLocaleDateString('en-MY', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            });
+          }
+          // If it's already in a good format, return as is
+          return dateString;
+        }
+        
+        // Handle Date objects
+        if (dateString instanceof Date) {
+          return dateString.toLocaleDateString('en-MY', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        }
+        
+        return 'N/A';
+      } catch {
+        return dateString || 'N/A';
+      }
+    }
+  
     async function loadBillingData() {
       try {
         showLoading(true);
         const userData = checkSession();
         if (!userData?.phone) return safeRedirect('login.html');
-
+  
         const callbackName = `billingCallback_${Date.now()}`;
         const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getBillingInfo&phone=${encodeURIComponent(userData.phone)}`;
-
+  
         const response = await new Promise((resolve, reject) => {
           window[callbackName] = (data) => {
             delete window[callbackName];
             document.getElementById(callbackName)?.remove();
             resolve(data);
           };
-
+  
           const script = document.createElement('script');
           script.id = callbackName;
           script.src = url;
@@ -240,15 +281,30 @@
           };
           document.head.appendChild(script);
         });
-
+  
         if (!response.success) {
           showError(response.message || 'Failed to load billing information', 'connectionError');
           return;
         }
-
+  
         allBillingData = response.data || [];
+        console.log('Loaded billing data:', allBillingData); // Debug log
+        
+        // Check if we have data but all values are N/A
+        if (allBillingData.length > 0) {
+          const firstItem = allBillingData[0];
+          const hasValidData = Object.values(firstItem).some(val => 
+            val !== '' && val !== 'N/A' && val !== 0 && val !== '0'
+          );
+          
+          if (!hasValidData) {
+            console.warn('Data loaded but all values appear to be empty/N/A');
+            showError('Data loaded but no valid billing information found. Please check sheet column mappings.', 'connectionError');
+          }
+        }
+        
         renderBillingSections(allBillingData);
-
+  
       } catch (error) {
         console.error('Billing load error:', error);
         showError('Connection failed. Please try again.', 'connectionError');
@@ -256,21 +312,26 @@
         showLoading(false);
       }
     }
-
+  
     function renderBillingSections(data) {
       // Split data into uncollected and collected
       const uncollected = data.filter(item => !item.status || item.status.toString().trim() === '');
       const collected = data.filter(item => item.status && item.status.toString().trim() !== '');
       
       uncollectedCount = uncollected.length;
-      document.getElementById('uncollectedCount').textContent = uncollectedCount;
+      const countElement = document.getElementById('uncollectedCount');
+      if (countElement) {
+        countElement.textContent = uncollectedCount;
+        countElement.style.display = uncollectedCount > 0 ? 'inline-flex' : 'none';
+      }
       
       renderSection('uncollectedSection', uncollected, true);
       renderSection('collectedSection', collected, false);
     }
-
+  
     function renderSection(sectionId, data, isUncollected) {
       const section = document.getElementById(sectionId);
+      if (!section) return;
       
       if (!data.length) {
         section.innerHTML = `
@@ -281,7 +342,7 @@
         `;
         return;
       }
-
+  
       section.innerHTML = `
         <table class="billing-table">
           <thead>
@@ -295,66 +356,61 @@
             </tr>
           </thead>
           <tbody>
-            ${data.map(item => `
+            ${data.map(item => {
+              // Extract first tracking number for display
+              const firstTracking = (item.trackingDetails || '').split('\n')[0] || 'N/A';
+              const receiptNumber = item.receipt || 'N/A';
+              
+              return `
               <tr>
-                <td>${item.receipt || 'N/A'}</td>
-                <td>${formatDate(item.date) || 'N/A'}</td>
+                <td>${receiptNumber}</td>
+                <td>${formatBillingDate(item.date)}</td>
                 <td>
-                  <div><strong>${item.trackingDetails.split('\n')[0] || 'N/A'}</strong></div>
+                  <div><strong>${firstTracking}</strong></div>
                   ${item.code ? `<div style="font-size: 0.9em; color: var(--gold);">Code: ${item.code}</div>` : ''}
                 </td>
                 <td class="tracking-details">${item.trackingDetails || 'N/A'}</td>
-                <td class="amount">${formatCurrency(item.total)}</td>
+                <td class="amount">${formatCurrencyBND(item.total)}</td>
                 <td>
-                  ${isUncollected ? 
-                    `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${item.receipt || ''}" 
+                  ${isUncollected && receiptNumber !== 'N/A' ? 
+                    `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${receiptNumber}" 
                        class="pay-now-btn" target="_blank">Pay Now</a>` :
-                    `<span class="status-badge status-completed">${item.status}</span>`
+                    `<span class="status-badge status-completed">${item.status || 'Completed'}</span>`
                   }
                 </td>
               </tr>
-            `).join('')}
+            `}).join('')}
           </tbody>
         </table>
       `;
     }
-
+  
     function filterBillingData(searchTerm) {
       const filtered = allBillingData.filter(item => {
+        if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return (item.trackingDetails && item.trackingDetails.toLowerCase().includes(searchLower)) ||
-               (item.code && item.code.toLowerCase().includes(searchLower));
+               (item.code && item.code.toLowerCase().includes(searchLower)) ||
+               (item.receipt && item.receipt.toLowerCase().includes(searchLower));
       });
       renderBillingSections(filtered);
     }
-
+  
     // Initialize page
     document.addEventListener('DOMContentLoaded', () => {
       detectViewMode();
       
       // Setup search functionality
-      document.getElementById('searchInput').addEventListener('input', (e) => {
-        filterBillingData(e.target.value.trim());
-      });
-
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          filterBillingData(e.target.value.trim());
+        });
+      }
+  
       // Load billing data
       loadBillingData();
     });
-
-    // Helper function to format date
-    function formatDate(dateString) {
-      if (!dateString) return 'N/A';
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-MY', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
-      } catch {
-        return dateString;
-      }
-    }
   </script>
 </body>
 </html>
