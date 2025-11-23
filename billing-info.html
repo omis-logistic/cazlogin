@@ -342,7 +342,7 @@
         `;
         return;
       }
-  
+    
       section.innerHTML = `
         <table class="billing-table">
           <thead>
@@ -360,6 +360,9 @@
               // Extract first tracking number for display
               const firstTracking = (item.trackingDetails || '').split('\n')[0] || 'N/A';
               const receiptNumber = item.receipt || 'N/A';
+              const code = item.code || '';
+              const trackingDetails = item.trackingDetails || 'No tracking details available';
+              const total = item.total || 0;
               
               return `
               <tr>
@@ -367,10 +370,10 @@
                 <td>${formatBillingDate(item.date)}</td>
                 <td>
                   <div><strong>${firstTracking}</strong></div>
-                  ${item.code ? `<div style="font-size: 0.9em; color: var(--gold);">Code: ${item.code}</div>` : ''}
+                  ${code ? `<div style="font-size: 0.9em; color: var(--gold);">Code: ${code}</div>` : ''}
                 </td>
-                <td class="tracking-details">${item.trackingDetails || 'N/A'}</td>
-                <td class="amount">${formatCurrencyBND(item.total)}</td>
+                <td class="tracking-details">${trackingDetails}</td>
+                <td class="amount">${formatCurrencyBND(total)}</td>
                 <td>
                   ${isUncollected && receiptNumber !== 'N/A' ? 
                     `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${receiptNumber}" 
