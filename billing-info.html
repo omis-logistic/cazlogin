@@ -92,6 +92,7 @@
       font-family: monospace;
       font-size: 0.9em;
       line-height: 1.4;
+      max-width: 300px;
     }
     
     .empty-state {
@@ -136,6 +137,17 @@
       animation: pulse 2s infinite;
     }
     
+    /* Column width classes for better control */
+    .col-receipt { min-width: 100px; }
+    .col-date { min-width: 100px; }
+    .col-code { min-width: 100px; }
+    .col-details { min-width: 200px; }
+    .col-location { min-width: 120px; }
+    .col-total { min-width: 100px; }
+    .col-action { min-width: 100px; }
+    .col-status { min-width: 100px; }
+    .col-collection-date { min-width: 120px; }
+    
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.1); }
@@ -147,21 +159,156 @@
       to { opacity: 1; transform: translateY(0); }
     }
     
+    /* Desktop Optimizations */
+    @media (min-width: 1024px) {
+      .billing-table {
+        table-layout: fixed;
+      }
+      
+      .tracking-details {
+        max-width: 400px;
+      }
+    }
+    
+    /* Tablet Optimizations */
+    @media (max-width: 1023px) and (min-width: 769px) {
+      .billing-table {
+        table-layout: auto;
+      }
+      
+      .col-details { min-width: 150px; }
+      .tracking-details {
+        max-width: 250px;
+        font-size: 0.85em;
+      }
+    }
+    
+    /* Mobile Optimizations */
     @media (max-width: 768px) {
+      .billing-page {
+        padding: 10px;
+      }
+      
+      .billing-section {
+        padding: 15px;
+      }
+      
       .billing-table {
         display: block;
         overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
       }
       
       .billing-table th,
       .billing-table td {
-        padding: 8px 4px;
+        padding: 8px 6px;
         font-size: 0.9em;
       }
       
       .pay-now-btn {
         padding: 6px 12px;
-        font-size: 0.9em;
+        font-size: 0.85em;
+      }
+      
+      .tracking-details {
+        max-width: 200px;
+        font-size: 0.8em;
+        line-height: 1.3;
+      }
+      
+      .status-badge {
+        font-size: 0.75em;
+        padding: 3px 6px;
+      }
+      
+      /* Mobile column widths */
+      .col-receipt { min-width: 80px; }
+      .col-date { min-width: 80px; }
+      .col-code { min-width: 80px; }
+      .col-details { min-width: 150px; }
+      .col-location { min-width: 100px; }
+      .col-total { min-width: 80px; }
+      .col-action { min-width: 90px; }
+      .col-status { min-width: 90px; }
+      .col-collection-date { min-width: 100px; }
+      
+      .section-title {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+      }
+      
+      .search-box {
+        padding: 10px;
+        font-size: 14px;
+      }
+    }
+    
+    /* Small Mobile Optimizations */
+    @media (max-width: 480px) {
+      .billing-section {
+        padding: 10px;
+      }
+      
+      .billing-table th,
+      .billing-table td {
+        padding: 6px 4px;
+        font-size: 0.85em;
+      }
+      
+      .tracking-details {
+        max-width: 150px;
+        font-size: 0.75em;
+      }
+      
+      .pay-now-btn {
+        padding: 5px 10px;
+        font-size: 0.8em;
+      }
+      
+      /* Even smaller column widths for very small screens */
+      .col-receipt { min-width: 70px; }
+      .col-date { min-width: 70px; }
+      .col-code { min-width: 70px; }
+      .col-details { min-width: 120px; }
+      .col-location { min-width: 90px; }
+      .col-total { min-width: 70px; }
+      .col-action { min-width: 80px; }
+      .col-status { min-width: 80px; }
+      .col-collection-date { min-width: 90px; }
+    }
+    
+    /* Print Styles */
+    @media print {
+      .billing-page {
+        max-width: none;
+        margin: 0;
+      }
+      
+      .search-container,
+      .back-btn {
+        display: none;
+      }
+      
+      .billing-section {
+        border: 1px solid #000;
+        break-inside: avoid;
+      }
+      
+      .billing-table {
+        border: 1px solid #000;
+      }
+      
+      .billing-table th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border-bottom: 2px solid #000;
+      }
+      
+      .pay-now-btn {
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #000;
       }
     }
   </style>
@@ -214,14 +361,14 @@
   <script>
     let allBillingData = [];
     let uncollectedCount = 0;
-  
+
     // BND Currency formatter for billing page only
     function formatCurrencyBND(amount) {
       if (!amount && amount !== 0) return 'N/A';
       const num = typeof amount === 'string' ? parseFloat(amount.replace(/[^\d.-]/g, '')) : amount;
       return 'B$' + (num || 0).toFixed(2);
     }
-  
+
     // Better date formatting for billing page
     function formatBillingDate(dateString) {
       if (!dateString) return 'N/A';
@@ -255,23 +402,23 @@
         return dateString || 'N/A';
       }
     }
-  
+
     async function loadBillingData() {
       try {
         showLoading(true);
         const userData = checkSession();
         if (!userData?.phone) return safeRedirect('login.html');
-  
+
         const callbackName = `billingCallback_${Date.now()}`;
         const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getBillingInfo&phone=${encodeURIComponent(userData.phone)}`;
-  
+
         const response = await new Promise((resolve, reject) => {
           window[callbackName] = (data) => {
             delete window[callbackName];
             document.getElementById(callbackName)?.remove();
             resolve(data);
           };
-  
+
           const script = document.createElement('script');
           script.id = callbackName;
           script.src = url;
@@ -281,30 +428,17 @@
           };
           document.head.appendChild(script);
         });
-  
+
         if (!response.success) {
           showError(response.message || 'Failed to load billing information', 'connectionError');
           return;
         }
-  
+
         allBillingData = response.data || [];
-        console.log('Loaded billing data:', allBillingData); // Debug log
-        
-        // Check if we have data but all values are N/A
-        if (allBillingData.length > 0) {
-          const firstItem = allBillingData[0];
-          const hasValidData = Object.values(firstItem).some(val => 
-            val !== '' && val !== 'N/A' && val !== 0 && val !== '0'
-          );
-          
-          if (!hasValidData) {
-            console.warn('Data loaded but all values appear to be empty/N/A');
-            showError('Data loaded but no valid billing information found. Please check sheet column mappings.', 'connectionError');
-          }
-        }
+        console.log('Loaded billing data:', allBillingData);
         
         renderBillingSections(allBillingData);
-  
+
       } catch (error) {
         console.error('Billing load error:', error);
         showError('Connection failed. Please try again.', 'connectionError');
@@ -312,7 +446,7 @@
         showLoading(false);
       }
     }
-  
+
     function renderBillingSections(data) {
       // Split data into uncollected and collected
       const uncollected = data.filter(item => !item.status || item.status.toString().trim() === '');
@@ -328,7 +462,7 @@
       renderSection('uncollectedSection', uncollected, true);
       renderSection('collectedSection', collected, false);
     }
-  
+
     function renderSection(sectionId, data, isUncollected) {
       const section = document.getElementById(sectionId);
       if (!section) return;
@@ -342,19 +476,20 @@
         `;
         return;
       }
-    
+
       section.innerHTML = `
         <table class="billing-table">
           <thead>
             <tr>
-              <th>Receipt No.</th>
-              <th>Date</th>
-              <th>Code</th> <!-- CHANGED: From "Tracking/Code" to "Code" -->
-              <th>Details</th>
-              <th>Total</th>
+              <th class="col-receipt">Receipt No.</th>
+              <th class="col-date">Date</th>
+              <th class="col-code">Code</th>
+              <th class="col-details">Details</th>
+              ${isUncollected ? '<th class="col-location">Location</th>' : ''}
+              <th class="col-total">Total</th>
               ${isUncollected ? 
-                '<th>Action</th>' : 
-                '<th>Status</th><th>Collection Date</th>' // ADDED: Collection Date column for collected section
+                '<th class="col-action">Action</th>' : 
+                '<th class="col-status">Status</th><th class="col-collection-date">Collection Date</th>'
               }
             </tr>
           </thead>
@@ -363,18 +498,20 @@
               const receiptNumber = item.receipt || 'N/A';
               const code = item.code || 'N/A';
               const trackingDetails = item.trackingDetails || 'No tracking details available';
+              const location = item.location || 'N/A';
               const total = item.total || 0;
               const status = item.status || '';
               const collectionDate = item.collectionDate || '';
               
               return `
               <tr>
-                <td>${receiptNumber}</td>
-                <td>${formatBillingDate(item.date)}</td>
-                <td>${code}</td> <!-- CHANGED: Now only showing code value -->
-                <td class="tracking-details">${trackingDetails}</td>
-                <td class="amount">${formatCurrencyBND(total)}</td>
-                <td>
+                <td class="col-receipt">${receiptNumber}</td>
+                <td class="col-date">${formatBillingDate(item.date)}</td>
+                <td class="col-code">${code}</td>
+                <td class="col-details tracking-details">${trackingDetails}</td>
+                ${isUncollected ? `<td class="col-location">${location}</td>` : ''}
+                <td class="col-total amount">${formatCurrencyBND(total)}</td>
+                <td class="${isUncollected ? 'col-action' : 'col-status'}">
                   ${isUncollected && receiptNumber !== 'N/A' ? 
                     `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${receiptNumber}" 
                        class="pay-now-btn" target="_blank">Pay Now</a>` :
@@ -382,7 +519,7 @@
                   }
                 </td>
                 ${!isUncollected ? 
-                  `<td>${formatBillingDate(collectionDate)}</td>` : 
+                  `<td class="col-collection-date">${formatBillingDate(collectionDate)}</td>` : 
                   ''
                 }
               </tr>
@@ -391,7 +528,7 @@
         </table>
       `;
     }
-  
+
     function filterBillingData(searchTerm) {
       const filtered = allBillingData.filter(item => {
         if (!searchTerm) return true;
@@ -402,7 +539,7 @@
       });
       renderBillingSections(filtered);
     }
-  
+
     // Initialize page
     document.addEventListener('DOMContentLoaded', () => {
       detectViewMode();
@@ -414,7 +551,7 @@
           filterBillingData(e.target.value.trim());
         });
       }
-  
+
       // Load billing data
       loadBillingData();
     });
