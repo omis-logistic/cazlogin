@@ -36,7 +36,7 @@
     border-radius: 8px;
     padding: 20px;
     border: 1px solid var(--gold);
-    overflow: hidden; /* NEW: Prevent border overflow */
+    overflow: hidden;
   }
   
   .section-title {
@@ -102,10 +102,8 @@
     color: #888;
   }
   
-  /* CHANGED: Remove right alignment for Total column */
   .amount {
     font-weight: 500;
-    /* Removed: text-align: right; */
   }
   
   .status-badge {
@@ -139,39 +137,50 @@
     animation: pulse 2s infinite;
   }
   
-  /* UPDATED: Column width classes with adjusted sizes and smaller fonts */
+  /* UPDATED: Optimized column widths - significantly reduced code column */
   .col-receipt { 
-    min-width: 90px; 
-    font-size: 0.9em; /* NEW: Smaller font for receipt */
+    min-width: 80px; 
+    max-width: 90px;
+    font-size: 0.85em;
+    word-break: break-word;
   }
   .col-date { 
-    min-width: 90px; 
-    font-size: 0.9em; /* NEW: Smaller font for date */
+    min-width: 85px; 
+    max-width: 95px;
+    font-size: 0.85em;
   }
   .col-code { 
-    min-width: 70px;  /* REDUCED: Smaller code column */
-    font-size: 0.9em; /* NEW: Smaller font for code */
+    min-width: 50px;  /* SIGNIFICANTLY REDUCED: Minimal space for code */
+    max-width: 60px;
+    font-size: 0.85em;
+    word-break: break-word;
   }
   .col-details { 
-    min-width: 200px; 
-    margin-left: -10px; /* NEW: Reduce gap between code and details */
+    min-width: 220px; /* INCREASED: More space for details */
+    max-width: 350px;
   }
   .col-location { 
-    min-width: 100px; 
-    font-size: 0.9em; /* NEW: Smaller font for location */
+    min-width: 90px; 
+    max-width: 120px;
+    font-size: 0.85em;
+    word-break: break-word;
   }
   .col-total { 
-    min-width: 90px; 
+    min-width: 80px; 
+    max-width: 90px;
   }
   .col-action { 
-    min-width: 100px; 
+    min-width: 90px; 
+    max-width: 100px;
   }
   .col-status { 
-    min-width: 100px; 
+    min-width: 90px; 
+    max-width: 100px;
   }
   .col-collection-date { 
-    min-width: 120px; 
-    font-size: 0.9em; /* NEW: Smaller font for collection date */
+    min-width: 110px; 
+    max-width: 130px;
+    font-size: 0.85em;
   }
   
   @keyframes pulse {
@@ -188,11 +197,7 @@
   /* Desktop Optimizations */
   @media (min-width: 1024px) {
     .billing-table {
-      table-layout: fixed;
-    }
-    
-    .tracking-details {
-      max-width: 400px;
+      table-layout: fixed; /* Use fixed layout for consistent columns */
     }
   }
   
@@ -202,27 +207,37 @@
       table-layout: auto;
     }
     
-    .col-details { min-width: 150px; }
+    /* Adjusted for tablet */
+    .col-receipt { min-width: 70px; max-width: 80px; }
+    .col-date { min-width: 75px; max-width: 85px; }
+    .col-code { min-width: 45px; max-width: 55px; }
+    .col-details { min-width: 180px; max-width: 280px; }
+    .col-location { min-width: 80px; max-width: 100px; }
+    .col-total { min-width: 70px; max-width: 80px; }
+    .col-action { min-width: 80px; max-width: 90px; }
+    .col-status { min-width: 80px; max-width: 90px; }
+    .col-collection-date { min-width: 100px; max-width: 120px; }
+    
     .tracking-details {
       max-width: 250px;
       font-size: 0.85em;
     }
   }
   
-  /* Mobile Optimizations - UPDATED for better containment */
+  /* Mobile Optimizations */
   @media (max-width: 768px) {
     .billing-page {
       padding: 10px;
       width: 100%;
-      box-sizing: border-box; /* NEW: Ensure proper box sizing */
+      box-sizing: border-box;
     }
     
     .billing-section {
       padding: 15px;
-      margin: 0; /* NEW: Remove any external margins */
+      margin: 0;
       width: 100%;
-      box-sizing: border-box; /* NEW: Ensure proper box sizing */
-      overflow-x: hidden; /* NEW: Prevent horizontal overflow */
+      box-sizing: border-box;
+      overflow-x: hidden;
     }
     
     .billing-table {
@@ -230,8 +245,8 @@
       overflow-x: auto;
       white-space: nowrap;
       -webkit-overflow-scrolling: touch;
-      width: 100%; /* NEW: Ensure table takes full width */
-      max-width: 100%; /* NEW: Prevent overflow */
+      width: 100%;
+      max-width: 100%;
     }
     
     .billing-table th,
@@ -256,39 +271,47 @@
       padding: 3px 6px;
     }
     
-    /* Mobile column widths - UPDATED */
+    /* Mobile column widths - OPTIMIZED */
     .col-receipt { 
-      min-width: 70px; 
-      font-size: 0.85em; /* Smaller on mobile */
+      min-width: 65px; 
+      max-width: 75px;
+      font-size: 0.8em;
     }
     .col-date { 
-      min-width: 70px; 
-      font-size: 0.85em; /* Smaller on mobile */
+      min-width: 65px; 
+      max-width: 75px;
+      font-size: 0.8em;
     }
     .col-code { 
-      min-width: 60px; /* Smaller code column on mobile */
-      font-size: 0.85em; /* Smaller on mobile */
+      min-width: 40px; /* Very compact on mobile */
+      max-width: 50px;
+      font-size: 0.8em;
     }
     .col-details { 
-      min-width: 130px; 
-      margin-left: -8px; /* Reduced gap on mobile */
+      min-width: 140px; 
+      max-width: 220px;
     }
     .col-location { 
-      min-width: 80px; 
-      font-size: 0.85em; /* Smaller on mobile */
+      min-width: 70px; 
+      max-width: 90px;
+      font-size: 0.8em;
     }
     .col-total { 
-      min-width: 70px; 
+      min-width: 65px; 
+      max-width: 75px;
     }
     .col-action { 
-      min-width: 80px; 
+      min-width: 75px; 
+      max-width: 85px;
     }
     .col-status { 
-      min-width: 80px; 
+      min-width: 75px; 
+      max-width: 85px;
     }
     .col-collection-date { 
-      min-width: 90px; 
-      font-size: 0.85em; /* Smaller on mobile */
+      min-width: 85px; 
+      max-width: 100px;
+      font-size: 0.8em;
     }
     
     .section-title {
@@ -300,16 +323,15 @@
       padding: 10px;
       font-size: 14px;
       width: 100%;
-      box-sizing: border-box; /* NEW: Ensure proper sizing */
+      box-sizing: border-box;
     }
   
-    /* NEW: Ensure the container properly contains everything */
     .container {
       padding: 10px;
       margin: 0 auto;
       width: 100%;
       box-sizing: border-box;
-      overflow: hidden; /* Prevent any overflow */
+      overflow: hidden;
     }
   }
   
@@ -317,7 +339,7 @@
   @media (max-width: 480px) {
     .billing-section {
       padding: 12px;
-      margin: 5px 0; /* NEW: Reduced margin */
+      margin: 5px 0;
     }
     
     .billing-table th,
@@ -327,7 +349,7 @@
     }
     
     .tracking-details {
-      max-width: 120px; /* Further reduced for small mobile */
+      max-width: 150px;
       font-size: 0.75em;
     }
     
@@ -336,43 +358,51 @@
       font-size: 0.8em;
     }
     
-    /* Even smaller column widths for very small screens */
+    /* Smallest mobile column widths */
     .col-receipt { 
-      min-width: 60px; 
-      font-size: 0.8em;
+      min-width: 55px; 
+      max-width: 65px;
+      font-size: 0.75em;
     }
     .col-date { 
-      min-width: 60px; 
-      font-size: 0.8em;
+      min-width: 55px; 
+      max-width: 65px;
+      font-size: 0.75em;
     }
     .col-code { 
-      min-width: 50px; /* Smallest code column */
-      font-size: 0.8em;
+      min-width: 35px; /* Absolute minimum for code */
+      max-width: 45px;
+      font-size: 0.75em;
     }
     .col-details { 
-      min-width: 100px; 
-      margin-left: -5px; /* Minimal gap */
+      min-width: 120px; 
+      max-width: 180px;
     }
     .col-location { 
-      min-width: 70px; 
-      font-size: 0.8em;
+      min-width: 60px; 
+      max-width: 80px;
+      font-size: 0.75em;
     }
     .col-total { 
-      min-width: 60px; 
+      min-width: 55px; 
+      max-width: 65px;
     }
     .col-action { 
-      min-width: 70px; 
+      min-width: 65px; 
+      max-width: 75px;
     }
     .col-status { 
-      min-width: 70px; 
+      min-width: 65px; 
+      max-width: 75px;
     }
     .col-collection-date { 
-      min-width: 80px; 
-      font-size: 0.8em;
+      min-width: 75px; 
+      max-width: 90px;
+      font-size: 0.75em;
     }
   
     .billing-sections {
-      gap: 20px; /* Reduced gap on small mobile */
+      gap: 20px;
     }
   }
   
