@@ -5,312 +5,410 @@
   <title>Billing Info - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
   <style>
-    .billing-page { 
-      max-width: 1200px; 
-      margin: 20px auto;
-      animation: fadeIn 0.3s ease-in;
-    }
-    
-    .search-container {
-      margin: 20px 0;
-    }
-    
-    .search-box {
-      width: 100%;
-      padding: 12px;
-      background: #2a2a2a;
-      border: 1px solid var(--gold);
-      color: var(--text-light);
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    
-    .billing-sections {
-      display: grid;
-      gap: 30px;
-      margin-top: 20px;
-    }
-    
-    .billing-section {
-      background: rgba(255,255,255,0.05);
-      border-radius: 8px;
-      padding: 20px;
-      border: 1px solid var(--gold);
-    }
-    
-    .section-title {
-      color: var(--gold);
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(197, 160, 71, 0.3);
-    }
-    
+  .billing-page { 
+    max-width: 1200px; 
+    margin: 20px auto;
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  .search-container {
+    margin: 20px 0;
+  }
+  
+  .search-box {
+    width: 100%;
+    padding: 12px;
+    background: #2a2a2a;
+    border: 1px solid var(--gold);
+    color: var(--text-light);
+    border-radius: 5px;
+    font-size: 16px;
+  }
+  
+  .billing-sections {
+    display: grid;
+    gap: 30px;
+    margin-top: 20px;
+  }
+  
+  .billing-section {
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid var(--gold);
+    overflow: hidden; /* NEW: Prevent border overflow */
+  }
+  
+  .section-title {
+    color: var(--gold);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(197, 160, 71, 0.3);
+  }
+  
+  .billing-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  
+  .billing-table th {
+    background: rgba(197, 160, 71, 0.2);
+    color: var(--gold);
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--gold);
+  }
+  
+  .billing-table td {
+    padding: 12px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    vertical-align: top;
+  }
+  
+  .billing-table tr:hover {
+    background: rgba(255,255,255,0.03);
+  }
+  
+  .pay-now-btn {
+    background: var(--gold);
+    color: var(--dark-bg);
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    transition: opacity 0.3s;
+  }
+  
+  .pay-now-btn:hover {
+    opacity: 0.9;
+    color: var(--dark-bg);
+  }
+  
+  .tracking-details {
+    white-space: pre-line;
+    font-family: monospace;
+    font-size: 0.9em;
+    line-height: 1.4;
+    max-width: 300px;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #888;
+  }
+  
+  /* CHANGED: Remove right alignment for Total column */
+  .amount {
+    font-weight: 500;
+    /* Removed: text-align: right; */
+  }
+  
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+  }
+  
+  .status-pending {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+  }
+  
+  .status-completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+  }
+  
+  .uncollected-indicator {
+    background: #ff4444;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+  }
+  
+  /* UPDATED: Column width classes with adjusted sizes and smaller fonts */
+  .col-receipt { 
+    min-width: 90px; 
+    font-size: 0.9em; /* NEW: Smaller font for receipt */
+  }
+  .col-date { 
+    min-width: 90px; 
+    font-size: 0.9em; /* NEW: Smaller font for date */
+  }
+  .col-code { 
+    min-width: 70px;  /* REDUCED: Smaller code column */
+    font-size: 0.9em; /* NEW: Smaller font for code */
+  }
+  .col-details { 
+    min-width: 200px; 
+    margin-left: -10px; /* NEW: Reduce gap between code and details */
+  }
+  .col-location { 
+    min-width: 100px; 
+    font-size: 0.9em; /* NEW: Smaller font for location */
+  }
+  .col-total { 
+    min-width: 90px; 
+  }
+  .col-action { 
+    min-width: 100px; 
+  }
+  .col-status { 
+    min-width: 100px; 
+  }
+  .col-collection-date { 
+    min-width: 120px; 
+    font-size: 0.9em; /* NEW: Smaller font for collection date */
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Desktop Optimizations */
+  @media (min-width: 1024px) {
     .billing-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    
-    .billing-table th {
-      background: rgba(197, 160, 71, 0.2);
-      color: var(--gold);
-      padding: 12px 8px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 2px solid var(--gold);
-    }
-    
-    .billing-table td {
-      padding: 12px 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      vertical-align: top;
-    }
-    
-    .billing-table tr:hover {
-      background: rgba(255,255,255,0.03);
-    }
-    
-    .pay-now-btn {
-      background: var(--gold);
-      color: var(--dark-bg);
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      text-decoration: none;
-      font-weight: bold;
-      display: inline-block;
-      transition: opacity 0.3s;
-    }
-    
-    .pay-now-btn:hover {
-      opacity: 0.9;
-      color: var(--dark-bg);
+      table-layout: fixed;
     }
     
     .tracking-details {
-      white-space: pre-line;
-      font-family: monospace;
+      max-width: 400px;
+    }
+  }
+  
+  /* Tablet Optimizations */
+  @media (max-width: 1023px) and (min-width: 769px) {
+    .billing-table {
+      table-layout: auto;
+    }
+    
+    .col-details { min-width: 150px; }
+    .tracking-details {
+      max-width: 250px;
+      font-size: 0.85em;
+    }
+  }
+  
+  /* Mobile Optimizations - UPDATED for better containment */
+  @media (max-width: 768px) {
+    .billing-page {
+      padding: 10px;
+      width: 100%;
+      box-sizing: border-box; /* NEW: Ensure proper box sizing */
+    }
+    
+    .billing-section {
+      padding: 15px;
+      margin: 0; /* NEW: Remove any external margins */
+      width: 100%;
+      box-sizing: border-box; /* NEW: Ensure proper box sizing */
+      overflow-x: hidden; /* NEW: Prevent horizontal overflow */
+    }
+    
+    .billing-table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      width: 100%; /* NEW: Ensure table takes full width */
+      max-width: 100%; /* NEW: Prevent overflow */
+    }
+    
+    .billing-table th,
+    .billing-table td {
+      padding: 8px 6px;
       font-size: 0.9em;
-      line-height: 1.4;
-      max-width: 300px;
     }
     
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #888;
+    .pay-now-btn {
+      padding: 6px 12px;
+      font-size: 0.85em;
     }
     
-    .amount {
-      text-align: right;
-      font-weight: 500;
+    .tracking-details {
+      max-width: 200px;
+      font-size: 0.8em;
+      line-height: 1.3;
     }
     
     .status-badge {
-      padding: 4px 8px;
-      border-radius: 12px;
+      font-size: 0.75em;
+      padding: 3px 6px;
+    }
+    
+    /* Mobile column widths - UPDATED */
+    .col-receipt { 
+      min-width: 70px; 
+      font-size: 0.85em; /* Smaller on mobile */
+    }
+    .col-date { 
+      min-width: 70px; 
+      font-size: 0.85em; /* Smaller on mobile */
+    }
+    .col-code { 
+      min-width: 60px; /* Smaller code column on mobile */
+      font-size: 0.85em; /* Smaller on mobile */
+    }
+    .col-details { 
+      min-width: 130px; 
+      margin-left: -8px; /* Reduced gap on mobile */
+    }
+    .col-location { 
+      min-width: 80px; 
+      font-size: 0.85em; /* Smaller on mobile */
+    }
+    .col-total { 
+      min-width: 70px; 
+    }
+    .col-action { 
+      min-width: 80px; 
+    }
+    .col-status { 
+      min-width: 80px; 
+    }
+    .col-collection-date { 
+      min-width: 90px; 
+      font-size: 0.85em; /* Smaller on mobile */
+    }
+    
+    .section-title {
+      font-size: 1.2em;
+      margin-bottom: 15px;
+    }
+    
+    .search-box {
+      padding: 10px;
+      font-size: 14px;
+      width: 100%;
+      box-sizing: border-box; /* NEW: Ensure proper sizing */
+    }
+  
+    /* NEW: Ensure the container properly contains everything */
+    .container {
+      padding: 10px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+      overflow: hidden; /* Prevent any overflow */
+    }
+  }
+  
+  /* Small Mobile Optimizations */
+  @media (max-width: 480px) {
+    .billing-section {
+      padding: 12px;
+      margin: 5px 0; /* NEW: Reduced margin */
+    }
+    
+    .billing-table th,
+    .billing-table td {
+      padding: 6px 4px;
+      font-size: 0.85em;
+    }
+    
+    .tracking-details {
+      max-width: 120px; /* Further reduced for small mobile */
+      font-size: 0.75em;
+    }
+    
+    .pay-now-btn {
+      padding: 5px 10px;
       font-size: 0.8em;
-      font-weight: 500;
     }
     
-    .status-pending {
-      background: rgba(255, 193, 7, 0.2);
-      color: #ffc107;
-    }
-    
-    .status-completed {
-      background: rgba(40, 167, 69, 0.2);
-      color: #28a745;
-    }
-    
-    .uncollected-indicator {
-      background: #ff4444;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+    /* Even smaller column widths for very small screens */
+    .col-receipt { 
+      min-width: 60px; 
       font-size: 0.8em;
-      margin-left: 8px;
-      animation: pulse 2s infinite;
+    }
+    .col-date { 
+      min-width: 60px; 
+      font-size: 0.8em;
+    }
+    .col-code { 
+      min-width: 50px; /* Smallest code column */
+      font-size: 0.8em;
+    }
+    .col-details { 
+      min-width: 100px; 
+      margin-left: -5px; /* Minimal gap */
+    }
+    .col-location { 
+      min-width: 70px; 
+      font-size: 0.8em;
+    }
+    .col-total { 
+      min-width: 60px; 
+    }
+    .col-action { 
+      min-width: 70px; 
+    }
+    .col-status { 
+      min-width: 70px; 
+    }
+    .col-collection-date { 
+      min-width: 80px; 
+      font-size: 0.8em;
+    }
+  
+    .billing-sections {
+      gap: 20px; /* Reduced gap on small mobile */
+    }
+  }
+  
+  /* Print Styles */
+  @media print {
+    .billing-page {
+      max-width: none;
+      margin: 0;
     }
     
-    /* Column width classes for better control */
-    .col-receipt { min-width: 100px; }
-    .col-date { min-width: 100px; }
-    .col-code { min-width: 100px; }
-    .col-details { min-width: 200px; }
-    .col-location { min-width: 120px; }
-    .col-total { min-width: 100px; }
-    .col-action { min-width: 100px; }
-    .col-status { min-width: 100px; }
-    .col-collection-date { min-width: 120px; }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-      100% { transform: scale(1); }
+    .search-container,
+    .back-btn {
+      display: none;
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
+    .billing-section {
+      border: 1px solid #000;
+      break-inside: avoid;
     }
     
-    /* Desktop Optimizations */
-    @media (min-width: 1024px) {
-      .billing-table {
-        table-layout: fixed;
-      }
-      
-      .tracking-details {
-        max-width: 400px;
-      }
+    .billing-table {
+      border: 1px solid #000;
     }
     
-    /* Tablet Optimizations */
-    @media (max-width: 1023px) and (min-width: 769px) {
-      .billing-table {
-        table-layout: auto;
-      }
-      
-      .col-details { min-width: 150px; }
-      .tracking-details {
-        max-width: 250px;
-        font-size: 0.85em;
-      }
+    .billing-table th {
+      background: #f0f0f0 !important;
+      color: #000 !important;
+      border-bottom: 2px solid #000;
     }
     
-    /* Mobile Optimizations */
-    @media (max-width: 768px) {
-      .billing-page {
-        padding: 10px;
-      }
-      
-      .billing-section {
-        padding: 15px;
-      }
-      
-      .billing-table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-      }
-      
-      .billing-table th,
-      .billing-table td {
-        padding: 8px 6px;
-        font-size: 0.9em;
-      }
-      
-      .pay-now-btn {
-        padding: 6px 12px;
-        font-size: 0.85em;
-      }
-      
-      .tracking-details {
-        max-width: 200px;
-        font-size: 0.8em;
-        line-height: 1.3;
-      }
-      
-      .status-badge {
-        font-size: 0.75em;
-        padding: 3px 6px;
-      }
-      
-      /* Mobile column widths */
-      .col-receipt { min-width: 80px; }
-      .col-date { min-width: 80px; }
-      .col-code { min-width: 80px; }
-      .col-details { min-width: 150px; }
-      .col-location { min-width: 100px; }
-      .col-total { min-width: 80px; }
-      .col-action { min-width: 90px; }
-      .col-status { min-width: 90px; }
-      .col-collection-date { min-width: 100px; }
-      
-      .section-title {
-        font-size: 1.2em;
-        margin-bottom: 15px;
-      }
-      
-      .search-box {
-        padding: 10px;
-        font-size: 14px;
-      }
+    .pay-now-btn {
+      background: #fff !important;
+      color: #000 !important;
+      border: 1px solid #000;
     }
-    
-    /* Small Mobile Optimizations */
-    @media (max-width: 480px) {
-      .billing-section {
-        padding: 10px;
-      }
-      
-      .billing-table th,
-      .billing-table td {
-        padding: 6px 4px;
-        font-size: 0.85em;
-      }
-      
-      .tracking-details {
-        max-width: 150px;
-        font-size: 0.75em;
-      }
-      
-      .pay-now-btn {
-        padding: 5px 10px;
-        font-size: 0.8em;
-      }
-      
-      /* Even smaller column widths for very small screens */
-      .col-receipt { min-width: 70px; }
-      .col-date { min-width: 70px; }
-      .col-code { min-width: 70px; }
-      .col-details { min-width: 120px; }
-      .col-location { min-width: 90px; }
-      .col-total { min-width: 70px; }
-      .col-action { min-width: 80px; }
-      .col-status { min-width: 80px; }
-      .col-collection-date { min-width: 90px; }
-    }
-    
-    /* Print Styles */
-    @media print {
-      .billing-page {
-        max-width: none;
-        margin: 0;
-      }
-      
-      .search-container,
-      .back-btn {
-        display: none;
-      }
-      
-      .billing-section {
-        border: 1px solid #000;
-        break-inside: avoid;
-      }
-      
-      .billing-table {
-        border: 1px solid #000;
-      }
-      
-      .billing-table th {
-        background: #f0f0f0 !important;
-        color: #000 !important;
-        border-bottom: 2px solid #000;
-      }
-      
-      .pay-now-btn {
-        background: #fff !important;
-        color: #000 !important;
-        border: 1px solid #000;
-      }
-    }
+  }
   </style>
 </head>
 <body>
