@@ -349,38 +349,42 @@
             <tr>
               <th>Receipt No.</th>
               <th>Date</th>
-              <th>Tracking/Code</th>
+              <th>Code</th> <!-- CHANGED: From "Tracking/Code" to "Code" -->
               <th>Details</th>
               <th>Total</th>
-              ${isUncollected ? '<th>Action</th>' : '<th>Status</th>'}
+              ${isUncollected ? 
+                '<th>Action</th>' : 
+                '<th>Status</th><th>Collection Date</th>' // ADDED: Collection Date column for collected section
+              }
             </tr>
           </thead>
           <tbody>
             ${data.map(item => {
-              // Extract first tracking number for display
-              const firstTracking = (item.trackingDetails || '').split('\n')[0] || 'N/A';
               const receiptNumber = item.receipt || 'N/A';
-              const code = item.code || '';
+              const code = item.code || 'N/A';
               const trackingDetails = item.trackingDetails || 'No tracking details available';
               const total = item.total || 0;
+              const status = item.status || '';
+              const collectionDate = item.collectionDate || '';
               
               return `
               <tr>
                 <td>${receiptNumber}</td>
                 <td>${formatBillingDate(item.date)}</td>
-                <td>
-                  <div><strong>${firstTracking}</strong></div>
-                  ${code ? `<div style="font-size: 0.9em; color: var(--gold);">Code: ${code}</div>` : ''}
-                </td>
+                <td>${code}</td> <!-- CHANGED: Now only showing code value -->
                 <td class="tracking-details">${trackingDetails}</td>
                 <td class="amount">${formatCurrencyBND(total)}</td>
                 <td>
                   ${isUncollected && receiptNumber !== 'N/A' ? 
                     `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${receiptNumber}" 
                        class="pay-now-btn" target="_blank">Pay Now</a>` :
-                    `<span class="status-badge status-completed">${item.status || 'Completed'}</span>`
+                    `<span class="status-badge status-completed">${status}</span>`
                   }
                 </td>
+                ${!isUncollected ? 
+                  `<td>${formatBillingDate(collectionDate)}</td>` : 
+                  ''
+                }
               </tr>
             `}).join('')}
           </tbody>
