@@ -50,6 +50,7 @@
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    table-layout: fixed; /* NEW: Force fixed layout on all screens */
   }
   
   .billing-table th {
@@ -59,12 +60,15 @@
     text-align: left;
     font-weight: 600;
     border-bottom: 2px solid var(--gold);
+    overflow: hidden;
   }
   
   .billing-table td {
     padding: 12px 8px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
     vertical-align: top;
+    overflow: hidden; /* NEW: Prevent overflow */
+    word-wrap: break-word; /* NEW: Break long words */
   }
   
   .billing-table tr:hover {
@@ -81,6 +85,7 @@
     font-weight: bold;
     display: inline-block;
     transition: opacity 0.3s;
+    white-space: nowrap; /* NEW: Prevent button text wrapping */
   }
   
   .pay-now-btn:hover {
@@ -93,7 +98,8 @@
     font-family: monospace;
     font-size: 0.9em;
     line-height: 1.4;
-    max-width: 300px;
+    max-width: 100%; /* NEW: Ensure it doesn't overflow */
+    overflow-wrap: break-word; /* NEW: Break long tracking numbers */
   }
   
   .empty-state {
@@ -111,6 +117,7 @@
     border-radius: 12px;
     font-size: 0.8em;
     font-weight: 500;
+    white-space: nowrap; /* NEW: Prevent status text wrapping */
   }
   
   .status-pending {
@@ -137,50 +144,62 @@
     animation: pulse 2s infinite;
   }
   
-  /* UPDATED: Optimized column widths - significantly reduced code column */
+  /* UPDATED: Optimized column widths with better distribution */
   .col-receipt { 
-    min-width: 80px; 
-    max-width: 90px;
+    width: 10%; /* Use percentage for better distribution */
+    min-width: 80px;
+    max-width: 100px;
     font-size: 0.85em;
-    word-break: break-word;
+    word-break: break-all; /* NEW: Force break long receipt numbers */
   }
   .col-date { 
-    min-width: 85px; 
-    max-width: 95px;
-    font-size: 0.85em;
-  }
-  .col-code { 
-    min-width: 50px;  /* SIGNIFICANTLY REDUCED: Minimal space for code */
-    max-width: 60px;
+    width: 12%;
+    min-width: 85px;
+    max-width: 100px;
     font-size: 0.85em;
     word-break: break-word;
   }
+  .col-code { 
+    width: 8%; /* Very small percentage for code */
+    min-width: 50px;
+    max-width: 60px;
+    font-size: 0.85em;
+    word-break: break-all; /* NEW: Force break long codes */
+  }
   .col-details { 
-    min-width: 220px; /* INCREASED: More space for details */
-    max-width: 350px;
+    width: 32%; /* Largest percentage for details */
+    min-width: 200px;
+    max-width: none; /* Allow to take available space */
+    overflow-wrap: break-word; /* NEW: Ensure details text wraps */
   }
   .col-location { 
-    min-width: 90px; 
+    width: 12%;
+    min-width: 90px;
     max-width: 120px;
     font-size: 0.85em;
     word-break: break-word;
   }
   .col-total { 
-    min-width: 80px; 
+    width: 10%;
+    min-width: 80px;
     max-width: 90px;
   }
   .col-action { 
-    min-width: 90px; 
+    width: 10%;
+    min-width: 90px;
     max-width: 100px;
   }
   .col-status { 
-    min-width: 90px; 
+    width: 10%;
+    min-width: 90px;
     max-width: 100px;
   }
   .col-collection-date { 
-    min-width: 110px; 
+    width: 14%;
+    min-width: 110px;
     max-width: 130px;
     font-size: 0.85em;
+    word-break: break-word;
   }
   
   @keyframes pulse {
@@ -197,34 +216,71 @@
   /* Desktop Optimizations */
   @media (min-width: 1024px) {
     .billing-table {
-      table-layout: fixed; /* Use fixed layout for consistent columns */
+      table-layout: fixed; /* Ensure fixed layout */
+    }
+    
+    /* NEW: Specific desktop column adjustments */
+    .col-receipt { 
+      width: 9%;
+      min-width: 85px;
+    }
+    .col-date { 
+      width: 10%;
+      min-width: 90px;
+    }
+    .col-code { 
+      width: 7%;
+      min-width: 55px;
+    }
+    .col-details { 
+      width: 34%; /* More space for details on desktop */
+      min-width: 250px;
+    }
+    .col-location { 
+      width: 11%;
+      min-width: 100px;
+    }
+    .col-total { 
+      width: 9%;
+      min-width: 85px;
+    }
+    .col-action { 
+      width: 10%;
+      min-width: 95px;
+    }
+    .col-status { 
+      width: 10%;
+      min-width: 95px;
+    }
+    .col-collection-date { 
+      width: 10%;
+      min-width: 120px;
     }
   }
   
   /* Tablet Optimizations */
   @media (max-width: 1023px) and (min-width: 769px) {
     .billing-table {
-      table-layout: auto;
+      table-layout: fixed;
     }
     
-    /* Adjusted for tablet */
-    .col-receipt { min-width: 70px; max-width: 80px; }
-    .col-date { min-width: 75px; max-width: 85px; }
-    .col-code { min-width: 45px; max-width: 55px; }
-    .col-details { min-width: 180px; max-width: 280px; }
-    .col-location { min-width: 80px; max-width: 100px; }
-    .col-total { min-width: 70px; max-width: 80px; }
-    .col-action { min-width: 80px; max-width: 90px; }
-    .col-status { min-width: 80px; max-width: 90px; }
-    .col-collection-date { min-width: 100px; max-width: 120px; }
+    /* Adjusted percentage widths for tablet */
+    .col-receipt { width: 11%; min-width: 75px; }
+    .col-date { width: 12%; min-width: 80px; }
+    .col-code { width: 8%; min-width: 50px; }
+    .col-details { width: 30%; min-width: 180px; }
+    .col-location { width: 12%; min-width: 85px; }
+    .col-total { width: 9%; min-width: 75px; }
+    .col-action { width: 9%; min-width: 85px; }
+    .col-status { width: 9%; min-width: 85px; }
+    .col-collection-date { width: 10%; min-width: 110px; }
     
     .tracking-details {
-      max-width: 250px;
       font-size: 0.85em;
     }
   }
   
-  /* Mobile Optimizations */
+  /* Mobile Optimizations - COMPLETELY REVISED */
   @media (max-width: 768px) {
     .billing-page {
       padding: 10px;
@@ -237,16 +293,13 @@
       margin: 0;
       width: 100%;
       box-sizing: border-box;
-      overflow-x: hidden;
+      overflow-x: auto; /* Allow horizontal scroll on section */
     }
     
     .billing-table {
-      display: block;
-      overflow-x: auto;
-      white-space: nowrap;
-      -webkit-overflow-scrolling: touch;
-      width: 100%;
-      max-width: 100%;
+      table-layout: auto; /* Use auto on mobile for flexibility */
+      min-width: 700px; /* NEW: Set minimum table width to prevent squeezing */
+      width: auto; /* Allow table to expand beyond container */
     }
     
     .billing-table th,
@@ -258,6 +311,7 @@
     .pay-now-btn {
       padding: 6px 12px;
       font-size: 0.85em;
+      white-space: nowrap;
     }
     
     .tracking-details {
@@ -269,48 +323,61 @@
     .status-badge {
       font-size: 0.75em;
       padding: 3px 6px;
+      white-space: nowrap;
     }
     
-    /* Mobile column widths - OPTIMIZED */
+    /* Mobile column widths - USE FIXED PIXEL WIDTHS */
     .col-receipt { 
-      min-width: 65px; 
-      max-width: 75px;
+      width: 80px !important; /* Force fixed width */
+      min-width: 80px;
+      max-width: 80px;
       font-size: 0.8em;
+      word-break: break-all;
     }
     .col-date { 
-      min-width: 65px; 
-      max-width: 75px;
+      width: 85px !important;
+      min-width: 85px;
+      max-width: 85px;
       font-size: 0.8em;
     }
     .col-code { 
-      min-width: 40px; /* Very compact on mobile */
-      max-width: 50px;
+      width: 60px !important;
+      min-width: 60px;
+      max-width: 60px;
       font-size: 0.8em;
+      word-break: break-all;
     }
     .col-details { 
-      min-width: 140px; 
+      width: 220px !important;
+      min-width: 220px;
       max-width: 220px;
+      overflow-wrap: break-word;
     }
     .col-location { 
-      min-width: 70px; 
-      max-width: 90px;
+      width: 100px !important;
+      min-width: 100px;
+      max-width: 100px;
       font-size: 0.8em;
     }
     .col-total { 
-      min-width: 65px; 
-      max-width: 75px;
+      width: 80px !important;
+      min-width: 80px;
+      max-width: 80px;
     }
     .col-action { 
-      min-width: 75px; 
-      max-width: 85px;
+      width: 90px !important;
+      min-width: 90px;
+      max-width: 90px;
     }
     .col-status { 
-      min-width: 75px; 
-      max-width: 85px;
+      width: 90px !important;
+      min-width: 90px;
+      max-width: 90px;
     }
     .col-collection-date { 
-      min-width: 85px; 
-      max-width: 100px;
+      width: 110px !important;
+      min-width: 110px;
+      max-width: 110px;
       font-size: 0.8em;
     }
     
@@ -331,7 +398,7 @@
       margin: 0 auto;
       width: 100%;
       box-sizing: border-box;
-      overflow: hidden;
+      overflow-x: auto; /* Allow horizontal scroll */
     }
   }
   
@@ -342,6 +409,10 @@
       margin: 5px 0;
     }
     
+    .billing-table {
+      min-width: 650px; /* Slightly smaller minimum */
+    }
+    
     .billing-table th,
     .billing-table td {
       padding: 6px 4px;
@@ -349,7 +420,7 @@
     }
     
     .tracking-details {
-      max-width: 150px;
+      max-width: 180px;
       font-size: 0.75em;
     }
     
@@ -358,46 +429,55 @@
       font-size: 0.8em;
     }
     
-    /* Smallest mobile column widths */
+    /* Smaller fixed widths for very small screens */
     .col-receipt { 
-      min-width: 55px; 
-      max-width: 65px;
+      width: 70px !important;
+      min-width: 70px;
+      max-width: 70px;
       font-size: 0.75em;
     }
     .col-date { 
-      min-width: 55px; 
-      max-width: 65px;
+      width: 75px !important;
+      min-width: 75px;
+      max-width: 75px;
       font-size: 0.75em;
     }
     .col-code { 
-      min-width: 35px; /* Absolute minimum for code */
-      max-width: 45px;
+      width: 55px !important;
+      min-width: 55px;
+      max-width: 55px;
       font-size: 0.75em;
     }
     .col-details { 
-      min-width: 120px; 
-      max-width: 180px;
+      width: 190px !important;
+      min-width: 190px;
+      max-width: 190px;
     }
     .col-location { 
-      min-width: 60px; 
-      max-width: 80px;
+      width: 90px !important;
+      min-width: 90px;
+      max-width: 90px;
       font-size: 0.75em;
     }
     .col-total { 
-      min-width: 55px; 
-      max-width: 65px;
+      width: 70px !important;
+      min-width: 70px;
+      max-width: 70px;
     }
     .col-action { 
-      min-width: 65px; 
-      max-width: 75px;
+      width: 80px !important;
+      min-width: 80px;
+      max-width: 80px;
     }
     .col-status { 
-      min-width: 65px; 
-      max-width: 75px;
+      width: 80px !important;
+      min-width: 80px;
+      max-width: 80px;
     }
     .col-collection-date { 
-      min-width: 75px; 
-      max-width: 90px;
+      width: 100px !important;
+      min-width: 100px;
+      max-width: 100px;
       font-size: 0.75em;
     }
   
@@ -425,6 +505,7 @@
     
     .billing-table {
       border: 1px solid #000;
+      table-layout: auto;
     }
     
     .billing-table th {
