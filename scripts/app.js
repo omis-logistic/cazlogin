@@ -1,8 +1,8 @@
 //scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbw-RJl3RFs8FVx-5RR4ByHz_7TaruwDtBUfd3fgnXGLxMEqnc-sBY4ZOis5BwI1Uwpz/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxIAX4irDMGRGzrQcnuQIP3-gAdMJ_tdAP9UDHr14s4deFBLu_-RjBRjZA8FgX3mrqtEQ/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwE2ySmLndAJDdBDoqfPmAyZW16J13v5YPB1ReFcxVg3F684GToxG-a3MZxgof81wIm/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxksxDSCalEak2cepsTS_SvtRfh7n-qcGQobT5JX8nKHv_QES13mjpW5abWMhkoQG8/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -130,9 +130,25 @@ async function callAPI(action, payload) {
   }
 }
 
-function showLoading(show = true) {
-  const loader = document.getElementById('loadingOverlay') || createLoaderElement();
+function showLoading(show = true, message = 'Processing...') {
+  const loader = document.getElementById('loadingOverlay');
+  if (!loader) return;
+
+  const textElement = loader.querySelector('.loading-text');
+  if (textElement) {
+    textElement.textContent = message;
+  }
+
   loader.style.display = show ? 'flex' : 'none';
+  
+  // Add a timeout to show "this may take a while" for long operations
+  if (show) {
+    setTimeout(() => {
+      if (loader.style.display === 'flex' && textElement) {
+        textElement.textContent = message + ' This may take a while...';
+      }
+    }, 3000); // Show after 3 seconds
+  }
 }
 
 function createLoaderElement() {
