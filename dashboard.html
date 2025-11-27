@@ -15,6 +15,7 @@
       display: grid;
       gap: 20px;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      margin-bottom: 30px;
     }
 
     .thumbnail {
@@ -24,6 +25,11 @@
       cursor: pointer;
       transition: all 0.3s ease;
       border: 1px solid var(--gold);
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
     .thumbnail:hover {
@@ -41,6 +47,178 @@
       color: var(--text-light);
       font-size: 0.95em;
       opacity: 0.9;
+      margin: 0;
+    }
+
+    /* Billing Thumbnail Special Styles */
+    #billingThumbnail {
+      position: relative;
+      border: 2px solid var(--gold);
+      background: rgba(197, 160, 71, 0.05);
+    }
+
+    #billingThumbnail::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      border-radius: 12px;
+      background: linear-gradient(45deg, var(--gold), #ffd700, var(--gold));
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #billingThumbnail.has-uncollected::before {
+      opacity: 1;
+      animation: borderPulse 2s infinite;
+    }
+
+    #billingThumbnail.has-uncollected {
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid transparent;
+    }
+
+    /* Pop-out Message Styles */
+    .popout-message {
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      background: linear-gradient(135deg, #ff4444, #cc0000);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 25px;
+      font-size: 0.75em;
+      font-weight: bold;
+      border: 2px solid var(--dark-bg);
+      box-shadow: 0 4px 15px rgba(255, 68, 68, 0.6);
+      z-index: 10;
+      white-space: nowrap;
+      transform: scale(0);
+      transform-origin: top right;
+      animation: popOut 0.5s ease-out forwards, float 3s ease-in-out infinite;
+      max-width: 200px;
+      text-align: center;
+    }
+
+    .popout-message::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      right: 20px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid #cc0000;
+    }
+
+    .popout-message.warning {
+      background: linear-gradient(135deg, #ff8800, #cc6600);
+    }
+
+    .popout-message.warning::after {
+      border-top-color: #cc6600;
+    }
+
+    .popout-message.urgent {
+      background: linear-gradient(135deg, #ff4444, #990000);
+      animation: popOut 0.5s ease-out forwards, float 2s ease-in-out infinite, pulse 1s infinite;
+    }
+
+    .popout-message.urgent::after {
+      border-top-color: #990000;
+    }
+
+    /* Global Loading Spinner */
+    .global-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    .global-loading .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid rgba(197, 160, 71, 0.3);
+      border-top: 5px solid var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    .global-loading .loading-text {
+      color: var(--gold);
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+
+    /* Animations */
+    @keyframes popOut {
+      0% {
+        transform: scale(0);
+        opacity: 0;
+      }
+      70% {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-5px) scale(1.02);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 4px 15px rgba(255, 68, 68, 0.6);
+      }
+      50% {
+        box-shadow: 0 4px 25px rgba(255, 68, 68, 0.9);
+      }
+      100% {
+        box-shadow: 0 4px 15px rgba(255, 68, 68, 0.6);
+      }
+    }
+
+    @keyframes borderPulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes shake {
+      0%, 100% {transform: translateX(0);}
+      10%, 30%, 50%, 70%, 90% {transform: translateX(-5px);}
+      20%, 40%, 60%, 80% {transform: translateX(5px);}
+    }
+
+    .shake {
+      animation: shake 0.5s ease;
     }
 
     /* Welcome Modal Styles */
@@ -122,13 +300,37 @@
         padding: 10px;
       }
       
+      .thumbnail-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
       .thumbnail {
-        margin: 10px 0;
+        margin: 0;
         padding: 15px;
+        min-height: 100px;
       }
       
       .thumbnail h2 {
         font-size: 1.2em;
+      }
+
+      .popout-message {
+        top: -12px;
+        right: -12px;
+        padding: 10px 14px;
+        font-size: 0.7em;
+        max-width: 160px;
+        white-space: normal;
+        text-align: center;
+      }
+
+      .popout-message::after {
+        right: 15px;
+        bottom: -6px;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid #cc0000;
       }
 
       .welcome-modal {
@@ -172,20 +374,42 @@
       .guidelines li {
         font-size: 0.85em;
       }
+
+      .popout-message {
+        top: -10px;
+        right: -10px;
+        padding: 8px 12px;
+        font-size: 0.65em;
+        max-width: 140px;
+      }
+
+      .popout-message::after {
+        right: 12px;
+        bottom: -5px;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 5px solid #cc0000;
+      }
     }
 
-  body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-.container {
-  flex: 1;
-}
-</style>
+    .container {
+      flex: 1;
+    }
+  </style>
 </head>
 <body>
+  <!-- Global Loading Spinner -->
+  <div id="globalLoading" class="global-loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+
   <div class="container dashboard-page">
     <h1>User Dashboard</h1>
     
@@ -204,9 +428,14 @@
         <h2>🚚 Track Parcel</h2>
         <p>Check your parcel status</p>
       </div>
+      
+      <!-- Billing Thumbnail with pop-out message -->
+      <div class="thumbnail" onclick="showBillingInfo()" id="billingThumbnail">
+        <h2>💰 Billing Info</h2>
+        <p>View parcel billing details and make payments</p>
+        <div id="popoutMessage" class="popout-message" style="display: none;"></div>
+      </div>
     </div>
-
-    
     
     <button class="logout-btn" onclick="handleLogout()">Log Out</button>
   </div>
@@ -279,93 +508,152 @@
 
   <script src="scripts/app.js"></script>
   <script>
+    // Global loading functions
+    function showGlobalLoading(message = 'Loading...') {
+      const loader = document.getElementById('globalLoading');
+      const text = loader.querySelector('.loading-text');
+      text.textContent = message;
+      loader.style.display = 'flex';
+    }
+
+    function hideGlobalLoading() {
+      const loader = document.getElementById('globalLoading');
+      loader.style.display = 'none';
+    }
+
+    let modalWasShown = false;
+
     function closeWelcomeModal() {
       const modal = document.getElementById('welcomeModal');
       modal.style.display = 'none';
       document.body.style.overflow = 'auto';
-    }
-
-  async function checkUncollectedParcels() {
-    try {
-      const userData = JSON.parse(sessionStorage.getItem('userData'));
-      if (!userData?.phone) return;
-
-      const callbackName = `uncollectedCallback_${Date.now()}`;
-      const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getUncollectedCount&phone=${encodeURIComponent(userData.phone)}`;
-
-      const response = await new Promise((resolve, reject) => {
-        window[callbackName] = (data) => {
-          delete window[callbackName];
-          document.getElementById(callbackName)?.remove();
-          resolve(data);
-        };
-
-        const script = document.createElement('script');
-        script.id = callbackName;
-        script.src = url;
-        script.onerror = () => {
-          delete window[callbackName];
-          reject(new Error('Failed to load uncollected count'));
-        };
-        document.head.appendChild(script);
-      });
-
-      const count = response.count || 0;
-      const indicator = document.getElementById('billingIndicator');
       
-      if (count > 0) {
-        indicator.textContent = count;
-        indicator.style.display = 'inline-flex';
-      } else {
-        indicator.style.display = 'none';
+      // Show loading spinner only after modal is closed
+      if (modalWasShown) {
+        checkUncollectedParcels();
       }
-    } catch (error) {
-      console.error('Uncollected count check failed:', error);
     }
-  }
+
+    async function checkUncollectedParcels() {
+      try {
+        showGlobalLoading('Checking for pending payments...');
+        const userData = JSON.parse(sessionStorage.getItem('userData'));
+        if (!userData?.phone) return;
+
+        const callbackName = `uncollectedCallback_${Date.now()}`;
+        const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getUncollectedCount&phone=${encodeURIComponent(userData.phone)}`;
+
+        const response = await new Promise((resolve, reject) => {
+          window[callbackName] = (data) => {
+            delete window[callbackName];
+            document.getElementById(callbackName)?.remove();
+            resolve(data);
+          };
+
+          const script = document.createElement('script');
+          script.id = callbackName;
+          script.src = url;
+          script.onerror = () => {
+            delete window[callbackName];
+            reject(new Error('Failed to load uncollected count'));
+          };
+          document.head.appendChild(script);
+        });
+
+        const count = response.count || 0;
+        const popout = document.getElementById('popoutMessage');
+        const billingThumbnail = document.getElementById('billingThumbnail');
+        
+        if (count > 0) {
+          // Create appropriate message based on count
+          let message = '';
+          if (count === 1) {
+            message = '⚠️ 1 Unclaim Parcel!';
+          } else {
+            message = `⚠️ ${count} Unclaim Parcels!`;
+          }
+          
+          popout.textContent = message;
+          popout.style.display = 'block';
+          billingThumbnail.classList.add('has-uncollected');
+          
+          // Add urgency levels
+          if (count >= 5) {
+            popout.classList.add('urgent');
+            popout.classList.remove('warning');
+          } else if (count >= 2) {
+            popout.classList.add('warning');
+            popout.classList.remove('urgent');
+          } else {
+            popout.classList.remove('warning', 'urgent');
+          }
+          
+          // Add shake animation for attention
+          setTimeout(() => {
+            billingThumbnail.classList.add('shake');
+            setTimeout(() => billingThumbnail.classList.remove('shake'), 500);
+          }, 1000);
+          
+          console.log(`Found ${count} uncollected parcels - popout shown`);
+        } else {
+          popout.style.display = 'none';
+          billingThumbnail.classList.remove('has-uncollected');
+          console.log('No uncollected parcels found');
+        }
+      } catch (error) {
+        console.error('Uncollected count check failed:', error);
+      } finally {
+        hideGlobalLoading();
+      }
+    }
     
-(function initDashboard() {
-  const userData = JSON.parse(sessionStorage.getItem('userData'));
-  if (!userData) return safeRedirect('login.html');
-  if (userData.tempPassword) return safeRedirect('password-reset.html');
+    (function initDashboard() {
+      const userData = JSON.parse(sessionStorage.getItem('userData'));
+      if (!userData) return safeRedirect('login.html');
+      if (userData.tempPassword) return safeRedirect('password-reset.html');
 
-  checkUncollectedParcels(); // This checks for uncollected parcels and updates the indicator
+      // Check if modal should be shown
+      const urlParams = new URLSearchParams(window.location.search);
+      const shouldShowModal = urlParams.has('fresh') || 
+                             (localStorage.getItem('freshLogin') === 'true' && 
+                              sessionStorage.getItem('modalShown') === 'false');
 
-  // New URL parameter check
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('fresh')) {
-    // Show modal and clean URL
-    document.getElementById('welcomeModal').style.display = 'block';
-    window.history.replaceState({}, '', 'dashboard.html');
-  }
+      if (shouldShowModal) {
+        modalWasShown = true;
+        // Show modal and clean URL
+        document.getElementById('welcomeModal').style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        window.history.replaceState({}, '', 'dashboard.html');
+        
+        // Set session storage to prevent showing modal again
+        sessionStorage.setItem('modalShown', 'true');
+        localStorage.removeItem('freshLogin');
+      } else {
+        // If no modal is shown, check uncollected parcels immediately
+        checkUncollectedParcels();
+      }
 
-  const modal = document.getElementById('welcomeModal');
+      const modal = document.getElementById('welcomeModal');
 
-  // Dual verification check
-  if (localStorage.getItem('freshLogin') === 'true' && 
-      sessionStorage.getItem('modalShown') === 'false') {
-    document.body.style.overflow = 'hidden';
-    modal.style.display = 'block';
-    sessionStorage.setItem('modalShown', 'true');
-    localStorage.removeItem('freshLogin');
-  }
+      window.onclick = (event) => {
+        if(event.target === document.getElementById('welcomeModal')) {
+          closeWelcomeModal();
+        }
+      }
 
-  window.onclick = (event) => {
-    if(event.target === document.getElementById('welcomeModal')) {
-      document.getElementById('welcomeModal').style.display = 'none';
-    }
-  }
-
-  window.showBillingInfo = () => safeRedirect('billing-info.html');
-  window.showMyInfo = () => safeRedirect('my-info.html');
-  window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
-  window.showTrackParcel = () => safeRedirect('track-parcel.html');
-  
-  window.handleLogout = () => {
-    sessionStorage.clear();
-    safeRedirect('login.html');
-  }
-})();
+      window.showBillingInfo = () => {
+        showGlobalLoading('Loading billing information...');
+        safeRedirect('billing-info.html');
+      };
+      window.showMyInfo = () => safeRedirect('my-info.html');
+      window.showParcelDeclaration = () => safeRedirect('parcel-declaration.html');
+      window.showTrackParcel = () => safeRedirect('track-parcel.html');
+      
+      window.handleLogout = () => {
+        sessionStorage.clear();
+        safeRedirect('login.html');
+      }
+    })();
   </script>
 </body>
 </html>
