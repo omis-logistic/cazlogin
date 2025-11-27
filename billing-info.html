@@ -743,8 +743,8 @@
                 <td class="col-total amount">${formatCurrencyBND(total)}</td>
                 <td class="${isUncollected ? 'col-action' : 'col-status'}">
                   ${isUncollected && receiptNumber !== 'N/A' ? 
-                    `<a href="https://omis-logistic.github.io/caz-paymentgateway/index.html?orderNumber=${receiptNumber}" 
-                       class="pay-now-btn" target="_blank">Pay Now</a>` :
+                    `<a href="invoice.html?orderNumber=${receiptNumber}" 
+                       class="pay-now-btn" target="_blank">Paid</a>` :
                     `<span class="status-badge status-completed">${status}</span>`
                   }
                 </td>
