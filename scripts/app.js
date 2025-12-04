@@ -1,7 +1,7 @@
 //scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbwE2ySmLndAJDdBDoqfPmAyZW16J13v5YPB1ReFcxVg3F684GToxG-a3MZxgof81wIm/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwSk0qZN3g22EEzD_DoKlt_5Izba6LgftvJbZ_9yhHzNM6EwAsBmrr8TPP19KfC-89A/exec',
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbzFaUKdOHLXstmOpBGwZlY_4xZsU6tS5ewE5zEt0bXkehRi6vJANZeLBQvXlxFsJvlo4w/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
@@ -69,36 +69,54 @@ function createErrorElement() {
   return errorDiv;
 }
 
-// ================= SESSION MANAGEMENT =================
+// ================= IMPROVED SESSION CHECK =================
 const checkSession = () => {
   const sessionData = sessionStorage.getItem('userData');
   const lastActivity = localStorage.getItem('lastActivity');
 
   if (!sessionData) {
-    handleLogout();
+    console.log('No session data found');
     return null;
   }
 
+  // Check session timeout (1 hour)
   if (lastActivity && Date.now() - lastActivity > CONFIG.SESSION_TIMEOUT * 1000) {
-    handleLogout();
+    console.log('Session expired');
+    sessionStorage.clear();
+    localStorage.removeItem('lastActivity');
     return null;
   }
 
-  localStorage.setItem('lastActivity', Date.now());
-  const userData = JSON.parse(sessionData);
-  
-  if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
-    handleLogout();
+  try {
+    const userData = JSON.parse(sessionData);
+    
+    // Update last activity
+    localStorage.setItem('lastActivity', Date.now());
+    
+    // Check if temp password requires reset
+    if (userData?.tempPassword && !window.location.pathname.includes('password-reset.html')) {
+      console.log('Temp password detected but not on reset page');
+      return null;
+    }
+
+    return userData;
+  } catch (error) {
+    console.error('Error parsing session data:', error);
+    sessionStorage.clear();
+    localStorage.removeItem('lastActivity');
     return null;
   }
-
-  return userData;
 };
 
 function handleLogout() {
-  sessionStorage.clear(); // This clears the freshLogin flag
+  console.log('Logging out...');
+  
+  // Clear all session data
+  sessionStorage.clear();
   localStorage.removeItem('lastActivity');
-  safeRedirect('login.html');
+  
+  // Redirect to login with cache-busting parameter
+  window.location.href = 'login.html?logout=' + Date.now();
 }
 
 // ================= API HANDLER =================
@@ -623,40 +641,6 @@ function initValidationListeners() {
 }
 
 // ================= AUTHENTICATION HANDLERS =================
-async function handleLogin() {
-  const phone = document.getElementById('phone').value.trim();
-  const password = document.getElementById('password').value;
-
-  if (!validatePhone(phone)) {
-    showError('Invalid phone number format');
-    return;
-  }
-
-  if (!password) {
-    showError('Please enter your password');
-    return;
-  }
-
-  try {
-    const result = await callAPI('processLogin', { phone, password });
-    
-    if (result.success) {
-      sessionStorage.setItem('userData', JSON.stringify(result));
-      localStorage.setItem('lastActivity', Date.now());
-      
-      if (result.tempPassword) {
-        safeRedirect('password-reset.html');
-      } else {
-        safeRedirect('dashboard.html');
-      }
-    } else {
-      showError(result.message || 'Authentication failed');
-    }
-  } catch (error) {
-    showError('Login failed - please try again');
-  }
-}
-
 async function handleRegistration() {
   if (!validateRegistrationForm()) return;
 
@@ -814,6 +798,7 @@ function safeRedirect(path) {
   }
 }
 
+
 function formatTrackingNumber(trackingNumber) {
   return trackingNumber.replace(/[^A-Z0-9-]/g, '').toUpperCase();
 }
@@ -839,15 +824,12 @@ function formatDate(dateString) {
 }
 
 // ================= INITIALIZATION =================
+// ================= INITIALIZATION =================
 document.addEventListener('DOMContentLoaded', () => {
+  // 1. Mark 1 style initialization
   detectViewMode();
-  initValidationListeners();
-  createLoaderElement();
-
-  // Initialize category requirements on page load
-  checkCategoryRequirements();
-
-  // Initialize parcel declaration form
+  
+  // 2. Initialize parcel form if exists (Mark 1 approach)
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
     parcelForm.addEventListener('submit', handleParcelSubmission);
@@ -857,17 +839,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (categorySelect) {
       categorySelect.addEventListener('change', checkCategoryRequirements);
     }
-
-    // Phone field setup
+  }
+  
+  // 3. Create loader element
+  createLoaderElement();
+  
+  // 4. Initialize category requirements
+  checkCategoryRequirements();
+  
+  // 5. Initialize validation listeners
+  initValidationListeners();
+  
+  // 6. Parcel declaration page specific code
+  if (window.location.pathname.includes('parcel-declaration.html')) {
+    const userData = checkSession();
+    if (!userData) {
+      handleLogout();
+      return;
+    }
+    
+    // Phone field handling
     const phoneField = document.getElementById('phone');
     if (phoneField) {
-      const userData = checkSession();
-      phoneField.value = userData?.phone || '';
+      phoneField.value = userData.phone || '';
       phoneField.readOnly = true;
     }
   }
 
-  // Session management
+  // 7. Session management - EXACT Mark 1 approach
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
@@ -875,20 +874,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!isPublicPage) {
     const userData = checkSession();
-    if (!userData) return;
+    if (!userData) {
+      handleLogout();
+      return;
+    }
     
+    // Check for temp password - EXACT Mark 1 logic
     if (userData.tempPassword && !window.location.pathname.includes('password-reset.html')) {
       handleLogout();
+      return;
     }
   }
 
+  // 8. Cleanup on page unload - Mark 1 approach
   window.addEventListener('beforeunload', () => {
     const errorElement = document.getElementById('error-message');
     if (errorElement) errorElement.style.display = 'none';
   });
 
+  // 9. Focus management - Mark 1 approach
   const firstInput = document.querySelector('input:not([type="hidden"])');
   if (firstInput) firstInput.focus();
+  
+  // 10. Setup category change listener if exists
+  const categorySelect = document.getElementById('itemCategory');
+  if (categorySelect) {
+    categorySelect.addEventListener('change', checkCategoryRequirements);
+  }
 });
 
 // New functions for category requirements =================
@@ -918,5 +930,189 @@ function setupCategoryChangeListener() {
   const categorySelect = document.getElementById('itemCategory');
   if (categorySelect) {
     categorySelect.addEventListener('change', checkCategoryRequirements);
+  }
+}
+
+// ================= BILLING SYSTEM HELPERS =================
+async function loadBillingDataWithRetry(phone, maxRetries = 3) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Loading billing data (attempt ${attempt}/${maxRetries})`);
+      
+      // Add exponential backoff
+      if (attempt > 1) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+      const result = await loadBillingDataFromServer(phone);
+      
+      if (result && result.success) {
+        return result;
+      }
+      
+      lastError = new Error(result?.message || 'Billing data load failed');
+      
+    } catch (error) {
+      console.error(`Billing load attempt ${attempt} failed:`, error);
+      lastError = error;
+      
+      // If it's a network error, try again
+      if (attempt < maxRetries) {
+        continue;
+      }
+    }
+  }
+  
+  throw lastError || new Error('Failed to load billing data after all retries');
+}
+
+async function checkPaymentStatusWithRetry(phone, maxRetries = 2) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Checking payment status (attempt ${attempt}/${maxRetries})`);
+      
+      if (attempt > 1) {
+        const delay = Math.min(500 * Math.pow(2, attempt - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+      const result = await checkPaymentStatusForUser(phone);
+      
+      if (result && (result.success || result.paidOrders)) {
+        return result;
+      }
+      
+      lastError = new Error('Payment status check failed');
+      
+    } catch (error) {
+      console.error(`Payment status attempt ${attempt} failed:`, error);
+      lastError = error;
+      
+      if (attempt < maxRetries) {
+        continue;
+      }
+    }
+  }
+  
+  // Return empty if all retries fail
+  return { success: false, paidOrders: [] };
+}
+
+// ================= IMPROVED LOADING FUNCTION =================
+async function loadBillingData() {
+  try {
+    showLoading(true, "Please wait, loading billing information...");
+    const userData = checkSession();
+    if (!userData?.phone) {
+      handleLogout();
+      return;
+    }
+
+    console.log('Starting to load billing data...');
+    
+    // Load billing data with retry
+    const billingResponse = await loadBillingDataWithRetry(userData.phone);
+    
+    if (!billingResponse.success) {
+      showError(billingResponse.message || 'Failed to load billing information', 'connectionError');
+      return;
+    }
+
+    // Load payment status with retry (non-critical)
+    const paymentStatus = await checkPaymentStatusWithRetry(userData.phone);
+    
+    allBillingData = billingResponse.data || [];
+    paidOrders = paymentStatus.paidOrders || [];
+    
+    console.log(`Loaded ${allBillingData.length} billing records and ${paidOrders.length} paid orders`);
+    
+    // Store in session for offline access
+    try {
+      sessionStorage.setItem('billingCache', JSON.stringify({
+        data: allBillingData,
+        paidOrders: paidOrders,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.warn('Could not cache billing data:', e);
+    }
+    
+    renderBillingSections(allBillingData);
+
+  } catch (error) {
+    console.error('Billing load error:', error);
+    
+    // Try to use cached data
+    try {
+      const cached = sessionStorage.getItem('billingCache');
+      if (cached) {
+        const cacheData = JSON.parse(cached);
+        const cacheAge = Date.now() - cacheData.timestamp;
+        
+        // Use cache if less than 10 minutes old
+        if (cacheAge < 10 * 60 * 1000) {
+          console.log('Using cached billing data');
+          allBillingData = cacheData.data || [];
+          paidOrders = cacheData.paidOrders || [];
+          renderBillingSections(allBillingData);
+          showError('Using cached data. Some information may be outdated.', 'connectionError');
+          return;
+        }
+      }
+    } catch (cacheError) {
+      console.warn('Cache error:', cacheError);
+    }
+    
+    showError('Connection failed. Please try again.', 'connectionError');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ================= CONNECTION HEALTH CHECK =================
+async function checkBackendHealth() {
+  try {
+    const healthCheck = await new Promise((resolve, reject) => {
+      const callbackName = `health_${Date.now()}`;
+      const script = document.createElement('script');
+      script.crossOrigin = 'anonymous';
+      script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=processLogin&phone=test&password=test`;
+      
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('Backend timeout'));
+      }, 5000);
+      
+      function cleanup() {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+      }
+      
+      window[callbackName] = (response) => {
+        cleanup();
+        // Even if login fails, backend is responding
+        resolve(true);
+      };
+      
+      script.onerror = () => {
+        cleanup();
+        reject(new Error('Backend unavailable'));
+      };
+      
+      document.body.appendChild(script);
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Backend health check failed:', error);
+    return false;
   }
 }
