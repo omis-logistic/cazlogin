@@ -60,15 +60,33 @@
         font-size: 14px;
       }
     }
+    
     body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-.container {
-  flex: 1;
-}
+    .container {
+      flex: 1;
+    }
+    
+    .button-loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid var(--gold);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -127,62 +145,128 @@
   <script src="scripts/app.js"></script>
   <script>
     function handleRegistration() {
-  const btn = document.querySelector('.registration-page button');
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<div class="button-loader"></div> Registering...';
+      const btn = document.querySelector('.registration-page button');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="button-loader"></div> Registering...';
 
-  // Clear previous errors
-  document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-  const statusElement = document.getElementById('registrationStatus');
-  statusElement.className = '';
-  statusElement.textContent = '';
+      // Clear previous errors
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+      const statusElement = document.getElementById('registrationStatus');
+      statusElement.className = '';
+      statusElement.textContent = '';
 
-  // Validate form first
-  if (!validateRegistrationForm()) {
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-    return;
-  }
-
-  // Get form values
-  const phone = document.getElementById('regPhone').value;
-  const password = document.getElementById('regPassword').value;
-  const email = document.getElementById('regEmail').value;
-
-  // Create JSONP request
-  const callbackName = `jsonp_${Date.now()}`;
-  const script = document.createElement('script');
-  script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
-
-  window[callbackName] = (response) => {
-    // Cleanup and restore button
-    delete window[callbackName];
-    document.body.removeChild(script);
-    btn.disabled = false;
-    btn.innerHTML = originalText;
-
-    // Handle response
-    if (response.success) {
-      statusElement.className = 'status-message success';
-      statusElement.textContent = 'Registration successful! Redirecting...';
-      setTimeout(() => safeRedirect('login.html'), 1500);
-    } else {
-      statusElement.className = 'status-message error';
-      statusElement.textContent = response.message || 'Registration failed';
-      
-      // Highlight specific errors if available
-      if (response.errors) {
-        response.errors.forEach(error => {
-          const errorField = document.getElementById(`${error.field}Error`);
-          if (errorField) errorField.textContent = error.message;
-        });
+      // Validate form first
+      if (!validateRegistrationForm()) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        return;
       }
-    }
-  };
 
-  document.body.appendChild(script);
-}
+      // Get form values
+      const phone = document.getElementById('regPhone').value;
+      const password = document.getElementById('regPassword').value;
+      const email = document.getElementById('regEmail').value;
+
+      // Create JSONP request - EXACT Mark 1 approach
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      
+      // Mark 1 approach with crossorigin attribute
+      script.crossOrigin = 'anonymous';
+      script.src = `${CONFIG.GAS_URL}?action=createAccount&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&email=${encodeURIComponent(email)}&callback=${callbackName}`;
+
+      window[callbackName] = (response) => {
+        // Cleanup and restore button - EXACT Mark 1 approach
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+
+        // Handle response
+        if (response.success) {
+          statusElement.className = 'status-message success';
+          statusElement.textContent = 'Registration successful! Redirecting...';
+          setTimeout(() => safeRedirect('login.html'), 1500);
+        } else {
+          statusElement.className = 'status-message error';
+          statusElement.textContent = response.message || 'Registration failed';
+        }
+        
+        // Remove script and cleanup
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+
+      // Error handling - Mark 1 approach
+      script.onerror = function() {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        statusElement.className = 'status-message error';
+        statusElement.textContent = 'Network error. Please try again.';
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+
+      document.body.appendChild(script);
+    }
+
+    // Real-time validation functions
+    function validatePhone(phone) {
+      const regex = /^(673\d{7,}|60\d{9,})$/;
+      return regex.test(phone);
+    }
+
+    function validatePassword(password) {
+      const regex = /^(?=.*[A-Z])(?=.*\d).{6,}$/;
+      return regex.test(password);
+    }
+
+    function validateEmail(email) {
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return regex.test(email);
+    }
+
+    // EXACT Mark 1 validation function
+    function validateRegistrationForm() {
+      const phone = document.getElementById('regPhone').value;
+      const password = document.getElementById('regPassword').value;
+      const confirmPassword = document.getElementById('regConfirmPass').value;
+      const email = document.getElementById('regEmail').value;
+      const confirmEmail = document.getElementById('regConfirmEmail').value;
+
+      let isValid = true;
+      document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+      if (!validatePhone(phone)) {
+        document.getElementById('phoneError').textContent = 'Invalid phone format';
+        isValid = false;
+      }
+
+      if (!validatePassword(password)) {
+        document.getElementById('passError').textContent = '6+ chars, 1 uppercase, 1 number';
+        isValid = false;
+      }
+
+      if (password !== confirmPassword) {
+        document.getElementById('confirmPassError').textContent = 'Passwords mismatch';
+        isValid = false;
+      }
+
+      if (!validateEmail(email)) {
+        document.getElementById('emailError').textContent = 'Invalid email format';
+        isValid = false;
+      }
+
+      if (email !== confirmEmail) {
+        document.getElementById('confirmEmailError').textContent = 'Emails mismatch';
+        isValid = false;
+      }
+
+      return isValid;
+    }
 
     document.getElementById('regPhone').addEventListener('input', function() {
       document.getElementById('phoneError').textContent = 
