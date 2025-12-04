@@ -58,6 +58,11 @@
       font-size: 16px;
       min-height: 44px;
       transition: all 0.3s ease;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
     }
 
     .auth-links {
@@ -76,6 +81,23 @@
     .secondary-btn:hover {
       background: var(--gold) !important;
       color: var(--dark-bg) !important;
+    }
+
+    /* Loading spinner styles */
+    .button-loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid var(--gold);
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 0.8s linear infinite;
+      display: none; /* Hidden by default */
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     @keyframes fadeIn {
@@ -100,15 +122,15 @@
       }
     }
 
-  body {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-.container {
-  flex: 1;
-}
+    .container {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -131,12 +153,14 @@
                required>
       </div>
       <div id="loginError" class="inline-error" style="display: none;"></div>
-      <button onclick="handleLogin()">LOGIN</button>
+      <button onclick="handleLogin()" id="loginBtn">
+        <div class="button-loader" id="loginSpinner"></div>
+        <span id="loginText">LOGIN</span>
+      </button>
       
       <div class="auth-links">
         <button onclick="showRegistration()">CREATE ACCOUNT</button>
-        <button class="secondary-btn" 
-                onclick="showForgotPassword()">
+        <button class="secondary-btn" onclick="showForgotPassword()">
           FORGOT PASSWORD?
         </button>
       </div>
@@ -148,55 +172,96 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    // Integrated with app.js functions
+    // EXACT Mark 1 login implementation with improved spinner
     function handleLogin() {
-  const btn = document.querySelector('.login-container button');
-  const originalText = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<div class="button-loader"></div> Authenticating...';
+      const btn = document.getElementById('loginBtn');
+      const spinner = document.getElementById('loginSpinner');
+      const loginText = document.getElementById('loginText');
+      
+      // Save original text and disable button
+      const originalText = loginText.textContent;
+      btn.disabled = true;
+      
+      // Show spinner and change text
+      spinner.style.display = 'inline-block';
+      loginText.textContent = 'Processing...';
 
-  const phone = document.getElementById('phone').value;
-  const password = document.getElementById('password').value;
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value;
 
-  const callbackName = `jsonp_${Date.now()}`;
-  const script = document.createElement('script');
-  script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
+      if (!validatePhone(phone)) {
+        showError('Invalid phone number format');
+        resetLoginButton(btn, spinner, loginText, originalText);
+        return;
+      }
 
-window[callbackName] = (response) => {
-  // Always restore button state first
-  btn.disabled = false;
-  btn.innerHTML = originalText;
-  
-  delete window[callbackName];
-  document.body.removeChild(script);
-  
-  if (response.success) {
-      sessionStorage.setItem('userData', JSON.stringify(response));
-      localStorage.setItem('lastActivity', Date.now());
-      safeRedirect(response.tempPassword ? 'password-reset.html' : 'dashboard.html?fresh=1');
-  } else {
-    const errorContainer = document.getElementById('loginError');
-    errorContainer.textContent = 'Incorrect Phone Number or Password. Try again';
-    errorContainer.style.display = 'block';
-    document.getElementById('password').value = '';
-  }
-};
+      const callbackName = `jsonp_${Date.now()}`;
+      const script = document.createElement('script');
+      
+      // EXACTLY like Mark 1 - with crossorigin attribute
+      script.crossOrigin = 'anonymous';
+      script.src = `${CONFIG.GAS_URL}?action=processLogin&phone=${encodeURIComponent(phone)}&password=${encodeURIComponent(password)}&callback=${callbackName}`;
 
-  document.body.appendChild(script);
-}
+      window[callbackName] = (response) => {
+        // Restore button state
+        resetLoginButton(btn, spinner, loginText, originalText);
 
-  // ======== ADD ENTER KEY HANDLING HERE ========
-  document.getElementById('password').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      handleLogin();
+        if (response.success) {
+          console.log('TempPassword flag:', response.tempPassword);
+          sessionStorage.setItem('userData', JSON.stringify({
+            phone: response.phone,
+            email: response.email,
+            tempPassword: response.tempPassword
+          }));
+          localStorage.setItem('lastActivity', Date.now());
+          
+          window.location.href = response.tempPassword 
+            ? 'password-reset.html?force=true'
+            : 'dashboard.html?fresh=1';
+        } else {
+          document.getElementById('password').value = '';
+          showError(response.message || 'Authentication failed');
+        }
+        
+        // Cleanup - EXACTLY like Mark 1
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+      
+      // Add error handler
+      script.onerror = function() {
+        resetLoginButton(btn, spinner, loginText, originalText);
+        showError('Network error. Please try again.');
+        if (script.parentNode) {
+          document.body.removeChild(script);
+        }
+        delete window[callbackName];
+      };
+      
+      document.body.appendChild(script);
     }
-  });
 
-  document.getElementById('phone').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      document.getElementById('password').focus();
+    // Helper function to reset login button state
+    function resetLoginButton(btn, spinner, textElement, originalText) {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      textElement.textContent = originalText;
     }
-  });
+
+    // ======== EXACT Mark 1 ENTER KEY HANDLING ========
+    document.getElementById('password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        handleLogin();
+      }
+    });
+
+    document.getElementById('phone').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('password').focus();
+      }
+    });
     
     function showRegistration() {
       safeRedirect('register.html');
@@ -204,6 +269,48 @@ window[callbackName] = (response) => {
 
     function showForgotPassword() {
       safeRedirect('forgot-password.html');
+    }
+
+    // EXACT Mark 1 validation function
+    function validatePhone(phone) {
+      const regex = /^(673\d{7,}|60\d{9,})$/;
+      return regex.test(phone);
+    }
+
+    // EXACT Mark 1 error display
+    function showError(message) {
+      const errorDiv = document.getElementById('error-message');
+      if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    // EXACT Mark 1 redirect function
+    function safeRedirect(path) {
+      try {
+        // Extract base path without query parameters
+        const basePath = path.split('?')[0].split('#')[0];
+        
+        const allowedPaths = [
+          'login.html', 'register.html', 'dashboard.html',
+          'forgot-password.html', 'password-reset.html',
+          'my-info.html', 'parcel-declaration.html', 'track-parcel.html',
+          'billing-info.html', 'invoice.html'
+        ];
+        
+        if (!allowedPaths.includes(basePath)) {
+          throw new Error('Unauthorized path');
+        }
+        
+        window.location.href = path;
+      } catch (error) {
+        console.error('Redirect error:', error);
+        showError('Navigation failed. Please try again.');
+      }
     }
   </script>
 </body>
