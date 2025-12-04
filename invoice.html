@@ -13,6 +13,7 @@
       padding: 30px;
       border-radius: 10px;
       box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      animation: fadeIn 0.3s ease-in;
     }
     
     .invoice-header {
@@ -319,6 +320,11 @@
         overflow: visible;
       }
     }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -349,24 +355,38 @@
 
   <script src="scripts/app.js"></script>
   <script>
-    console.log('Page loaded - checking session...');
-    const userData = checkSession();
-    console.log('Session data:', userData);
-    console.log('Current page:', window.location.href);
-    
+    // EXACT Mark 1 session check approach
+    document.addEventListener('DOMContentLoaded', () => {
+      const userData = checkSession();
+      if(!userData) {
+        handleLogout();
+        return;
+      }
+      
+      console.log('User logged in:', userData.phone);
+      console.log('Invoice page loaded, starting data load...');
+      
+      try {
+        loadInvoiceData();
+      } catch (error) {
+        console.error('Initialization error:', error);
+        showError('Failed to initialize page. Please try again.', 'connectionError');
+      }
+    });
+
     let invoiceData = null;
-  
+
     // Fixed back button function
     function goBackToBilling() {
       console.log('Navigating back to billing page');
       safeRedirect('billing-info.html');
     }
-  
+
+    // EXACT Mark 1 JSONP approach for loading invoice data
     async function loadInvoiceData() {
       try {
         showLoading(true, "Loading invoice data...");
         
-        // Check session first
         const userData = checkSession();
         if (!userData) {
           console.error('No valid session found');
@@ -380,90 +400,117 @@
         if (!orderNumber) {
           throw new Error('No order number provided');
         }
-  
+
         console.log('Loading invoice for order:', orderNumber);
-  
-        // Load invoice data and billing details in parallel
-        const [invoiceResponse, billingDetails] = await Promise.all([
-          loadInvoiceDataFromServer(orderNumber),
-          loadBillingDetails(orderNumber, userData.phone)
-        ]);
-  
+
+        // Load invoice data first
+        const invoiceResponse = await loadInvoiceDataFromServer(orderNumber);
+        
         if (!invoiceResponse.success) {
           throw new Error(invoiceResponse.message || 'Failed to load invoice information');
         }
-  
+
         invoiceData = invoiceResponse.data;
-        renderInvoiceContent(invoiceData, billingDetails);
-  
+        
+        // Try to load billing details, but don't fail if it doesn't work
+        try {
+          const billingDetails = await loadBillingDetails(orderNumber, userData.phone);
+          renderInvoiceContent(invoiceData, billingDetails);
+        } catch (billingError) {
+          console.warn('Could not load billing details:', billingError);
+          renderInvoiceContent(invoiceData, null);
+        }
+
       } catch (error) {
         console.error('Invoice load error:', error);
         showError(error.message, 'connectionError');
+        document.getElementById('invoiceContent').innerHTML = 
+          `<div class="empty-state">${error.message || 'Failed to load invoice'}</div>`;
       } finally {
         showLoading(false);
       }
     }
-  
-    // Separate function for server call
+
+    // EXACT Mark 1 JSONP approach for invoice data
     async function loadInvoiceDataFromServer(orderNumber) {
-      const callbackName = `invoiceCallback_${Date.now()}`;
-      const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getInvoiceData&orderNumber=${encodeURIComponent(orderNumber)}`;
-  
       return new Promise((resolve, reject) => {
-        window[callbackName] = (data) => {
+        const callbackName = `invoiceCallback_${Date.now()}`;
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Invoice data request timeout'));
+        }, 15000); // 15 second timeout
+        
+        function cleanup() {
+          clearTimeout(timeoutId);
           delete window[callbackName];
-          document.getElementById(callbackName)?.remove();
-          resolve(data);
-        };
-  
+          const script = document.getElementById(callbackName);
+          if (script && script.parentNode) {
+            document.head.removeChild(script);
+          }
+        }
+        
         const script = document.createElement('script');
         script.id = callbackName;
-        script.src = url;
+        script.crossOrigin = 'anonymous';
+        script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getInvoiceData&orderNumber=${encodeURIComponent(orderNumber)}`;
+        
+        window[callbackName] = (data) => {
+          cleanup();
+          resolve(data);
+        };
+        
         script.onerror = () => {
-          delete window[callbackName];
+          cleanup();
           reject(new Error('Failed to load invoice data'));
         };
+        
         document.head.appendChild(script);
       });
     }
-  
-    // Updated billing details loader with session
+
+    // EXACT Mark 1 JSONP approach for billing details
     async function loadBillingDetails(orderNumber, phone) {
-      try {
-        console.log('Loading billing details for order:', orderNumber);
-        
+      return new Promise((resolve, reject) => {
         const callbackName = `billingDetailsCallback_${Date.now()}`;
-        const url = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getBillingInfo&phone=${encodeURIComponent(phone)}`;
-  
-        const response = await new Promise((resolve, reject) => {
-          window[callbackName] = (data) => {
-            delete window[callbackName];
-            document.getElementById(callbackName)?.remove();
-            resolve(data);
-          };
-  
-          const script = document.createElement('script');
-          script.id = callbackName;
-          script.src = url;
-          script.onerror = () => {
-            delete window[callbackName];
-            reject(new Error('Failed to load billing details'));
-          };
-          document.head.appendChild(script);
-        });
-  
-        if (response.success && response.data) {
-          // Find the order in billing data
-          const order = response.data.find(item => item.receipt === orderNumber);
-          console.log('Found billing details:', order ? 'Yes' : 'No');
-          return order || null;
+        const timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Billing details request timeout'));
+        }, 10000); // 10 second timeout
+        
+        function cleanup() {
+          clearTimeout(timeoutId);
+          delete window[callbackName];
+          const script = document.getElementById(callbackName);
+          if (script && script.parentNode) {
+            document.head.removeChild(script);
+          }
         }
         
-        return null;
-      } catch (error) {
-        console.error('Billing details load error:', error);
-        return null;
-      }
+        const script = document.createElement('script');
+        script.id = callbackName;
+        script.crossOrigin = 'anonymous';
+        script.src = `${CONFIG.GAS_URL}?callback=${callbackName}&action=getBillingInfo&phone=${encodeURIComponent(phone)}`;
+        
+        window[callbackName] = (data) => {
+          cleanup();
+          
+          if (data.success && data.data) {
+            // Find the order in billing data
+            const order = data.data.find(item => item.receipt === orderNumber);
+            console.log('Found billing details:', order ? 'Yes' : 'No');
+            resolve(order || null);
+          } else {
+            resolve(null);
+          }
+        };
+        
+        script.onerror = () => {
+          cleanup();
+          resolve(null); // Don't reject, just return null
+        };
+        
+        document.head.appendChild(script);
+      });
     }
 
     function renderInvoiceContent(paymentData, billingData) {
@@ -480,7 +527,6 @@
       const location = billingData?.location || 'N/A';
       const code = billingData?.code || paymentData.code || 'N/A';
 
-      // UPDATED: Parcel details moved below order information & customer information
       container.innerHTML = `
         <div class="invoice-content">
           <div class="detail-grid">
@@ -521,7 +567,6 @@
             </div>
           </div>
           
-          <!-- UPDATED: Parcel Details moved here (below order & customer info) -->
           <div class="details-card">
             <h3>Parcel Details</h3>
             <div class="tracking-details">${trackingDetails}</div>
@@ -546,21 +591,12 @@
     function formatBillingDate(dateString) {
       if (!dateString) return 'N/A';
       try {
-        if (typeof dateString === 'string') {
-          const date = new Date(dateString);
-          if (!isNaN(date.getTime())) {
-            return date.toLocaleDateString('en-MY', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            });
-          }
-          return dateString;
-        }
-        if (dateString instanceof Date) {
-          return dateString.toLocaleDateString('en-MY', {
+        const dateStr = dateString.toString().trim();
+        if (dateStr === '' || dateStr === 'N/A') return 'N/A';
+        
+        const date = new Date(dateStr);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleDateString('en-MY', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -568,22 +604,25 @@
             minute: '2-digit'
           });
         }
-        return 'N/A';
-      } catch {
+        
+        return dateStr;
+      } catch (error) {
+        console.error('Date formatting error:', error);
         return dateString || 'N/A';
       }
     }
 
-    // Initialize page with better error handling
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('Invoice page loaded, starting data load...');
-      try {
-        loadInvoiceData();
-      } catch (error) {
-        console.error('Initialization error:', error);
-        showError('Failed to initialize page. Please try again.', 'connectionError');
+    // Mark 1 error handling
+    function showError(message, targetId = 'connectionError') {
+      const errorElement = document.getElementById(targetId);
+      if (errorElement) {
+        errorElement.textContent = message;
+        errorElement.style.display = 'block';
+        setTimeout(() => {
+          errorElement.style.display = 'none';
+        }, 5000);
       }
-    });
+    }
   </script>
 </body>
 </html>
