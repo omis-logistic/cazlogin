@@ -528,3 +528,56 @@ select {
     border: none;
   }
 }
+
+/* File input styling for better visibility */
+#fileUpload {
+  display: block !important;
+  width: 100%;
+  padding: 12px;
+  margin-top: 5px;
+  background: #2a2a2a;
+  border: 1px solid var(--gold);
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+}
+
+#fileUpload:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* File input for mobile */
+body.mobile-view #fileUpload {
+  font-size: 16px;
+  min-height: 44px; /* Minimum touch target size */
+}
+
+/* File input label styling */
+.file-upload-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--gold);
+}
+
+/* File help text */
+#fileHelp {
+  display: block;
+  margin-top: 5px;
+  font-size: 0.9em;
+}
+
+/* Success message for files */
+#invoiceFilesError.success {
+  color: #00C851 !important;
+}
+
+/* Error message for files */
+#invoiceFilesError {
+  color: #ff4444;
+  font-size: 0.9em;
+  margin-top: 5px;
+  display: block;
+  min-height: 20px;
+}
