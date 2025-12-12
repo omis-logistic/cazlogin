@@ -1,72 +1,294 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Parcel Declaration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Parcel Declaration - Cahaya Az Zahra Enterprise</title>
   <link rel="stylesheet" href="styles/main.css">
+  <style>
+    /* Safari-specific fixes */
+    .safari-fix input[type="file"] {
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 5px;
+      padding: 8px;
+      background: #2a2a2a;
+      color: white;
+    }
+    
+    .safari-fix input:focus,
+    .safari-fix select:focus,
+    .safari-fix textarea:focus {
+      outline: 2px solid var(--gold);
+      outline-offset: 2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .safari-fix button {
+      -webkit-appearance: none;
+      appearance: none;
+      -webkit-tap-highlight-color: rgba(212, 175, 55, 0.3);
+    }
+    
+    /* Prevent iOS zoom on input focus */
+    @media screen and (max-width: 768px) {
+      input[type="text"],
+      input[type="tel"],
+      input[type="number"],
+      input[type="email"],
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+    
+    /* Safari loading animation fix */
+    @keyframes safari-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-spinner {
+      animation: safari-spin 1s linear infinite;
+    }
+    
+    /* Required field indicator */
+    .required::after {
+      content: " *";
+      color: #ff4444;
+    }
+    
+    /* Form validation styles */
+    .input-group.error input,
+    .input-group.error select,
+    .input-group.error textarea {
+      border-color: #ff4444;
+      background: #3a1a1a;
+    }
+    
+    .input-group.success input,
+    .input-group.success select,
+    .input-group.success textarea {
+      border-color: #00C851;
+      background: #1a3a1a;
+    }
+    
+    .error-message {
+      color: #ff4444;
+      font-size: 0.9em;
+      margin-top: 5px;
+      display: block;
+    }
+    
+    .success-message {
+      color: #00C851;
+      font-size: 0.9em;
+      margin-top: 5px;
+      display: block;
+    }
+
+    /* Global spinner overlay */
+    #globalSpinnerOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .global-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(212, 175, 55, 0.3);
+      border-top: 4px solid var(--gold);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    .global-loading-text {
+      color: var(--gold);
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Page header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--gold);
+    }
+
+    .page-header h1 {
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .page-header .subtitle {
+      color: #aaa;
+      font-size: 1rem;
+    }
+  </style>
 </head>
-<body>
+<body class="safari-fix">
+  <!-- Global Spinner Overlay -->
+  <div id="globalSpinnerOverlay">
+    <div class="global-spinner"></div>
+    <div class="global-loading-text">Processing Submission...</div>
+  </div>
+
   <div class="container">
-    <h1>Parcel Declaration Form</h1>
-    <form id="declarationForm">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1>📦 Parcel Declaration</h1>
+      <p class="subtitle">Submit your parcel information for customs declaration</p>
+    </div>
+
+    <!-- Network Status Indicator -->
+    <div id="networkStatus" class="network-status" style="display: none;">
+      <span class="status-icon">🔴</span>
+      <span class="status-text">Offline - Form will be saved locally</span>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="statusMessage" class="message" style="display: none;"></div>
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+    <!-- Main Form -->
+    <form id="declarationForm" novalidate>
       <!-- Tracking Number -->
       <div class="input-group">
-        <label for="trackingNumber">Tracking Number:</label>
-        <input type="text" id="trackingNumber" name="trackingNumber" 
-               pattern="^[A-Za-z0-9\-]+"
-               title="Only letters, numbers, and hyphens allowed (no spaces)"
-               required>
+        <label for="trackingNumber" class="required">Tracking Number:</label>
+        <input 
+          type="text" 
+          id="trackingNumber" 
+          name="trackingNumber"
+          pattern="^[A-Za-z0-9\-]{5,}$"
+          title="Minimum 5 characters, letters, numbers, and hyphens only"
+          placeholder="e.g., ABC123456 or 123-456-789"
+          required
+          autocomplete="off"
+          autocapitalize="characters"
+        >
+        <small class="form-help">Enter your tracking number exactly as provided by the carrier</small>
+        <span id="trackingError" class="error-message"></span>
       </div>
 
-<!-- NEW NAME ON PARCEL FIELD -->
-<div class="input-group">
-  <label for="nameOnParcel">Name on Parcel:</label>
-  <input type="text" id="nameOnParcel" name="nameOnParcel" 
-         required>
-</div>
+      <!-- Name on Parcel -->
+      <div class="input-group">
+        <label for="nameOnParcel" class="required">Name on Parcel:</label>
+        <input 
+          type="text" 
+          id="nameOnParcel" 
+          name="nameOnParcel"
+          minlength="2"
+          maxlength="100"
+          placeholder="Enter the exact name as on the parcel"
+          required
+          autocomplete="name"
+        >
+        <span id="nameOnParcelError" class="error-message"></span>
+      </div>
 
       <!-- Auto-populated Phone Number -->
       <div class="input-group">
-        <label for="phone">Phone Number:</label>
-        <input type="tel" id="phone" name="phone" readonly>
+        <label for="phone" class="required">Phone Number:</label>
+        <input 
+          type="tel" 
+          id="phone" 
+          name="phone"
+          pattern="^(673\d{7,}|60\d{9,})$"
+          title="Brunei: 673XXXXXXX or Malaysia: 60XXXXXXXXX"
+          required
+          readonly
+          style="background-color: #333; color: #888;"
+        >
+        <small class="form-help">This is your registered phone number</small>
       </div>
 
       <!-- Item Description -->
       <div class="input-group">
-        <label for="itemDescription">Item Description:</label>
-        <textarea id="itemDescription" name="itemDescription" required></textarea>
+        <label for="itemDescription" class="required">Item Description:</label>
+        <textarea 
+          id="itemDescription" 
+          name="itemDescription"
+          rows="3"
+          minlength="3"
+          maxlength="500"
+          placeholder=
+          "Simple item detail. For multiple items example:
+          - Baju x2 RM30
+          - Seluar x1 RM10"
+          required
+        ></textarea>
+        <small class="form-help">Be specific for customs clearance</small>
+        <span id="itemDescriptionError" class="error-message"></span>
       </div>
 
       <!-- Quantity and Price -->
       <div class="input-group double-column">
         <div>
-          <label for="quantity">Quantity:</label>
-          <input type="number" id="quantity" name="quantity" 
-                 min="1" step="1" required>
+          <label for="quantity" class="required">Quantity:</label>
+          <input 
+            type="number" 
+            id="quantity" 
+            name="quantity"
+            min="1"
+            max="999"
+            step="1"
+            placeholder="1"
+            required
+          >
+          <span id="quantityError" class="error-message"></span>
         </div>
         <div>
-          <label for="price">Price (MYR):</label>
-          <input type="number" id="price" name="price" 
-                 min="0" step="0.01" required>
+          <label for="price" class="required">Price (MYR):</label>
+          <input 
+            type="number" 
+            id="price" 
+            name="price"
+            min="0"
+            max="99999"
+            step="0.01"
+            placeholder="0.00"
+            required
+          >
+          <small class="form-help">Value in Malaysian Ringgit</small>
+          <span id="priceError" class="error-message"></span>
         </div>
       </div>
 
       <!-- Collection Point -->
       <div class="input-group">
-        <label for="collectionPoint">Collection Point:</label>
+        <label for="collectionPoint" class="required">Collection Point:</label>
         <select id="collectionPoint" name="collectionPoint" required>
-          <option value="">Select Collection Point</option>
+          <option value="">-- Select Collection Point --</option>
           <option value="Rimba">Rimba</option>
           <option value="Bengkurong">Bengkurong</option>
         </select>
+        <span id="collectionPointError" class="error-message"></span>
       </div>
 
       <!-- Item Category -->
-      <div class="form-group">
-        <label for="itemCategory">Item Category:</label>
+      <div class="input-group">
+        <label for="itemCategory" class="required">Item Category:</label>
         <select id="itemCategory" name="itemCategory" required>
-          <option value="">Select Category</option>
+          <option value="">-- Select Category --</option>
           <option value="Accessories/Jewellery">Accessories/Jewellery</option>
           <option value="Baby Appliances">Baby Appliances</option>
           <option value="Bag">Bag</option>
@@ -110,44 +332,628 @@
           <option value="Underwear">Underwear</option>
           <option value="Watch & Accessories">Watch & Accessories</option>
           <option value="Wire, Adapter & Plug">Wire, Adapter & Plug</option>
-          <!-- Starred Categories -->
-          <option value="*Books">*Books</option>
-          <option value="*Cosmetics/Skincare/Bodycare">*Cosmetics/Skincare/Bodycare</option>
-          <option value="*Food Beverage/Drinks">*Food Beverage/Drinks</option>
-          <option value="*Gadgets">*Gadgets</option>
-          <option value="*Oil Ointment">*Oil Ointment</option>
-          <option value="*Supplement">*Supplement</option>
-          <option value="*Others">*Others</option>
+          <!-- Starred Categories (Require Invoice) -->
+          <optgroup label="―― Required Invoice ――">
+            <option value="*Books">* Books</option>
+            <option value="*Cosmetics/Skincare/Bodycare">* Cosmetics/Skincare/Bodycare</option>
+            <option value="*Food Beverage/Drinks">* Food Beverage/Drinks</option>
+            <option value="*Gadgets">* Gadgets</option>
+            <option value="*Oil Ointment">* Oil Ointment</option>
+            <option value="*Supplement">* Supplement</option>
+            <option value="*Others">* Others (with invoice)</option>
+          </optgroup>
         </select>
+        <small class="form-help">Starred (*) categories require invoice upload</small>
+        <span id="itemCategoryError" class="error-message"></span>
       </div>
 
-      <!-- File Upload -->
-      <div class="input-group">
+      <!-- File Upload Section -->
+      <div class="input-group file-upload-section">
         <label for="fileUpload">Upload Documents:</label>
-        <input type="file" 
-       id="fileUpload" 
-       name="files"
-       multiple
-       accept="image/jpeg, image/png, application/pdf"
-       onchange="handleFileSelection(this)">
+        <input 
+          type="file" 
+          id="fileUpload" 
+          name="files"
+          multiple
+          accept="image/*,.pdf"
+          style="display: block; width: 100%; padding: 12px; margin-top: 5px;"
+        >
         <small id="fileHelp" class="form-text">
-          Required for starred (*) categories: JPEG, PNG, PDF (Max 5MB each)
+          <span id="fileRequirement">Optional: </span>JPEG, PNG, PDF (Max 5MB each)
         </small>
+        
+        <span id="invoiceFilesError" class="error-message"></span>
       </div>
 
       <!-- Form Buttons -->
       <div class="button-group">
-        <button type="submit" class="gold-button">Submit Declaration</button>
-        <button type="button" class="gold-button" onclick="safeRedirect('dashboard.html')">
-          Back to Dashboard
+        <button 
+          type="submit" 
+          id="submitBtn" 
+          class="gold-button"
+          disabled
+        >
+          <span id="submitText">Submit Declaration</span>
+          <span id="submitSpinner" style="display: none;">⏳ Processing...</span>
+        </button>
+        
+        <button 
+          type="button" 
+          class="secondary-button"
+          onclick="safeRedirect('dashboard.html')"
+        >
+          ← Back to Dashboard
+        </button>
+        
+        <button 
+          type="button" 
+          class="secondary-button"
+          onclick="saveDraft()"
+          id="saveDraftBtn"
+        >
+          💾 Save as Draft
         </button>
       </div>
     </form>
 
-    <!-- Status Messages -->
-    <div id="message" class="message" aria-live="polite"></div>
+    <!-- Info Box -->
+    <div class="info-box">
+      <h3>📋 Important Notes:</h3>
+      <ul>
+        <li>Ensure tracking number matches your shipment exactly</li>
+        <li>For starred (*) categories, invoice upload is mandatory</li>
+        <li>You can save as draft and return later</li>
+        <li>Submit once per parcel/shipment</li>
+      </ul>
+    </div>
+
+    <!-- Drafts Section (Collapsible) -->
+    <div class="drafts-section">
+      <button onclick="toggleDrafts()" class="drafts-toggle">
+        📁 Saved Drafts (<span id="draftCount">0</span>)
+      </button>
+      <div id="draftsList" class="drafts-list" style="display: none;"></div>
+    </div>
   </div>
 
-  <script src="scripts/app.js"></script>
+<!-- Safari-specific script initialization -->
+<script>
+  // Detect Safari browser
+  function isSafari() {
+    const ua = navigator.userAgent;
+    const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    return isSafari || isIOS;
+  }
+
+  // Apply Safari-specific fixes
+  if (isSafari()) {
+    console.log('Safari browser detected - applying compatibility fixes');
+    
+    // Add Safari class to body
+    document.body.classList.add('safari-browser');
+    
+    // Disable autocorrect for form fields
+    document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+      el.setAttribute('autocorrect', 'off');
+      el.setAttribute('spellcheck', 'false');
+    });
+    
+    // Fix for file input styling
+    const fileInput = document.getElementById('fileUpload');
+    if (fileInput) {
+      fileInput.style.opacity = '1';
+      fileInput.style.position = 'relative';
+      fileInput.style.zIndex = '1';
+    }
+  }
+
+  // Network detection
+  function updateNetworkStatus() {
+    const statusEl = document.getElementById('networkStatus');
+    if (!statusEl) return;
+    
+    if (navigator.onLine) {
+      statusEl.style.display = 'none';
+    } else {
+      statusEl.style.display = 'block';
+      statusEl.querySelector('.status-icon').textContent = '🔴';
+      statusEl.querySelector('.status-text').textContent = 'Offline - Form will be saved locally';
+    }
+  }
+
+  // Initialize network status
+  window.addEventListener('online', updateNetworkStatus);
+  window.addEventListener('offline', updateNetworkStatus);
+  updateNetworkStatus();
+</script>
+
+<script src="scripts/app.js"></script>
+<script>
+  // Form-specific initialization
+  document.addEventListener('DOMContentLoaded', function() {
+    // Check session and set user info
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    if (userData.phone) {
+      document.getElementById('userPhone').textContent = userData.phone;
+      document.getElementById('phone').value = userData.phone;
+    } else {
+      // Redirect to login if no session
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // Load saved drafts
+    loadDrafts();
+
+    // Initialize file upload preview
+    const fileInput = document.getElementById('fileUpload');
+    if (fileInput) {
+      fileInput.addEventListener('change', handleFileSelection);
+    }
+
+    // Category change handler
+    const categorySelect = document.getElementById('itemCategory');
+    if (categorySelect) {
+      categorySelect.addEventListener('change', checkCategoryRequirements);
+    }
+
+    // Set up individual field validators
+    setupFieldValidations();
+
+    // Check category requirements on load
+    checkCategoryRequirements();
+  });
+
+  // Set up field-by-field validation
+  function setupFieldValidations() {
+    // Price field validation (allows 0)
+    const priceField = document.getElementById('price');
+    if (priceField) {
+      priceField.addEventListener('input', function() {
+        const value = parseFloat(this.value) || 0;
+        const errorEl = document.getElementById('priceError');
+        
+        if (errorEl) {
+          if (isNaN(value) || value < 0) {
+            errorEl.textContent = 'Price must be 0 or greater';
+            this.style.borderColor = '#ff4444';
+          } else {
+            errorEl.textContent = '';
+            this.style.borderColor = '#00C851';
+          }
+        }
+        updateSubmitButton();
+      });
+      
+      // Also validate on blur
+      priceField.addEventListener('blur', function() {
+        if (this.value === '') {
+          const errorEl = document.getElementById('priceError');
+          if (errorEl) errorEl.textContent = 'Price is required';
+          this.style.borderColor = '#ff4444';
+          updateSubmitButton();
+        }
+      });
+    }
+
+    // Item description validation (minimum 3 characters)
+    const descriptionField = document.getElementById('itemDescription');
+    if (descriptionField) {
+      descriptionField.addEventListener('input', function() {
+        const value = this.value.trim();
+        const errorEl = document.getElementById('itemDescriptionError');
+        
+        if (errorEl) {
+          if (value.length < 3) {
+            errorEl.textContent = 'Minimum 3 characters required';
+            this.style.borderColor = '#ff4444';
+          } else {
+            errorEl.textContent = '';
+            this.style.borderColor = '#00C851';
+          }
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // Quantity validation
+    const quantityField = document.getElementById('quantity');
+    if (quantityField) {
+      quantityField.addEventListener('input', function() {
+        const value = parseInt(this.value) || 0;
+        const errorEl = document.getElementById('quantityError');
+        
+        if (errorEl) {
+          if (isNaN(value) || value < 1 || value > 999) {
+            errorEl.textContent = 'Must be between 1 and 999';
+            this.style.borderColor = '#ff4444';
+          } else {
+            errorEl.textContent = '';
+            this.style.borderColor = '#00C851';
+          }
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // Tracking number validation
+    const trackingField = document.getElementById('trackingNumber');
+    if (trackingField) {
+      trackingField.addEventListener('input', function() {
+        const value = this.value.trim();
+        const errorEl = document.getElementById('trackingError');
+        
+        if (errorEl) {
+          if (!/^[A-Za-z0-9\-]{5,}$/.test(value)) {
+            errorEl.textContent = 'Minimum 5 chars, letters/numbers/hyphens only';
+            this.style.borderColor = '#ff4444';
+          } else {
+            errorEl.textContent = '';
+            this.style.borderColor = '#00C851';
+          }
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // Name on parcel validation
+    const nameField = document.getElementById('nameOnParcel');
+    if (nameField) {
+      nameField.addEventListener('input', function() {
+        const value = this.value.trim();
+        const errorEl = document.getElementById('nameOnParcelError');
+        
+        if (errorEl) {
+          if (value.length < 2) {
+            errorEl.textContent = 'Minimum 2 characters required';
+            this.style.borderColor = '#ff4444';
+          } else {
+            errorEl.textContent = '';
+            this.style.borderColor = '#00C851';
+          }
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // Collection point validation
+    const collectionField = document.getElementById('collectionPoint');
+    if (collectionField) {
+      collectionField.addEventListener('change', function() {
+        const errorEl = document.getElementById('collectionPointError');
+        if (errorEl) {
+          errorEl.textContent = this.value ? '' : 'Please select collection point';
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // Item category validation
+    const categoryField = document.getElementById('itemCategory');
+    if (categoryField) {
+      categoryField.addEventListener('change', function() {
+        const errorEl = document.getElementById('itemCategoryError');
+        if (errorEl) {
+          errorEl.textContent = this.value ? '' : 'Please select item category';
+        }
+        updateSubmitButton();
+      });
+    }
+
+    // File upload validation
+    const fileUploadField = document.getElementById('fileUpload');
+    if (fileUploadField) {
+      fileUploadField.addEventListener('change', function() {
+        updateSubmitButton();
+      });
+    }
+
+    // Form submission handler
+    const form = document.getElementById('declarationForm');
+    if (form) {
+      form.addEventListener('submit', handleParcelSubmission);
+    }
+  }
+
+  // Update submit button state - SIMPLIFIED VERSION
+  function updateSubmitButton() {
+    const submitBtn = document.getElementById('submitBtn');
+    if (!submitBtn) return;
+    
+    // Check each field individually
+    const trackingValid = validateTrackingField();
+    const nameValid = validateNameField();
+    const descriptionValid = validateDescriptionField();
+    const quantityValid = validateQuantityField();
+    const priceValid = validatePriceField();
+    const collectionValid = validateCollectionField();
+    const categoryValid = validateCategoryField();
+    const filesValid = validateFilesField();
+    
+    const allValid = trackingValid && nameValid && descriptionValid && 
+                    quantityValid && priceValid && collectionValid && 
+                    categoryValid && filesValid;
+    
+    submitBtn.disabled = !allValid;
+  }
+
+  // Individual validation functions
+  function validateTrackingField() {
+    const field = document.getElementById('trackingNumber');
+    if (!field || !field.value.trim()) return false;
+    return /^[A-Za-z0-9\-]{5,}$/.test(field.value.trim());
+  }
+
+  function validateNameField() {
+    const field = document.getElementById('nameOnParcel');
+    return field && field.value.trim().length >= 2;
+  }
+
+  function validateDescriptionField() {
+    const field = document.getElementById('itemDescription');
+    return field && field.value.trim().length >= 3;
+  }
+
+  function validateQuantityField() {
+    const field = document.getElementById('quantity');
+    if (!field || !field.value) return false;
+    const value = parseInt(field.value);
+    return !isNaN(value) && value >= 1 && value <= 999;
+  }
+
+  function validatePriceField() {
+    const field = document.getElementById('price');
+    if (!field || field.value === '') return false;  // Empty is not valid
+    const value = parseFloat(field.value);
+    return !isNaN(value) && value >= 0;  // Allow 0
+  }
+
+  function validateCollectionField() {
+    const field = document.getElementById('collectionPoint');
+    return field && field.value !== '';
+  }
+
+  function validateCategoryField() {
+    const field = document.getElementById('itemCategory');
+    return field && field.value !== '';
+  }
+
+  function validateFilesField() {
+    const category = document.getElementById('itemCategory')?.value || '';
+    const starredCategories = [
+      '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+      '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+    ];
+    
+    if (starredCategories.includes(category)) {
+      const files = document.getElementById('fileUpload')?.files || [];
+      return files.length > 0;
+    }
+    return true; // Not required for non-starred categories
+  }
+
+  // Check category requirements
+  function checkCategoryRequirements() {
+    const category = document.getElementById('itemCategory')?.value || '';
+    const fileHelp = document.getElementById('fileHelp');
+    const fileRequirement = document.getElementById('fileRequirement');
+    
+    const starredCategories = [
+      '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+      '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+    ];
+    
+    if (starredCategories.includes(category)) {
+      fileRequirement.textContent = 'Required: ';
+      fileHelp.style.color = '#ff4444';
+    } else {
+      fileRequirement.textContent = 'Optional: ';
+      fileHelp.style.color = '#888';
+    }
+    
+    updateSubmitButton();
+  }
+
+  // Handle file selection
+  function handleFileSelection(event) {
+    const fileInput = event.target;
+    const files = fileInput.files;
+    const errorEl = document.getElementById('invoiceFilesError');
+    
+    // Reset error message
+    if (errorEl) errorEl.textContent = '';
+    
+    if (files.length === 0) {
+      updateSubmitButton();
+      return;
+    }
+    
+    // Validate files
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    let hasError = false;
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      // Check file type
+      const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        errorEl.textContent = `File "${file.name}" must be JPG, PNG, or PDF`;
+        hasError = true;
+        break;
+      }
+      
+      // Check file size
+      if (file.size > MAX_SIZE) {
+        errorEl.textContent = `File "${file.name}" exceeds 5MB limit`;
+        hasError = true;
+        break;
+      }
+    }
+    
+    if (hasError) {
+      fileInput.value = '';
+    }
+    
+    updateSubmitButton();
+  }
+
+  // Save form as draft
+  function saveDraft() {
+    const form = document.getElementById('declarationForm');
+    const formData = new FormData(form);
+    const draft = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+      if (key !== 'files') {
+        draft[key] = value;
+      }
+    }
+    
+    // Get files info
+    const files = document.getElementById('fileUpload')?.files || [];
+    if (files.length > 0) {
+      draft.filesCount = files.length;
+      draft.filesInfo = Array.from(files).map(file => ({
+        name: file.name,
+        size: file.size,
+        type: file.type
+      }));
+    }
+    
+    // Add timestamp
+    draft.timestamp = new Date().toISOString();
+    draft.id = 'draft_' + Date.now();
+    
+    // Save to localStorage
+    const drafts = JSON.parse(localStorage.getItem('parcelDrafts') || '[]');
+    drafts.push(draft);
+    localStorage.setItem('parcelDrafts', JSON.stringify(drafts));
+    
+    // Show success message
+    showMessage('Draft saved successfully!', 'success');
+    loadDrafts();
+  }
+
+  // Load saved drafts
+  function loadDrafts() {
+    const drafts = JSON.parse(localStorage.getItem('parcelDrafts') || '[]');
+    const draftCount = document.getElementById('draftCount');
+    const draftsList = document.getElementById('draftsList');
+    
+    if (draftCount) draftCount.textContent = drafts.length;
+    
+    if (draftsList) {
+      if (drafts.length === 0) {
+        draftsList.innerHTML = '<p class="empty-drafts">No saved drafts</p>';
+        return;
+      }
+      
+      let html = '<div class="drafts-container">';
+      drafts.forEach((draft, index) => {
+        html += `
+          <div class="draft-item">
+            <div class="draft-info">
+              <strong>${draft.trackingNumber || 'Untitled'}</strong>
+              <small>${new Date(draft.timestamp).toLocaleDateString()}</small>
+            </div>
+            <div class="draft-actions">
+              <button onclick="loadDraft(${index})" class="small-btn">Load</button>
+              <button onclick="deleteDraft(${index})" class="small-btn delete">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+      html += '</div>';
+      draftsList.innerHTML = html;
+    }
+  }
+
+  // Load draft into form
+  function loadDraft(index) {
+    const drafts = JSON.parse(localStorage.getItem('parcelDrafts') || '[]');
+    const draft = drafts[index];
+    
+    if (!draft) return;
+    
+    // Populate form fields
+    Object.keys(draft).forEach(key => {
+      if (key !== 'timestamp' && key !== 'id' && key !== 'filesCount' && key !== 'filesInfo') {
+        const field = document.getElementById(key);
+        if (field) field.value = draft[key];
+      }
+    });
+    
+    // Update UI
+    checkCategoryRequirements();
+    updateSubmitButton();
+    
+    showMessage('Draft loaded!', 'success');
+  }
+
+  // Delete draft
+  function deleteDraft(index) {
+    const drafts = JSON.parse(localStorage.getItem('parcelDrafts') || '[]');
+    drafts.splice(index, 1);
+    localStorage.setItem('parcelDrafts', JSON.stringify(drafts));
+    loadDrafts();
+    showMessage('Draft deleted', 'info');
+  }
+
+  // Toggle drafts visibility
+  function toggleDrafts() {
+    const draftsList = document.getElementById('draftsList');
+    if (draftsList.style.display === 'none') {
+      draftsList.style.display = 'block';
+    } else {
+      draftsList.style.display = 'none';
+    }
+  }
+
+  // Show message
+  function showMessage(text, type = 'info') {
+    const messageEl = document.getElementById('statusMessage');
+    const errorEl = document.getElementById('errorMessage');
+    
+    // Clear any existing error messages
+    if (errorEl) {
+      errorEl.style.display = 'none';
+      errorEl.textContent = '';
+    }
+    
+    if (!messageEl) return;
+    
+    messageEl.textContent = text;
+    messageEl.className = 'message ' + type;
+    messageEl.style.display = 'block';
+    
+    setTimeout(() => {
+      messageEl.style.display = 'none';
+    }, 5000);
+  }
+
+  // Show error
+  function showError(text) {
+    const messageEl = document.getElementById('statusMessage');
+    const errorEl = document.getElementById('errorMessage');
+    
+    // Clear any existing success messages
+    if (messageEl) {
+      messageEl.style.display = 'none';
+      messageEl.textContent = '';
+    }
+    
+    if (!errorEl) return;
+    
+    errorEl.textContent = text;
+    errorEl.style.display = 'block';
+    
+    setTimeout(() => {
+      errorEl.style.display = 'none';
+    }, 5000);
+  }
+</script>
 </body>
 </html>
