@@ -247,6 +247,17 @@ function resetForm() {
     phoneField.style.backgroundColor = '#2a2a2a';
     phoneField.style.color = '#ffffff';
   }
+
+  // Trigger validation after reset
+  setTimeout(() => {
+    if (typeof runInitialValidation === 'function') {
+      runInitialValidation();
+    }
+    // Also check category requirements
+    if (typeof checkCategoryRequirements === 'function') {
+      checkCategoryRequirements();
+    }
+  }, 100);
 }
 
 // ================= ENHANCED SUBMISSION SYSTEM =================
@@ -792,6 +803,11 @@ function showSubmissionSuccess(trackingNumber) {
   messageElement.className = 'success';
   messageElement.style.display = 'block';
   
+  // Reset form after successful submission
+  setTimeout(() => {
+    resetForm();
+  }, 500);
+  
   // Auto-hide after 5 seconds
   setTimeout(() => {
     messageElement.style.display = 'none';
@@ -975,6 +991,419 @@ function isSafariBrowser() {
 }
 
 // ================= VALIDATION CORE =================
+// ================= REAL-TIME VALIDATION SYSTEM =================
+function initRealTimeValidation() {
+  console.log('Initializing real-time validation...');
+  
+  // Run initial validation on page load
+  setTimeout(() => {
+    console.log('Running initial page load validation...');
+    runInitialValidation();
+    
+    // Update validation on every input
+    setupRealTimeValidationListeners();
+  }, 100);
+}
+
+function runInitialValidation() {
+  console.log('Running initial validation for all fields...');
+  
+  const fieldsToValidate = [
+    { id: 'trackingNumber', name: 'Tracking Number', type: 'tracking' },
+    { id: 'nameOnParcel', name: 'Name on Parcel', type: 'name' },
+    { id: 'itemDescription', name: 'Item Description', type: 'description' },
+    { id: 'quantity', name: 'Quantity', type: 'quantity' },
+    { id: 'price', name: 'Price', type: 'price' },
+    { id: 'collectionPoint', name: 'Collection Point', type: 'select' },
+    { id: 'itemCategory', name: 'Item Category', type: 'select' }
+  ];
+  
+  // Validate each field
+  fieldsToValidate.forEach(field => {
+    const fieldElement = document.getElementById(field.id);
+    const errorElement = document.getElementById(field.id + 'Error') || 
+                        createErrorMessageElement(field.id);
+    
+    if (!fieldElement) return;
+    
+    let isValid = false;
+    let message = '';
+    
+    switch(field.type) {
+      case 'tracking':
+        isValid = validateTrackingNumberOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Minimum 5 alphanumeric characters or hyphens';
+        break;
+      case 'name':
+        isValid = validateNameOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Minimum 2 characters required';
+        break;
+      case 'description':
+        isValid = validateDescriptionOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Minimum 3 characters required';
+        break;
+      case 'quantity':
+        isValid = validateQuantityOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Must be between 1 and 999';
+        break;
+      case 'price':
+        isValid = validatePriceOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Price must be 0 or greater (0 is allowed)';
+        break;
+      case 'select':
+        isValid = validateSelectOnLoad(fieldElement.value);
+        message = isValid ? '' : 'Please select an option';
+        break;
+    }
+    
+    // Update UI
+    updateFieldValidationState(fieldElement, isValid, message);
+  });
+  
+  // Validate files if required
+  const category = document.getElementById('itemCategory')?.value || '';
+  const starredCategories = [
+    '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+    '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+  ];
+  
+  if (starredCategories.includes(category)) {
+    const files = document.getElementById('fileUpload')?.files || [];
+    if (files.length === 0) {
+      const fileInput = document.getElementById('fileUpload');
+      const fileError = document.getElementById('invoiceFilesError') || 
+                       createErrorMessageElement('invoiceFiles');
+      
+      if (fileInput && fileError) {
+        fileError.textContent = 'Required: At least 1 invoice/document required';
+        fileError.style.color = '#ff4444';
+        fileError.style.display = 'block';
+        fileInput.style.borderColor = '#ff4444';
+        fileInput.parentElement.classList.add('invalid');
+      }
+    }
+  }
+  
+  // Update submit button
+  updateSubmitButton();
+  
+  return true;
+}
+
+function validateTrackingNumberOnLoad(value) {
+  return value && /^[A-Za-z0-9\-]{5,}$/.test(value.trim());
+}
+
+function validateNameOnLoad(value) {
+  return value && value.trim().length >= 2;
+}
+
+function validateDescriptionOnLoad(value) {
+  return value && value.trim().length >= 3;
+}
+
+function validateQuantityOnLoad(value) {
+  const num = parseInt(value);
+  return !isNaN(num) && num >= 1 && num <= 999;
+}
+
+function validatePriceOnLoad(value) {
+  if (value === '') return false;
+  const num = parseFloat(value);
+  return !isNaN(num) && num >= 0;
+}
+
+function validateSelectOnLoad(value) {
+  return value && value !== '';
+}
+
+function createErrorMessageElement(fieldId) {
+  const errorSpan = document.createElement('span');
+  errorSpan.id = fieldId + 'Error';
+  errorSpan.className = 'validation-message';
+  
+  const fieldElement = document.getElementById(fieldId);
+  const parent = fieldElement?.parentElement;
+  if (fieldElement && parent) {
+    parent.appendChild(errorSpan);
+  }
+  
+  return errorSpan;
+}
+
+function updateFieldValidationState(fieldElement, isValid, message) {
+  const errorElement = document.getElementById(fieldElement.id + 'Error');
+  const parent = fieldElement.parentElement;
+  
+  // Remove existing validation classes
+  parent.classList.remove('valid', 'invalid');
+  
+  if (isValid) {
+    parent.classList.add('valid');
+    if (errorElement) {
+      errorElement.textContent = '';
+      errorElement.style.display = 'none';
+      fieldElement.style.borderColor = '#444';
+    }
+  } else {
+    parent.classList.add('invalid');
+    if (errorElement) {
+      errorElement.textContent = message;
+      errorElement.style.color = '#ff4444';
+      errorElement.style.display = 'block';
+      fieldElement.style.borderColor = '#ff4444';
+    }
+  }
+  
+  // Special handling for select elements to ensure error text is visible
+  if (fieldElement.tagName === 'SELECT') {
+    if (errorElement) {
+      errorElement.style.position = 'relative';
+      errorElement.style.zIndex = '1000';
+      errorElement.style.backgroundColor = 'rgba(26, 26, 26, 0.95)';
+      errorElement.style.padding = '5px 10px';
+      errorElement.style.borderRadius = '3px';
+      errorElement.style.marginTop = '8px';
+      errorElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+    }
+  }
+}
+
+function setupRealTimeValidationListeners() {
+  console.log('Setting up real-time validation listeners...');
+  
+  const fields = [
+    'trackingNumber',
+    'nameOnParcel', 
+    'itemDescription',
+    'quantity',
+    'price',
+    'collectionPoint',
+    'itemCategory'
+  ];
+  
+  fields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.addEventListener('input', () => validateFieldInRealTime(field));
+      field.addEventListener('change', () => validateFieldInRealTime(field));
+      
+      // For select fields, validate on change
+      if (field.tagName === 'SELECT') {
+        field.addEventListener('change', () => {
+          validateFieldInRealTime(field);
+          checkCategoryRequirements(); // Also check file requirements
+        });
+      }
+    }
+  });
+  
+  // File upload validation
+  const fileUpload = document.getElementById('fileUpload');
+  if (fileUpload) {
+    fileUpload.addEventListener('change', validateFilesInRealTime);
+  }
+}
+
+function validateFieldInRealTime(field) {
+  const value = field.value;
+  let isValid = false;
+  let message = '';
+  
+  switch(field.id) {
+    case 'trackingNumber':
+      isValid = validateTrackingNumberOnLoad(value);
+      message = isValid ? '' : 'Minimum 5 alphanumeric characters or hyphens';
+      break;
+    case 'nameOnParcel':
+      isValid = validateNameOnLoad(value);
+      message = isValid ? '' : 'Minimum 2 characters required';
+      break;
+    case 'itemDescription':
+      isValid = validateDescriptionOnLoad(value);
+      message = isValid ? '' : 'Minimum 3 characters required';
+      break;
+    case 'quantity':
+      isValid = validateQuantityOnLoad(value);
+      message = isValid ? '' : 'Must be between 1 and 999';
+      break;
+    case 'price':
+      isValid = validatePriceOnLoad(value);
+      message = isValid ? '' : 'Price must be 0 or greater (0 is allowed)';
+      break;
+    case 'collectionPoint':
+    case 'itemCategory':
+      isValid = validateSelectOnLoad(value);
+      message = isValid ? '' : 'Please select an option';
+      break;
+  }
+  
+  updateFieldValidationState(field, isValid, message);
+  updateSubmitButton();
+  
+  // If this is the category field, also check file requirements
+  if (field.id === 'itemCategory') {
+    setTimeout(() => {
+      checkCategoryRequirements();
+    }, 100);
+  }
+}
+
+function validateFilesInRealTime() {
+  const fileInput = document.getElementById('fileUpload');
+  const category = document.getElementById('itemCategory')?.value || '';
+  const starredCategories = [
+    '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+    '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+  ];
+  
+  if (!fileInput) return;
+  
+  const errorElement = document.getElementById('invoiceFilesError') || 
+                      createErrorMessageElement('invoiceFiles');
+  const parent = fileInput.parentElement;
+  
+  parent.classList.remove('valid', 'invalid');
+  
+  if (starredCategories.includes(category)) {
+    const files = fileInput.files;
+    
+    if (files.length === 0) {
+      errorElement.textContent = 'Required: At least 1 invoice/document required';
+      errorElement.style.color = '#ff4444';
+      errorElement.style.display = 'block';
+      parent.classList.add('invalid');
+      fileInput.style.borderColor = '#ff4444';
+    } else {
+      // Validate each file
+      let allValid = true;
+      const MAX_SIZE = 5 * 1024 * 1024;
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        
+        if (!allowedTypes.includes(file.type)) {
+          errorElement.textContent = `File "${file.name}" must be JPG, PNG, or PDF`;
+          allValid = false;
+          break;
+        }
+        
+        if (file.size > MAX_SIZE) {
+          errorElement.textContent = `File "${file.name}" exceeds 5MB limit`;
+          allValid = false;
+          break;
+        }
+      }
+      
+      if (allValid) {
+        errorElement.textContent = `${files.length} file(s) selected`;
+        errorElement.style.color = '#00C851';
+        parent.classList.add('valid');
+        fileInput.style.borderColor = '#00C851';
+      } else {
+        errorElement.style.color = '#ff4444';
+        parent.classList.add('invalid');
+        fileInput.style.borderColor = '#ff4444';
+      }
+    }
+  } else {
+    // Not required, but validate if files are uploaded
+    const files = fileInput.files;
+    if (files.length > 0) {
+      // Validate each file
+      let allValid = true;
+      const MAX_SIZE = 5 * 1024 * 1024;
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        
+        if (!allowedTypes.includes(file.type)) {
+          errorElement.textContent = `File "${file.name}" must be JPG, PNG, or PDF`;
+          allValid = false;
+          break;
+        }
+        
+        if (file.size > MAX_SIZE) {
+          errorElement.textContent = `File "${file.name}" exceeds 5MB limit`;
+          allValid = false;
+          break;
+        }
+      }
+      
+      if (allValid) {
+        errorElement.textContent = `${files.length} file(s) selected (optional)`;
+        errorElement.style.color = '#888';
+        parent.classList.add('valid');
+        fileInput.style.borderColor = '#00C851';
+      } else {
+        errorElement.style.color = '#ff4444';
+        parent.classList.add('invalid');
+        fileInput.style.borderColor = '#ff4444';
+      }
+    } else {
+      errorElement.textContent = 'Optional: Upload invoice/documents if available';
+      errorElement.style.color = '#888';
+      errorElement.style.display = 'block';
+      fileInput.style.borderColor = '#444';
+    }
+  }
+  
+  updateSubmitButton();
+}
+
+function checkCategoryRequirements() {
+  const category = document.getElementById('itemCategory')?.value || '';
+  const starredCategories = [
+    '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+    '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+  ];
+  
+  const fileInput = document.getElementById('fileUpload');
+  const fileHelp = document.getElementById('fileHelp');
+  const fileRequirement = document.getElementById('fileRequirement');
+  
+  if (!fileInput || !fileHelp) return;
+  
+  if (starredCategories.includes(category)) {
+    // Show as required
+    if (fileRequirement) {
+      fileRequirement.textContent = 'Required: ';
+      fileRequirement.style.color = '#ff4444';
+    }
+    fileHelp.style.color = '#ff4444';
+    fileHelp.style.fontWeight = 'bold';
+    
+    // Validate immediately
+    setTimeout(() => {
+      validateFilesInRealTime();
+    }, 100);
+  } else {
+    // Show as optional
+    if (fileRequirement) {
+      fileRequirement.textContent = 'Optional: ';
+      fileRequirement.style.color = '#888';
+    }
+    fileHelp.style.color = '#888';
+    fileHelp.style.fontWeight = 'normal';
+    
+    // Clear any error state
+    const errorElement = document.getElementById('invoiceFilesError');
+    const parent = fileInput.parentElement;
+    
+    if (errorElement) {
+      errorElement.textContent = 'Optional: Upload invoice/documents if available';
+      errorElement.style.color = '#888';
+    }
+    
+    parent.classList.remove('invalid');
+    fileInput.style.borderColor = '#444';
+  }
+  
+  updateSubmitButton();
+}
+
 function validateTrackingNumberInput(inputElement) {
   const value = inputElement.value.trim().toUpperCase();
   const isValid = /^[A-Z0-9-]{5,}$/i.test(value);
@@ -1540,17 +1969,41 @@ function updateSubmitButton() {
   const submitBtn = document.getElementById('submitBtn');
   if (!submitBtn) return;
   
-  const requiredFields = [
-    'trackingNumber', 'nameOnParcel', 'itemDescription',
-    'quantity', 'price', 'collectionPoint', 'itemCategory'
+  // Check each field's validation state
+  const fields = [
+    'trackingNumber',
+    'nameOnParcel',
+    'itemDescription',
+    'quantity',
+    'price',
+    'collectionPoint',
+    'itemCategory'
   ];
   
   let allValid = true;
   
-  requiredFields.forEach(fieldId => {
+  fields.forEach(fieldId => {
     const field = document.getElementById(fieldId);
-    if (field && !field.value.trim()) {
+    const parent = field?.parentElement;
+    
+    if (!field) {
       allValid = false;
+      return;
+    }
+    
+    // Check if field has invalid class or is empty
+    if (parent && parent.classList.contains('invalid')) {
+      allValid = false;
+      return;
+    }
+    
+    // Check field value
+    if (field.tagName === 'SELECT') {
+      if (!field.value) allValid = false;
+    } else if (field.type === 'number') {
+      if (field.value === '') allValid = false;
+    } else {
+      if (!field.value.trim()) allValid = false;
     }
   });
   
@@ -1563,12 +2016,32 @@ function updateSubmitButton() {
   
   if (starredCategories.includes(category)) {
     const files = document.getElementById('fileUpload')?.files || [];
-    if (files.length === 0) {
+    const fileParent = document.getElementById('fileUpload')?.parentElement;
+    
+    if (files.length === 0 || (fileParent && fileParent.classList.contains('invalid'))) {
       allValid = false;
     }
   }
   
+  // Update button state
   submitBtn.disabled = !allValid;
+  
+  // Update button text based on state
+  const submitText = document.getElementById('submitText');
+  if (submitText) {
+    submitText.textContent = allValid ? 'Submit Declaration' : 'Please fix errors above';
+  }
+  
+  // Visual feedback
+  if (allValid) {
+    submitBtn.style.background = 'linear-gradient(135deg, #d4af37, #b8941f)';
+    submitBtn.style.cursor = 'pointer';
+    submitBtn.style.opacity = '1';
+  } else {
+    submitBtn.style.background = '#555';
+    submitBtn.style.cursor = 'not-allowed';
+    submitBtn.style.opacity = '0.7';
+  }
 }
 
 // ================= NEW FUNCTIONS FOR CATEGORY REQUIREMENTS =================
@@ -2013,6 +2486,9 @@ document.addEventListener('DOMContentLoaded', () => {
       setupCategoryChangeListener();
       initValidationListeners();
       checkCategoryRequirements();
+      
+      // Initialize real-time validation
+      initRealTimeValidation();
       
       // Load saved drafts
       loadDrafts();
