@@ -783,19 +783,37 @@ async function handleParcelSubmission(e) {
     showLoading(false);
   }
 }
-// Enhanced success handler
+
+// ================= ENHANCED SUCCESS HANDLER =================
 function showSubmissionSuccess(trackingNumber) {
   // Update message element
   const messageElement = document.getElementById('message') || createMessageElement();
   
   messageElement.innerHTML = `
-    <div style="text-align: center; padding: 20px;">
+    <div style="text-align: center; padding: 20px; position: relative;">
+      <button 
+        id="closeMessageBtn" 
+        style="
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: #ff4444;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          cursor: pointer;
+          font-size: 18px;
+          line-height: 1;
+          padding: 0;
+        "
+      >×</button>
       <div style="font-size: 48px; color: #00C851;">✓</div>
       <h3 style="color: #00C851; margin: 10px 0;">Submission Successful!</h3>
       <p>Tracking Number: <strong>${trackingNumber}</strong></p>
-      <p style="font-size: 0.9em; color: #888;">
-        Your parcel declaration has been submitted.<br>
-        Check your submission at Track Parcel page.
+      <p style="font-size: 0.9em; color: #888; margin-top: 15px;">
+        Click <a href="track-parcel.html" style="color: #00C851; text-decoration: underline; font-weight: bold;">HERE</a> to check your submission, if not available please resubmit again.
       </p>
     </div>
   `;
@@ -803,16 +821,15 @@ function showSubmissionSuccess(trackingNumber) {
   messageElement.className = 'success';
   messageElement.style.display = 'block';
   
-  // Reset form after successful submission
-  setTimeout(() => {
-    resetForm();
-  }, 500);
-  
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
+  // Add click handler for close button
+  document.getElementById('closeMessageBtn').addEventListener('click', function() {
     messageElement.style.display = 'none';
-  }, 5000);
+  });
+  
+  // Remove the auto-hide timeout
+  // Don't reset form here - let user close the message first
 }
+
 
 // Show local recovery notice
 function showLocalRecoveryNotice(payload) {
@@ -892,15 +909,16 @@ function createMessageElement() {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     color: white;
     padding: 30px;
     border-radius: 10px;
     z-index: 10000;
     display: none;
-    min-width: 300px;
+    min-width: 350px;
     text-align: center;
     box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    border: 2px solid #00C851;
   `;
   
   document.body.appendChild(messageDiv);
