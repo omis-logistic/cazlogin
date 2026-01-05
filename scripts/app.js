@@ -209,7 +209,7 @@ function showSuccessMessage() {
   const messageElement = document.getElementById('message');
   if (!messageElement) return;
 
-  messageElement.textContent = '✓ Submission Successful!';
+  messageElement.textContent = 'Data is processed!';
   messageElement.className = 'success';
   messageElement.style.display = 'block';
 
@@ -273,7 +273,7 @@ async function submitParcelData(payload) {
     const results = await tryAllSubmissionMethods(payload);
     
     if (results.success) {
-      console.log('Submission successful via', results.method);
+      console.log('Data is processed via', results.method);
       return results;
     }
     
@@ -810,7 +810,7 @@ function showSubmissionSuccess(trackingNumber) {
         "
       >×</button>
       <div style="font-size: 48px; color: #00C851;">✓</div>
-      <h3 style="color: #00C851; margin: 10px 0;">Submission Successful!</h3>
+      <h3 style="color: #00C851; margin: 10px 0;">Data is processed</h3>
       <p>Tracking Number: <strong>${trackingNumber}</strong></p>
       <p style="font-size: 0.9em; color: #888; margin-top: 15px;">
         Click <a href="track-parcel.html" style="color: #00C851; text-decoration: underline; font-weight: bold;">HERE</a> to check your submission, if not available please resubmit again.
