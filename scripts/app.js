@@ -2,7 +2,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbympMQBvVvPBpmkJUF97dS4yt01D4SCFH6akprgCDOgHUQ5Z4rY1kWFulVnF4uzOx3t/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzZZxyeXddesKkpI-4NXcs_teemitbJl4MpeLGfBiH-SCENHVllX-ZhRB0wgHc1cFJAMw/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwG9uJHc_hx3kUsiSgFhy98TzuG66Rvz90TApGYJsauieRBAutcZ8gnfUHjumo5-y05uQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -316,10 +316,9 @@ async function tryAllSubmissionMethods(payload) {
   throw new Error('All submission methods failed');
 }
 
-// Method 1: POST via Proxy (Primary)
+// Update the tryPostViaProxy function to properly handle success:false
 async function tryPostViaProxy(payload) {
   return new Promise((resolve, reject) => {
-    // Use XHR for better error handling
     const xhr = new XMLHttpRequest();
     const url = CONFIG.PROXY_URL;
     
@@ -333,9 +332,14 @@ async function tryPostViaProxy(payload) {
       if (xhr.status >= 200 && xhr.status < 300) {
         try {
           const response = JSON.parse(xhr.responseText);
-          resolve(response);
+          
+          // Check if backend returned success:false
+          if (response.success === false) {
+            reject(new Error(response.message || 'Submission failed at server'));
+          } else {
+            resolve(response);
+          }
         } catch (e) {
-          // Try to parse as text if JSON fails
           console.log('Raw response:', xhr.responseText);
           resolve({ 
             success: true, 
@@ -612,13 +616,14 @@ function base64ToBlob(base64, mimeType) {
 }
 
 // ================= UPDATED PARCEL SUBMISSION HANDLER =================
+// Update handleParcelSubmission to show better error messages
 async function handleParcelSubmission(e) {
   e.preventDefault();
   const form = e.target;
   showLoading(true, "Submitting parcel declaration...");
 
   try {
-    // Get form data
+    // Get form data (same as before)
     const formData = new FormData(form);
     const userData = checkSession();
     
@@ -626,7 +631,7 @@ async function handleParcelSubmission(e) {
       throw new Error('Session expired. Please login again.');
     }
 
-    // Build payload
+    // Build payload (same as before)
     const payload = {
       action: 'submitParcelDeclaration',
       data: {
@@ -635,48 +640,36 @@ async function handleParcelSubmission(e) {
         phoneNumber: userData.phone,
         itemDescription: formData.get('itemDescription')?.trim() || '',
         quantity: Number(formData.get('quantity')) || 1,
-        price: Number(formData.get('price')) || 0,  // This allows 0
+        price: Number(formData.get('price')) || 0,
         collectionPoint: formData.get('collectionPoint') || '',
         itemCategory: formData.get('itemCategory') || ''
       },
       files: []
     };
     
-    // Validate required fields - FIXED VERSION
+    // Validate required fields (same as before)
     const requiredFields = ['trackingNumber', 'nameOnParcel', 'itemDescription', 'quantity', 'price', 'collectionPoint', 'itemCategory'];
     for (const field of requiredFields) {
       const value = payload.data[field];
       
-      // Special handling for price field (0 is valid)
       if (field === 'price') {
         if (value === undefined || value === null || isNaN(value)) {
           throw new Error(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
         }
-      }
-      // Special handling for quantity field
-      else if (field === 'quantity') {
+      } else if (field === 'quantity') {
         if (isNaN(value) || value < 1) {
           throw new Error(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
         }
-      }
-      // Special handling for item description
-      else if (field === 'itemDescription') {
+      } else if (field === 'itemDescription') {
         if (!value || value.trim().length < 3) {
           throw new Error('Item description must be at least 3 characters');
         }
-      }
-      // For other fields, check if they're not empty
-      else if (!value) {
+      } else if (!value) {
         throw new Error(`Please fill in ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
       }
     }
 
-    // Validate item description length (minimum 3 characters)
-    if (payload.data.itemDescription.trim().length < 3) {
-      throw new Error('Item description must be at least 3 characters');
-    }
-
-    // Handle file uploads
+    // Handle file uploads (same as before)
     const fileInput = document.getElementById('fileUpload');
     const category = payload.data.itemCategory;
     
@@ -686,13 +679,12 @@ async function handleParcelSubmission(e) {
       '*Oil Ointment', '*Supplement', '*Others'
     ];
 
-    // Validate file requirements
     if (starredCategories.includes(category)) {
       if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
         throw new Error('Invoice/document upload is required for this category');
       }
       
-      // Process files
+      // Process files (same as before)
       const files = Array.from(fileInput.files);
       
       if (files.length > CONFIG.MAX_FILES) {
@@ -742,41 +734,52 @@ async function handleParcelSubmission(e) {
       showLocalRecoveryNotice(payload);
       
     } else {
-      // Complete failure
-      throw new Error(result.message || 'Submission failed');
+      // Complete failure - show actual error from backend
+      throw new Error(result.message || 'Submission failed at server');
     }
 
   } catch (error) {
     console.error('Submission error:', error);
     
     // Show user-friendly error message
+    let errorMessage = error.message;
+    
+    // Categorize errors for better messaging
     if (error.message.includes('Price must be')) {
-      showError('❌ Price must be 0 or greater. 0 is allowed for items with no declared value.');
+      errorMessage = '❌ Price must be 0 or greater. 0 is allowed for items with no declared value.';
     } else if (error.message.includes('Item description must be')) {
-      showError('❌ Item description must be at least 3 characters.');
+      errorMessage = '❌ Item description must be at least 3 characters.';
     } else if (error.message.includes('Invoice/document upload')) {
-      showError('❌ Invoice/document upload is required for starred categories.');
+      errorMessage = '❌ Invoice/document upload is required for starred categories.';
     } else if (error.message.includes('Network') || error.message.includes('Failed to fetch')) {
-      showError('⚠️ Network connection issue. Please check your internet and try again.');
+      errorMessage = '⚠️ Network connection issue. Please check your internet and try again.';
     } else if (error.message.includes('timeout')) {
-      showError('⚠️ Submission timeout. The request took too long. Please try again.');
+      errorMessage = '⚠️ Submission timeout. The request took too long. Please try again.';
     } else if (error.message.includes('Session expired')) {
-      showError('❌ Session expired. Please login again.');
+      errorMessage = '❌ Session expired. Please login again.';
       setTimeout(() => {
         handleLogout();
       }, 2000);
+    } else if (error.message.includes('Submission failed at server')) {
+      errorMessage = '❌ Server error: Could not save your submission. Please try again.';
+    } else if (error.message.includes('No payload received')) {
+      errorMessage = '❌ Submission data was corrupted. Please try again.';
     } else {
-      showError(`❌ ${error.message}`);
+      errorMessage = `❌ ${error.message}`;
     }
     
-    // Only offer to save as draft for network/timeout errors, not validation errors
+    showError(errorMessage);
+    
+    // Offer to save as draft for network/timeout errors
     if ((error.message.includes('Network') || error.message.includes('timeout') || error.message.includes('Failed to fetch')) && 
         !error.message.includes('Price must be') && 
         !error.message.includes('Item description must be') &&
         !error.message.includes('Invoice/document upload')) {
-      if (confirm('Would you like to save this form as a draft?')) {
-        saveFormAsDraft();
-      }
+      setTimeout(() => {
+        if (confirm('Would you like to save this form as a draft?')) {
+          saveFormAsDraft();
+        }
+      }, 1000);
     }
     
   } finally {
@@ -797,7 +800,7 @@ function showSubmissionSuccess(trackingNumber) {
           position: absolute;
           top: 10px;
           right: 10px;
-          background: #ff4444;
+          background: #333;
           color: white;
           border: none;
           border-radius: 50%;
@@ -807,13 +810,15 @@ function showSubmissionSuccess(trackingNumber) {
           font-size: 18px;
           line-height: 1;
           padding: 0;
+          transition: all 0.3s ease;
         "
+        title="Close this message"
       >×</button>
       <div style="font-size: 48px; color: #00C851;">✓</div>
-      <h3 style="color: #00C851; margin: 10px 0;">Data is processed</h3>
-      <p>Tracking Number: <strong>${trackingNumber}</strong></p>
-      <p style="font-size: 0.9em; color: #888; margin-top: 15px;">
-        Click <a href="track-parcel.html" style="color: #00C851; text-decoration: underline; font-weight: bold;">HERE</a> to check your submission, if not available please resubmit again.
+      <h3 style="color: #00C851; margin: 10px 0;">Submission Successful!</h3>
+      <p style="margin: 10px 0;">Tracking Number: <strong style="color: #d4af37;">${trackingNumber}</strong></p>
+      <p style="font-size: 0.9em; color: #aaa; margin-top: 15px; line-height: 1.5;">
+        Click <a href="track-parcel.html" style="color: #00C851; text-decoration: underline; font-weight: bold;">HERE</a> to check your submission,<br>if not available please resubmit again.
       </p>
     </div>
   `;
@@ -821,13 +826,28 @@ function showSubmissionSuccess(trackingNumber) {
   messageElement.className = 'success';
   messageElement.style.display = 'block';
   
+  // Add hover effect to close button
+  const closeBtn = document.getElementById('closeMessageBtn');
+  closeBtn.addEventListener('mouseenter', function() {
+    this.style.background = '#ff4444';
+    this.style.transform = 'scale(1.1)';
+  });
+  closeBtn.addEventListener('mouseleave', function() {
+    this.style.background = '#333';
+    this.style.transform = 'scale(1)';
+  });
+  
   // Add click handler for close button
-  document.getElementById('closeMessageBtn').addEventListener('click', function() {
+  closeBtn.addEventListener('click', function() {
     messageElement.style.display = 'none';
   });
   
-  // Remove the auto-hide timeout
-  // Don't reset form here - let user close the message first
+  // REMOVED: Auto-close timeout - message stays until user closes it
+  // setTimeout(() => {
+  //   if (messageElement.style.display === 'block') {
+  //     messageElement.style.display = 'none';
+  //   }
+  // }, 8000);
 }
 
 
