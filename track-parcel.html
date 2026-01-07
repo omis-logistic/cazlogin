@@ -128,7 +128,7 @@
       background: rgba(212, 175, 55, 0.7);
     }
     
-    /* Tracking items */
+    /* Tracking items - REMOVED TIMESTAMP */
     .tracking-item { 
       padding: 15px; 
       margin: 10px 0; 
@@ -137,6 +137,9 @@
       cursor: pointer; 
       transition: all 0.3s ease;
       border: 1px solid transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     
     .tracking-item.active { 
@@ -156,7 +159,9 @@
       color: #d4af37; 
       font-size: 15px; 
       font-weight: 600; 
-      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     
     .status-indicator {
@@ -173,16 +178,19 @@
     .status-hold { background: #ff4444; }
     .status-unknown { background: #888; }
     
-    /* Details panel */
+    /* Details panel - FIXED FOR MOBILE */
     .details-content {
       display: none;
+      height: calc(100% - 40px); /* Account for panel title */
     }
     
     .detail-column { 
       display: flex; 
       flex-direction: column; 
-      gap: 20px; 
-      padding: 10px; 
+      gap: 15px; 
+      height: 100%;
+      overflow-y: auto;
+      padding-right: 5px;
     }
     
     .detail-item { 
@@ -190,6 +198,7 @@
       flex-direction: column; 
       align-items: center; 
       gap: 10px; 
+      min-height: 70px; /* Ensure consistent height */
     }
     
     .detail-value { 
@@ -201,17 +210,14 @@
       width: 100%; 
       text-align: center;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      word-break: break-word;
+      box-sizing: border-box;
     }
     
     .detail-value strong { 
       color: #d4af37; 
       margin-right: 10px; 
       font-weight: 600;
-    }
-    
-    .arrow { 
-      color: #d4af37; 
-      font-size: 20px; 
     }
     
     /* Empty states */
@@ -235,7 +241,7 @@
       font-size: 1.1rem;
     }
     
-    /* Button group styles */
+    /* Button group styles - ADDED MARGIN TOP FOR MOBILE */
     .button-group {
       display: flex;
       gap: 20px;
@@ -338,7 +344,7 @@
       100% { transform: rotate(360deg); }
     }
     
-    /* Responsive design */
+    /* Responsive design - FIXED MOBILE LAYOUT */
     @media (max-width: 1024px) {
       .container {
         padding: 15px;
@@ -358,19 +364,48 @@
         grid-template-columns: 1fr; 
         height: auto; 
         gap: 30px;
+        /* IMPORTANT: Add bottom margin to prevent overlap */
+        margin-bottom: 40px;
       } 
       
+      /* REMOVED fixed height, using auto with min-height */
       .tracking-list-panel, .details-panel { 
-        height: 400px; 
+        height: auto;
+        min-height: 350px;
+        max-height: 450px;
+        display: flex;
+        flex-direction: column;
       } 
+      
+      .tracking-items-container {
+        flex: 1;
+        min-height: 300px;
+      }
+      
+      /* FIXED: Details panel for mobile */
+      .details-content {
+        display: none;
+        flex: 1;
+        overflow-y: auto;
+      }
+      
+      .detail-column {
+        padding-bottom: 20px; /* Add padding at bottom */
+      }
       
       .detail-value { 
         font-size: 14px; 
+        padding: 12px;
+        margin-bottom: 0;
       }
       
+      /* Button group fixes for mobile */
       .button-group {
         flex-direction: column;
         gap: 15px;
+        margin-top: 30px; /* Reduced margin on mobile */
+        position: relative;
+        z-index: 1; /* Ensure buttons are above content */
       }
       
       .gold-button, .secondary-button {
@@ -391,10 +426,26 @@
       
       .tracking-list-panel, .details-panel {
         padding: 15px;
+        min-height: 320px;
+        max-height: 400px;
       }
       
       .button-group {
-        margin-top: 30px;
+        margin-top: 25px;
+        margin-bottom: 10px;
+      }
+      
+      /* Ensure content doesn't overflow */
+      .details-panel {
+        overflow: hidden;
+      }
+      
+      .detail-column {
+        gap: 12px;
+      }
+      
+      .detail-item {
+        min-height: 65px;
       }
     }
     
@@ -442,7 +493,7 @@
     </div>
   </div>
 
-  <!-- NEW BUTTON GROUP -->
+  <!-- BUTTON GROUP - FIXED POSITIONING -->
   <div class="button-group">
     <button class="gold-button" onclick="safeRedirect('parcel-declaration.html')">
       📦 Go to Declare Parcel
@@ -548,6 +599,13 @@
       // Store parcels
       allParcels = response.data || [];
       
+      // FIX 1: Sort parcels by submittedTimestamp in DESCENDING order (newest first)
+      allParcels.sort((a, b) => {
+        const dateA = new Date(a.submittedTimestamp || 0);
+        const dateB = new Date(b.submittedTimestamp || 0);
+        return dateB - dateA; // Descending order
+      });
+      
       if (allParcels.length === 0) {
         document.getElementById('trackingList').innerHTML = `
           <div class="empty-state">
@@ -571,7 +629,7 @@
       renderTrackingList(allParcels);
       
       // Show details panel
-      document.getElementById('parcelDetails').style.display = 'block';
+      document.getElementById('parcelDetails').style.display = 'flex';
 
     } catch (error) {
       console.error('Tracking load error:', error);
@@ -592,7 +650,7 @@
     }
   }
 
-  // Function to render tracking list
+  // Function to render tracking list - FIX 2: REMOVED TIMESTAMP
   function renderTrackingList(parcels) {
     const container = document.getElementById('trackingList');
     if (!container) return;
@@ -617,17 +675,15 @@
       item.className = `tracking-item`;
       item.dataset.index = index;
       
+      // FIX 2: Simplified HTML - REMOVED TIMESTAMP
       item.innerHTML = `
         <div class="tracking-number">
           <span style="margin-right: 8px;">${getStatusIcon(parcel.status)}</span>
           ${parcel.trackingNumber || 'N/A'}
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-          <span style="color: #aaa; font-size: 13px;">
-            ${parcel.submittedTimestamp ? formatDate(parcel.submittedTimestamp) : 'Date unknown'}
-          </span>
-          <span class="status-indicator ${getStatusClass(parcel.status)}" title="${parcel.status || 'Unknown'}"></span>
-        </div>
+        <span class="status-indicator ${getStatusClass(parcel.status)}" 
+              title="${parcel.status || 'Unknown'}">
+        </span>
       `;
       
       item.addEventListener('click', () => showParcelDetails(parcel, item));
@@ -642,6 +698,7 @@
       'in transit': '🚚',
       'delivered': '✅',
       'customs hold': '⚠️',
+      '': '❓'
     };
     return icons[status?.toLowerCase()] || '📦';
   }
@@ -658,7 +715,7 @@
     return statusMap[status?.toLowerCase()] || 'status-unknown';
   }
 
-  // Function to show parcel details
+  // Function to show parcel details - FIX 3: BETTER MOBILE LAYOUT
   function showParcelDetails(parcel, clickedElement) {
     if (!parcel) return;
     
@@ -692,20 +749,6 @@
           <strong>Estimated Delivery:</strong> ${parcel.estimatedDelivery || 'N/A'}
         </span>
       </div>
-      ${parcel.itemDescription ? `
-      <div class="detail-item">
-        <span class="detail-value">
-          <strong>Item Description:</strong> ${parcel.itemDescription}
-        </span>
-      </div>
-      ` : ''}
-      ${parcel.collectionPoint ? `
-      <div class="detail-item">
-        <span class="detail-value">
-          <strong>Collection Point:</strong> ${parcel.collectionPoint}
-        </span>
-      </div>
-      ` : ''}
     `;
 
     // Update active state
@@ -719,7 +762,12 @@
     
     // Hide "no details" message
     document.getElementById('noDetails').style.display = 'none';
-    document.getElementById('parcelDetails').style.display = 'block';
+    document.getElementById('parcelDetails').style.display = 'flex';
+    
+    // FIX 3: Scroll to top of details for mobile
+    if (window.innerWidth <= 768) {
+      container.scrollTop = 0;
+    }
   }
 
   // Format date function
@@ -758,13 +806,16 @@
 
     // Load initial data
     loadParcelData().then(() => {
-      // Auto-select first parcel if available
+      // Auto-select first parcel if available (now sorted by newest first)
       if (allParcels.length > 0) {
         const firstItem = document.querySelector('.tracking-item');
         if (firstItem) {
           const index = parseInt(firstItem.dataset.index);
           if (!isNaN(index) && allParcels[index]) {
-            showParcelDetails(allParcels[index], firstItem);
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+              showParcelDetails(allParcels[index], firstItem);
+            }, 100);
           }
         }
       }
@@ -776,6 +827,17 @@
         e.preventDefault();
         if (searchInput) {
           searchInput.focus();
+        }
+      }
+    });
+    
+    // FIX 3: Handle window resize to prevent overlap
+    window.addEventListener('resize', () => {
+      // Force re-layout when window is resized
+      if (selectedParcel && window.innerWidth <= 768) {
+        const detailContainer = document.getElementById('detailContainer');
+        if (detailContainer) {
+          detailContainer.scrollTop = 0;
         }
       }
     });
