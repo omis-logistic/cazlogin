@@ -814,8 +814,8 @@ function showSubmissionSuccess(trackingNumber) {
         "
         title="Close this message"
       >×</button>
-      <div style="font-size: 48px; color: #00C851;">✓</div>
-      <h3 style="color: #00C851; margin: 10px 0;">Submission Successful!</h3>
+      <div style="font-size: 48px; color: #00C851;">⏳</div>
+      <h3 style="color: #00C851; margin: 10px 0;">Submission is processed!</h3>
       <p style="margin: 10px 0;">Tracking Number: <strong style="color: #d4af37;">${trackingNumber}</strong></p>
       <p style="font-size: 0.9em; color: #aaa; margin-top: 15px; line-height: 1.5;">
         Click <a href="track-parcel.html" style="color: #00C851; text-decoration: underline; font-weight: bold;">HERE</a> to check your submission,<br>if not available please resubmit again.
