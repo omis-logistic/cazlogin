@@ -581,3 +581,24 @@ body.mobile-view #fileUpload {
   display: block;
   min-height: 20px;
 }
+
+/* Fix dropdown option colors for select elements */
+select option {
+  background-color: var(--input-bg) !important;
+  color: var(--text-light) !important;
+  padding: 10px;
+}
+
+select optgroup {
+  background-color: var(--dark-bg) !important;
+  color: var(--gold) !important;
+  font-weight: bold;
+  font-size: 1em;
+  padding: 8px;
+}
+
+select optgroup option {
+  background-color: var(--input-bg) !important;
+  color: var(--text-light) !important;
+  padding-left: 20px;
+}
