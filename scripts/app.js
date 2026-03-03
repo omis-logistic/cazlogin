@@ -1,7 +1,7 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  MAIN_URL: 'https://script.google.com/macros/s/AKfycbxM7Ca32kqLortZI0spNPnXsj3M7W732ZlO6kxgv-l7NrpvaAmXr5wR-JYPKPd6Vjmu/exec', // for JSONP (login, etc.)
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxM7Ca32kqLortZI0spNPnXsj3M7W732ZlO6kxgv-l7NrpvaAmXr5wR-JYPKPd6Vjmu/exec', // main backend for JSONP (login, etc.)
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbzNJentSkOZp9h64C644F144st49nfF--jFK2cB_FzOvSFqCbv-QT8DOGt4w9Q1e-X7ig/exec', // for CORS POST (parcel submission)
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
@@ -108,7 +108,7 @@ function handleLogout() {
 function jsonpRequest(action, params) {
   return new Promise((resolve, reject) => {
     const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const url = new URL(CONFIG.MAIN_URL);
+    const url = new URL(CONFIG.GAS_URL);
     url.searchParams.append('callback', callbackName);
     url.searchParams.append('action', action);
     Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
