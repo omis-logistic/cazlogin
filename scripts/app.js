@@ -1,7 +1,7 @@
 // scripts/app.js – Version 3
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbyDZuvtBMhkwkI-Su6nXMLmm036-z5MvjBvRL1RJvqye_2UhQTV5j8yAdxrT10llNwa/exec',   // Main backend (unchanged)
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbxKHsB5a3lWG-Jul22-f-8FmfGBJmz4Kkmtxjr7Xjidk6skJ2103LsoO-p_2JpQ4Ie6/exec',   // Main backend (unchanged)
   PROXY_URL: 'https://script.google.com/macros/s/AKfycbyaIj08vEuC_6GHD17TeM3jEnEQ6vpKDVzesR8TAZMgKzzhc32XvCzl5hFbrHjF5aZ5hw/exec', // Proxy for submissions
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
