@@ -9,17 +9,6 @@ const CONFIG = {
   MAX_FILES: 3
 };
 
-// ================= HELPER: TRACKING NUMBER CLEANING =================
-function cleanTrackingNumber(rawTracking) {
-  if (!rawTracking) return '';
-  let cleaned = rawTracking.trim().toUpperCase();
-  const spxIndex = cleaned.indexOf('SPXLM');
-  if (spxIndex !== -1) {
-    cleaned = cleaned.substring(0, spxIndex);
-  }
-  return cleaned;
-}
-
 // ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
   const isMobile = (
@@ -646,7 +635,7 @@ async function handleParcelSubmission(e) {
     const payload = {
       action: 'submitParcelDeclaration',
       data: {
-        trackingNumber: cleanTrackingNumber(formData.get('trackingNumber')), // <-- CLEANED
+        trackingNumber: formData.get('trackingNumber')?.trim().toUpperCase() || '',
         nameOnParcel: formData.get('nameOnParcel')?.trim() || '',
         phoneNumber: userData.phone,
         itemDescription: formData.get('itemDescription')?.trim() || '',
