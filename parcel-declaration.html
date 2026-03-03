@@ -887,20 +887,23 @@
     }
   }
 
-  function validateFilesInRealTime() {
-    const fileInput = document.getElementById('fileUpload');
-    const category = document.getElementById('itemCategory')?.value || '';
-    const starredCategories = [
-      '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
-      '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
-    ];
-    
-    if (!fileInput) return;
-    
-    const errorElement = document.getElementById('invoiceFilesError');
-    const parent = fileInput.parentElement;
-    
-    parent.classList.remove('valid', 'invalid');
+    function validateFilesInRealTime() {
+        const fileInput = document.getElementById('fileUpload');
+        const category = document.getElementById('itemCategory')?.value || '';
+        const starredCategories = [
+          '*Books', '*Cosmetics/Skincare/Bodycare', '*Food Beverage/Drinks',
+          '*Gadgets', '*Oil Ointment', '*Supplement', '*Others'
+        ];
+        
+        if (!fileInput) return;
+        
+        const errorElement = document.getElementById('invoiceFilesError');
+        // ✅ ADD THIS NULL CHECK
+        if (!errorElement) return;
+        
+        const parent = fileInput.parentElement;
+        
+        parent.classList.remove('valid', 'invalid');
     
     if (starredCategories.includes(category)) {
       const files = fileInput.files;
