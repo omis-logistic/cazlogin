@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxeOl1JwkJO2QCivgZ35L4MekH5Jw-Y_0Wal7N0BH2ectWgLd2ryG4_WIPIsasU0i0X/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbw-1eKWGZ4l_thE1cv5iEvg_Poe2wNtRMPuI2NjFcQvz2YCZrwx9SE-ksRecnYnBdFGdA/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyLfrksjfV8CcMCeyd0uGSNNwd4jHn7Ou9zr4o7kh6nJ5q28F2JFM7xcvMuuMkWysf9/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzmeEH1GffjCPLz11EeQXXsEzfDyUa4AfJw341lc_pCirJgbuOeQ53T9Hd-YuXDcHhPpg/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -43,7 +43,6 @@ function detectViewMode() {
 function showError(message, targetId = 'error-message') {
   const errorElement = document.getElementById(targetId) || createErrorElement();
   
-  // Special handling for success-like messages
   if (typeof message === 'string' && message.includes('success')) {
     errorElement.style.background = '#00C851dd';
     errorElement.textContent = message.replace('success', '').trim();
@@ -233,7 +232,6 @@ async function handleParcelSubmission(e) {
     const formData = new FormData(form);
     const files = Array.from(formData.getAll('files'));
     
-    // Process files for all submissions
     const processedFiles = await Promise.all(
       files.map(async file => ({
         name: file.name,
@@ -249,9 +247,8 @@ async function handleParcelSubmission(e) {
       throw new Error('Documents required for this category');
     }
 
-    // Get logged-in user data
+    // Get logged-in user data (phone only)
     const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const userId = userData.userID || '';
 
     // Trim tracking number
     const rawTracking = formData.get('trackingNumber').trim().toUpperCase();
@@ -261,7 +258,6 @@ async function handleParcelSubmission(e) {
       trackingNumber: trimmedTracking,
       nameOnParcel: formData.get('nameOnParcel').trim(),
       phone: document.getElementById('phone').value,
-      userId: userId,
       itemDescription: formData.get('itemDescription').trim(),
       quantity: formData.get('quantity'),
       price: formData.get('price'),
@@ -384,7 +380,6 @@ function validateCategory(selectElement) {
 
 function validateInvoiceFiles() {
   const category = document.getElementById('itemCategory')?.value;
-  // If category is not mandatory, files are optional → always valid
   if (!MANDATORY_CATEGORIES.includes(category)) {
     return true;
   }
@@ -423,7 +418,6 @@ function toBase64(file) {
 }
 
 function validateFiles(category, files) {
-  // Only used in handleFileSelection, which now only validates size/type
   files.forEach(file => {
     if (file.size > CONFIG.MAX_FILE_SIZE) {
       throw new Error(`${file.name} exceeds ${CONFIG.MAX_FILE_SIZE/1024/1024}MB limit`);
@@ -435,7 +429,6 @@ function handleFileSelection(input) {
   try {
     const files = Array.from(input.files);
     
-    // Max files check only (presence is handled by required attribute & submit validation)
     if (files.length > 3) throw new Error('Max 3 files allowed');
 
     files.forEach(file => {
@@ -586,7 +579,6 @@ function initValidationListeners() {
             validateCategory(input);
             break;
           case 'remarks':
-          // No validation needed
           break;
         }
         updateSubmitButtonState();
@@ -873,7 +865,7 @@ function processPendingTracking() {
     return false;
 }
 
-// ================= CATEGORY REQUIREMENTS (UPDATED) =================
+// ================= CATEGORY REQUIREMENTS =================
 function checkCategoryRequirements() {
   const categorySelect = document.getElementById('itemCategory');
   const fileInput = document.getElementById('fileUpload');
@@ -907,15 +899,13 @@ document.addEventListener('DOMContentLoaded', () => {
   detectViewMode();
   initValidationListeners();
   createLoaderElement();
-  setupCategoryChangeListener();   // Listen for category changes
-  checkCategoryRequirements();     // Set initial state
+  setupCategoryChangeListener();
+  checkCategoryRequirements();
 
-  // Initialize parcel declaration form
   const parcelForm = document.getElementById('declarationForm');
   if (parcelForm) {
     parcelForm.addEventListener('submit', handleParcelSubmission);
     
-    // Phone field setup
     const phoneField = document.getElementById('phone');
     if (phoneField) {
       const userData = checkSession();
@@ -924,7 +914,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Session management
   const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
   const isPublicPage = publicPages.some(page => 
     window.location.pathname.includes(page)
