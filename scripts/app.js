@@ -1,13 +1,24 @@
 //scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzSkoFZ7mnwbfyyi3jTQg9x62bvIyeli3Ubb0kYOB5FndomVMHJ6wFs21QETRJep_G7/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbwDbC9g6Qip9swzGvFDU9Igjm_BFnGQgWxrS8_T8d-qNf9wk1Dx0RtB-GzwFJX6QFInYg/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyEaqcqbQivRBbA_qjPDsw-D-ZGKKpJRJeFKbC0KHUppqGfE562uWIKPFHYntT3nQZ2/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbzbQ-5oHOFVLZ3O-l-eg8CjeSBupcX-P97vJGqH_hS9J3TIVJMN0nW_dnLTQieeMGORrQ/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
   MAX_FILES: 3
 };
+
+// ================= HELPER: TRACKING NUMBER CLEANING =================
+function cleanTrackingNumber(rawTracking) {
+  if (!rawTracking) return '';
+  let cleaned = rawTracking.trim().toUpperCase();
+  const spxIndex = cleaned.indexOf('SPXLM');
+  if (spxIndex !== -1) {
+    cleaned = cleaned.substring(0, spxIndex);
+  }
+  return cleaned;
+}
 
 // ================= VIEWPORT MANAGEMENT =================
 function detectViewMode() {
@@ -635,7 +646,7 @@ async function handleParcelSubmission(e) {
     const payload = {
       action: 'submitParcelDeclaration',
       data: {
-        trackingNumber: formData.get('trackingNumber')?.trim().toUpperCase() || '',
+        trackingNumber: cleanTrackingNumber(formData.get('trackingNumber')), // <-- CLEANED
         nameOnParcel: formData.get('nameOnParcel')?.trim() || '',
         phoneNumber: userData.phone,
         itemDescription: formData.get('itemDescription')?.trim() || '',
