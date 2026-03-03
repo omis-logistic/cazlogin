@@ -2,7 +2,7 @@
 // ================= CONFIGURATION =================
 const CONFIG = {
   GAS_URL: 'https://script.google.com/macros/s/AKfycbxM7Ca32kqLortZI0spNPnXsj3M7W732ZlO6kxgv-l7NrpvaAmXr5wR-JYPKPd6Vjmu/exec', // main backend for JSONP (login, etc.)
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbyObhtrCNZ14wfKM25Y2YYpMY9U2a9R5pev4qdl7nbbQum7geFsbyJaKP3NFzQSr8nWhA/exec', // for CORS POST (parcel submission)
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxOz-YN8meJOUA9Aay3poYKKJVetYTKYM-hoXpUzNxxFchUwW21z1JmfzvWp2IJ4ac8UA/exec', // for CORS POST (parcel submission)
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
