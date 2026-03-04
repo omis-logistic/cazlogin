@@ -1,8 +1,8 @@
 // scripts/app.js
 // ================= CONFIGURATION =================
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzOcW3kpgt8sj25aGUHPi8cqzzbt92_UTi_PRzCfACcnx4vGlFMcMTH1MWdxgkFJJjl/exec',
-  PROXY_URL: 'https://script.google.com/macros/s/AKfycbyH61oWrdjP4hV2SgPk0SvtsZep9AyUEMnJQW-TLaswDGeoJn3WwYK41ejK74xyH6CjdA/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwxW9fB4FpS7kiDueQz_tkGPC_nvlygNnqYVPfS0KePK48x4cGq4exJpBzRuDcTmru7/exec',
+  PROXY_URL: 'https://script.google.com/macros/s/AKfycbxZePSOM7lgha0jY1hqxBUwSlHCtY8lb8BG1Od9O2s_xehEIbyA0TK_QW_iqliKzwsEZA/exec',
   SESSION_TIMEOUT: 3600,
   MAX_FILE_SIZE: 5 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'application/pdf'],
@@ -261,7 +261,10 @@ async function handleParcelSubmission(e) {
 
     await fetch(CONFIG.PROXY_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      mode: 'no-cors', // CRITICAL: This bypasses the CORS preflight check
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
       body: `payload=${encodeURIComponent(JSON.stringify(payload))}`
     });
 
@@ -460,7 +463,7 @@ async function submitDeclaration(payload) {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
       },
       body: `payload=${encodeURIComponent(JSON.stringify(fullPayload))}`,
-      mode: 'cors',
+      mode: 'no-cors',
       redirect: 'follow',
       referrerPolicy: 'no-referrer'
     });
